@@ -361,3 +361,10 @@ input:focus, select:focus, textarea:focus {
 .transition-visibility {
   transition: visibility 0.3s ease;
 }
+
+/* Center sonner toast */
+.toaster-center[data-sonner-toaster] {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  bottom: auto !important;
+}

@@ -43,7 +43,7 @@ export default function UserLayout({ children }) {
   return (
     <div className="min-h-screen bg-[color:var(--color-bg-main)] min-w-0 overflow-x-hidden pb-24 md:pb-0">
       {/* Top Navigation */}
-      <nav className="sticky top-0 z-40 border-b backdrop-blur-xl shadow-[var(--shadow-navbar)]" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
+      <nav className="sticky top-0 z-40 border-b backdrop-blur-xl shadow-[var(--shadow-navbar)] pt-[max(env(safe-area-inset-top),0px)]" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
         <div className="app-shell relative">
           <div className="flex min-h-[4rem] flex-wrap items-center justify-between gap-3 py-2 md:py-3">
             <div className="flex items-center gap-3">

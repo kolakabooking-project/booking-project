@@ -20,6 +20,7 @@ import FleetPage from './pages/admin/FleetPage';
 import DriversPage from './pages/admin/DriversPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import AdminChatPage from './pages/admin/AdminChatPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 
 function ProtectedRoute({ children, role }) {
   const { activeRole, isAuthenticated } = useAuth();
@@ -56,6 +57,7 @@ function AppRoutes() {
       <Route path="/admin/drivers" element={<ProtectedRoute role="admin"><AdminLayout><DriversPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/chat" element={<ProtectedRoute role="admin"><AdminLayout><AdminChatPage /></AdminLayout></ProtectedRoute>} />
+      <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminLayout><AdminSettingsPage /></AdminLayout></ProtectedRoute>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
@@ -70,8 +72,9 @@ function AppShell() {
     <>
       <AppRoutes />
       <Toaster
-        position="top-right"
+        position="top-center"
         theme={theme}
+        className="toaster-center"
         toastOptions={{
           style: { fontFamily: "'Montserrat', sans-serif", fontSize: '14px' },
         }}

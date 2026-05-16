@@ -10,7 +10,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   Menu, LogOut, ChevronLeft, Bell, Home, ChevronRight,
   LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle,
+  Settings, Plus,
 } from 'lucide-react';
+import BookingModalFlow from '../shared/BookingModalFlow';
 
 const iconMap = { LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle };
 
@@ -88,11 +90,11 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
           />
         </div>
         {(!collapsed || isMobile) && (
-          <div className="rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm">
+          <Link to="/admin/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
             <p className="truncate text-sm font-heading font-bold text-white">{user?.name || 'Administrator'}</p>
             <p className="mt-1 truncate text-xs font-semibold text-djp-yellow">{user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
             <p className="mt-1 truncate text-[10px] uppercase tracking-widest text-white/45">{user?.jabatan || 'Subbagian Umum'}</p>
-          </div>
+          </Link>
         )}
         {user?.role === 'admin' && (
           <button
@@ -127,6 +129,8 @@ export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const { isDark } = useTheme();
 
   useEffect(() => {
@@ -238,16 +242,9 @@ export default function AdminLayout({ children }) {
       </div>
 
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-[250px]'}`}>
-        <header className="sticky top-0 z-20 flex min-h-20 flex-wrap items-center justify-between gap-4 border-b px-4 py-3 shadow-[var(--shadow-navbar)] backdrop-blur-xl sm:px-6" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
+        <header className="sticky top-0 z-20 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-4 border-b px-4 pb-3 pt-[max(env(safe-area-inset-top),12px)] shadow-[var(--shadow-navbar)] backdrop-blur-xl sm:px-6" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="rounded-xl border p-2 text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-muted)] lg:hidden"
-              style={{ borderColor: 'var(--color-border)' }}
-            >
-              <Menu size={22} />
-            </button>
-            <Link to="/admin/dashboard" className="mr-2 inline-flex items-center lg:hidden">
+            <Link to="/admin/dashboard" className="mr-2 inline-flex items-center lg:hidden focus:outline-none focus:ring-2 focus:ring-djp-blue/30 rounded-lg">
               <ThemeLogo className="h-8" />
             </Link>
             <div className="hidden sm:block">
@@ -332,10 +329,84 @@ export default function AdminLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in">
+        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
+        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
+          <NavLink to="/admin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <Home size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Beranda</span>
+          </NavLink>
+          
+          <NavLink to="/admin/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <div className="relative">
+              <MessageCircle size={20} strokeWidth={2.5} />
+              {hasUnreadChat && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+            </div>
+            <span className="text-[10px] font-bold">Chat</span>
+          </NavLink>
+
+          <div className="w-16"></div>
+
+          <button 
+            onClick={() => setActionModalOpen(true)}
+            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            style={{ borderColor: 'var(--color-bg-main)' }}
+          >
+            <div className="relative flex items-center justify-center">
+               <Car size={28} strokeWidth={2} className="text-white relative z-10" />
+               <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
+                 <Plus size={12} strokeWidth={4} />
+               </div>
+            </div>
+          </button>
+
+          <NavLink to="/admin/reports" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <FileSpreadsheet size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Laporan</span>
+          </NavLink>
+
+          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <Settings size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Settings</span>
+          </NavLink>
+        </div>
+      </div>
+
+      {/* Action Modal */}
+      {actionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-fade-in" onClick={() => setActionModalOpen(false)} />
+          <div className="relative w-full rounded-t-3xl bg-[color:var(--color-surface)] sm:w-96 sm:rounded-3xl p-6 pb-safe shadow-2xl animate-slide-up sm:animate-scale-in">
+            <div className="w-12 h-1.5 bg-[color:var(--color-border)] rounded-full mx-auto mb-6 sm:hidden" />
+            <h3 className="text-lg font-heading font-bold mb-6 text-[color:var(--color-heading)] text-center">Pilih Tindakan</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => { setActionModalOpen(false); setBookingModalOpen(true); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-djp-blue/5 hover:border-djp-blue/30 transition-all active:scale-95">
+                <div className="w-12 h-12 rounded-full bg-djp-blue/10 flex items-center justify-center text-djp-blue"><Car size={24} /></div>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Peminjaman<br/>(Mandatory)</span>
+              </button>
+              <button onClick={() => { setActionModalOpen(false); navigate('/admin/requests'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-djp-blue/5 hover:border-djp-blue/30 transition-all active:scale-95">
+                <div className="w-12 h-12 rounded-full bg-djp-blue/10 flex items-center justify-center text-djp-blue"><ClipboardCheck size={24} /></div>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Daftar<br/>Persetujuan</span>
+              </button>
+            </div>
+            <button onClick={() => setActionModalOpen(false)} className="mt-6 w-full py-3.5 rounded-2xl font-bold text-[color:var(--color-text-muted)] bg-[color:var(--color-surface-muted)] hover:bg-[color:var(--color-border)] transition-colors">Batal</button>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Modal */}
+      <BookingModalFlow 
+        isOpen={bookingModalOpen} 
+        onClose={() => setBookingModalOpen(false)} 
+        selectedDate={null} 
+        dateBookings={[]} 
+        isAdmin={true}
+      />
     </div>
   );
 }
