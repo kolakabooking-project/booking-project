@@ -1,0 +1,571 @@
+/* ============================================
+   MY JOURNEY TRACKER — User Dashboard Visualization
+   ============================================ */
+
+/* --- Keyframe Animations --- */
+@keyframes mjt-road-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 44px 0; }
+}
+
+@keyframes mjt-idle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes mjt-ready-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.5)); }
+}
+
+@keyframes mjt-on-road {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(2px) translateY(-1px); }
+  75% { transform: translateX(-1px) translateY(1px); }
+}
+
+@keyframes mjt-flag-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+@keyframes mjt-pulse-cta {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(33, 44, 95, 0.25); }
+  50% { box-shadow: 0 0 0 8px rgba(33, 44, 95, 0); }
+}
+
+@keyframes mjt-dot-sparkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* --- Root Variables --- */
+.mjt-root {
+  --mjt-road-color: rgba(148, 163, 184, 0.3);
+  --mjt-road-dash: rgba(148, 163, 184, 0.5);
+  --mjt-node-bg: var(--color-surface-elevated);
+  --mjt-node-border: var(--color-border);
+  --mjt-label-color: var(--color-text-soft);
+  --mjt-heading-color: var(--color-heading);
+  --mjt-pos-pending-bg: rgba(255, 201, 27, 0.08);
+  --mjt-pos-pending-border: rgba(255, 201, 27, 0.2);
+  --mjt-pos-approved-bg: rgba(16, 185, 129, 0.08);
+  --mjt-pos-approved-border: rgba(16, 185, 129, 0.2);
+  --mjt-pos-ongoing-bg: rgba(59, 130, 246, 0.08);
+  --mjt-pos-ongoing-border: rgba(59, 130, 246, 0.2);
+  --mjt-pos-done-bg: rgba(148, 163, 184, 0.08);
+  --mjt-pos-done-border: rgba(148, 163, 184, 0.2);
+  --mjt-pos-start-bg: rgba(33, 44, 95, 0.06);
+  --mjt-pos-start-border: rgba(33, 44, 95, 0.15);
+}
+
+.dark .mjt-root {
+  --mjt-road-color: rgba(96, 165, 250, 0.1);
+  --mjt-road-dash: rgba(96, 165, 250, 0.25);
+  --mjt-pos-pending-bg: rgba(255, 201, 27, 0.06);
+  --mjt-pos-pending-border: rgba(255, 201, 27, 0.15);
+  --mjt-pos-approved-bg: rgba(16, 185, 129, 0.06);
+  --mjt-pos-approved-border: rgba(16, 185, 129, 0.12);
+  --mjt-pos-ongoing-bg: rgba(59, 130, 246, 0.06);
+  --mjt-pos-ongoing-border: rgba(59, 130, 246, 0.12);
+  --mjt-pos-done-bg: rgba(148, 163, 184, 0.05);
+  --mjt-pos-done-border: rgba(148, 163, 184, 0.1);
+  --mjt-pos-start-bg: rgba(142, 164, 255, 0.06);
+  --mjt-pos-start-border: rgba(142, 164, 255, 0.12);
+}
+
+/* --- Container --- */
+.mjt-root {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+/* ═══════════════════════════════════
+   TOGGLE BUTTON
+   ═══════════════════════════════════ */
+.mjt-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  font-family: var(--font-heading);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+  cursor: pointer;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mjt-toggle-btn:hover {
+  background: var(--color-surface-muted);
+  box-shadow: var(--shadow-card);
+}
+
+.mjt-toggle-chevron {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mjt-toggle-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* --- Scroll Wrapper --- */
+.mjt-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 0.5rem;
+}
+
+.mjt-scroll-wrapper::-webkit-scrollbar { height: 4px; }
+.mjt-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.mjt-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
+/* --- Track (the road) --- */
+.mjt-track {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 820px;
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+/* --- Road Connector --- */
+.mjt-road {
+  flex: 0 0 auto;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  align-self: center;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+
+.mjt-road::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--mjt-road-dash) 0px,
+    var(--mjt-road-dash) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+  background-size: 20px 3px;
+  animation: mjt-road-flow 1.2s linear infinite;
+  border-radius: 2px;
+}
+
+.mjt-road::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--mjt-road-dash);
+  z-index: 2;
+}
+
+/* --- Checkpoint / Pos --- */
+.mjt-checkpoint {
+  flex: 1 1 0;
+  min-width: 140px;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+/* --- Checkpoint Card --- */
+.mjt-checkpoint-card {
+  flex: 1;
+  width: 100%;
+  border-radius: var(--radius-soft);
+  border: 1px solid var(--mjt-node-border);
+  background: var(--mjt-node-bg);
+  backdrop-filter: blur(10px);
+  padding: 0.875rem;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: border-color 0.35s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mjt-checkpoint-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* --- Checkpoint Variants --- */
+.mjt-checkpoint--start .mjt-checkpoint-card {
+  background: var(--mjt-pos-start-bg);
+  border-color: var(--mjt-pos-start-border);
+}
+.mjt-checkpoint--pending .mjt-checkpoint-card {
+  background: var(--mjt-pos-pending-bg);
+  border-color: var(--mjt-pos-pending-border);
+}
+.mjt-checkpoint--approved .mjt-checkpoint-card {
+  background: var(--mjt-pos-approved-bg);
+  border-color: var(--mjt-pos-approved-border);
+}
+.mjt-checkpoint--ongoing .mjt-checkpoint-card {
+  background: var(--mjt-pos-ongoing-bg);
+  border-color: var(--mjt-pos-ongoing-border);
+}
+.mjt-checkpoint--done .mjt-checkpoint-card {
+  background: var(--mjt-pos-done-bg);
+  border-color: var(--mjt-pos-done-border);
+}
+
+/* ═══════════════════════════════════
+   NODE (circle marker above card)
+   ═══════════════════════════════════ */
+.mjt-node {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  border: 2px solid var(--mjt-node-border);
+  background: var(--mjt-node-bg);
+  position: relative;
+  z-index: 3;
+  transition: transform 0.2s ease, margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mjt-root--collapsed .mjt-node {
+  margin-bottom: 0;
+}
+
+.mjt-checkpoint:hover {
+  z-index: 50;
+}
+
+.mjt-checkpoint:hover .mjt-node {
+  transform: scale(1.1);
+}
+
+.mjt-node svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ═══════════════════════════════════
+   NODE ICON ↔ COUNT
+   ═══════════════════════════════════ */
+.mjt-node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mjt-node-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  color: inherit;
+}
+
+/* --- Node Color Variants --- */
+.mjt-checkpoint--start .mjt-node {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+.mjt-checkpoint--pending .mjt-node {
+  border-color: #ffc91b;
+  color: #e5b200;
+}
+.mjt-checkpoint--approved .mjt-node {
+  border-color: #10b981;
+  color: #10b981;
+}
+.mjt-checkpoint--ongoing .mjt-node {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.mjt-checkpoint--done .mjt-node {
+  border-color: var(--color-text-soft);
+  color: var(--color-text-soft);
+}
+
+/* --- Checkpoint Label --- */
+.mjt-checkpoint-label {
+  font-family: var(--font-heading);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mjt-label-color);
+  margin-bottom: 0.5rem;
+}
+
+/* --- Counter --- */
+.mjt-counter {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--mjt-heading-color);
+  line-height: 1;
+  margin-bottom: 0.125rem;
+}
+
+.mjt-counter-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--mjt-label-color);
+}
+
+/* --- Vehicles --- */
+.mjt-vehicles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  min-height: 36px;
+}
+
+.mjt-vehicle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.mjt-vehicle:hover { transform: translateY(-2px); z-index: 50; }
+.mjt-vehicle--pending { animation: mjt-idle-bounce 2s ease-in-out infinite; }
+.mjt-vehicle--approved { animation: mjt-ready-glow 2.5s ease-in-out infinite; }
+.mjt-vehicle--ongoing { animation: mjt-on-road 2s ease-in-out infinite; }
+
+.mjt-vehicle-label {
+  font-family: var(--font-heading);
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--mjt-label-color);
+  text-align: center;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Tooltip --- */
+.mjt-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  transform: scale(0.95);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mjt-vehicle:hover .mjt-tooltip {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mjt-tooltip-title {
+  font-family: var(--font-heading);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+.mjt-tooltip-sub {
+  font-size: 0.625rem;
+  color: var(--mjt-label-color);
+  margin-top: 1px;
+}
+
+/* --- CTA Button --- */
+.mjt-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 9999px;
+  border: none;
+  font-family: var(--font-heading);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: var(--color-brand);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  animation: mjt-pulse-cta 2.5s ease-in-out infinite;
+}
+
+.dark .mjt-cta-btn {
+  background: #8ea4ff;
+  color: #0f172a;
+}
+
+.mjt-cta-btn:hover {
+  transform: scale(1.05);
+  animation: none;
+  box-shadow: 0 6px 20px -6px rgba(33, 44, 95, 0.4);
+}
+
+.mjt-cta-btn svg { width: 14px; height: 14px; }
+
+/* --- Flag / Sparkles --- */
+.mjt-flag {
+  animation: mjt-flag-wave 3s ease-in-out infinite;
+  display: inline-block;
+}
+
+.mjt-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mjt-sparkle-dot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  opacity: 0.3;
+  animation: mjt-dot-sparkle 2s ease-in-out infinite;
+}
+
+.mjt-sparkle-dot:nth-child(1) { top: 15%; left: 20%; animation-delay: 0s; }
+.mjt-sparkle-dot:nth-child(2) { top: 60%; left: 75%; animation-delay: 0.6s; }
+.mjt-sparkle-dot:nth-child(3) { top: 30%; left: 50%; animation-delay: 1.2s; }
+.mjt-sparkle-dot:nth-child(4) { top: 75%; left: 30%; animation-delay: 0.3s; }
+
+/* --- Empty state --- */
+.mjt-empty-text {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: var(--mjt-label-color);
+  opacity: 0.6;
+  margin-top: 0.25rem;
+}
+
+/* --- Mini road (ongoing card) --- */
+.mjt-mini-road {
+  height: 2px;
+  width: 100%;
+  margin-top: 0.375rem;
+  border-radius: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--mjt-road-dash) 0px,
+    var(--mjt-road-dash) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  background-size: 16px 2px;
+  animation: mjt-road-flow 1s linear infinite;
+}
+
+/* ═══════════════════════════════════
+   RESPONSIVE — Mobile
+   ═══════════════════════════════════ */
+@media (max-width: 1023px) {
+  .mjt-scroll-wrapper {
+    overflow-x: visible;
+  }
+  .mjt-track {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem 0.5rem;
+    min-width: 0;
+    padding: 0;
+  }
+  .mjt-road {
+    display: none;
+  }
+  .mjt-checkpoint {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .mjt-checkpoint--start {
+    display: none;
+  }
+  .mjt-checkpoint--done {
+    grid-column: span 1;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+  .mjt-checkpoint-card {
+    padding: 0.75rem 0.5rem;
+  }
+  .mjt-cta-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Collapsed mobile: 4 nodes in a row */
+  .mjt-root--collapsed .mjt-track {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+  .mjt-root--collapsed .mjt-checkpoint {
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mjt-track {
+    min-width: 0;
+  }
+  .mjt-checkpoint {
+    max-width: none;
+  }
+  .mjt-road {
+    width: 56px;
+  }
+}
