@@ -286,6 +286,20 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--color-border-strong);
   }
 
+  /* Fix for iOS date/time inputs squishing or rendering poorly */
+  input[type="date"].form-control,
+  input[type="time"].form-control {
+    @apply px-3; /* Slightly less padding to fit on mobile */
+    min-height: 2.875rem; /* Ensure consistent height even if empty */
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  
+  input[type="time"]::-webkit-date-and-time-value,
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
   .toolbar-shell {
     @apply flex flex-col gap-3 rounded-[1rem] sm:rounded-[var(--radius-soft)] border p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between;
     background: var(--color-bg-shell);
@@ -362,9 +376,98 @@ input:focus, select:focus, textarea:focus {
   transition: visibility 0.3s ease;
 }
 
-/* Center sonner toast */
+/* Center sonner toast container */
 .toaster-center[data-sonner-toaster] {
   top: 50% !important;
-  transform: translateY(-50%) !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
   bottom: auto !important;
+  right: auto !important;
+  width: auto !important;
+  pointer-events: none;
+}
+
+/* Make individual toast look like a card */
+.toaster-center [data-sonner-toast] {
+  pointer-events: auto;
+  width: clamp(280px, 85vw, 360px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 2.5rem 1.5rem !important;
+  border-radius: 2rem !important;
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.3) !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+}
+
+/* The icon wrapper */
+.toaster-center [data-icon] {
+  width: 4rem !important;
+  height: 4rem !important;
+  margin: 0 auto !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Icon SVG size */
+.toaster-center [data-icon] svg {
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+/* Content wrapper (title & description) */
+.toaster-center [data-content] {
+  margin: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* Title text */
+.toaster-center [data-title] {
+  font-family: var(--font-heading) !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: var(--color-heading) !important;
+  line-height: 1.3 !important;
+}
+
+/* Description text */
+.toaster-center [data-description] {
+  font-size: 0.875rem !important;
+  color: var(--color-text-soft) !important;
+  margin: 0 !important;
+}
+
+/* Close button - hide it since center modals usually auto-dismiss */
+.toaster-center [data-close-button] {
+  display: none !important;
+}
+
+/* Status specific colors */
+.toaster-center [data-type="success"] [data-icon] {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #22c55e !important;
+}
+.toaster-center [data-type="error"] [data-icon] {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+.toaster-center [data-type="info"] [data-icon] {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #3b82f6 !important;
+}
+.toaster-center [data-type="warning"] [data-icon] {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
 }

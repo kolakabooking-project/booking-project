@@ -75,11 +75,11 @@ function AppShell() {
         position="top-center"
         theme={theme}
         className="toaster-center"
+        visibleToasts={1}
         toastOptions={{
-          style: { fontFamily: "'Montserrat', sans-serif", fontSize: '14px' },
+          style: { fontFamily: "'Montserrat', sans-serif" },
+          duration: 3500,
         }}
-        richColors
-        closeButton
       />
     </>
   );

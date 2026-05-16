@@ -271,7 +271,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
             disabled={!!selectedDate && !isAdmin}
             onChange={(e) => { setForm({...form, startDate: e.target.value, endDate: e.target.value}); setAvailChecked(false); }}
           />
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <FormInput
               label="Waktu Mulai"
               id="startTime"
