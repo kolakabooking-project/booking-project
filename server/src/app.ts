@@ -63,11 +63,11 @@ export function createApp() {
     cors({
       origin: (origin, callback) => {
         if (isProd) {
-          // In production: STRICT origin validation, no bypass
-          if (origin && allowedOrigins.includes(origin)) {
+          // In production: Allow same-origin (undefined) or explicitly allowed origins
+          if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
           } else {
-            callback(new Error(`Origin ${origin || 'unknown'} not allowed by CORS`));
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
           }
         } else {
           // In development: Allow requests with no origin (curl, Postman, etc.)
