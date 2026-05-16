@@ -5,10 +5,16 @@ import crypto from 'crypto';
 import { env } from '../config/env.js';
 import { ValidationError } from './errors.js';
 
-// Ensure upload directory exists
-const uploadDir = path.resolve(env.UPLOAD_DIR);
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// In production (Vercel), we must use /tmp because the rest of the filesystem is read-only
+const isProd = env.NODE_ENV === 'production';
+const uploadDir = isProd ? path.join('/tmp', env.UPLOAD_DIR) : path.resolve(env.UPLOAD_DIR);
+
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (error) {
+  console.warn(`[WARN] Failed to create upload directory at ${uploadDir}. Uploads may fail.`, error);
 }
 
 // Allowed MIME types
