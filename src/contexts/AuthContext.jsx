@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { authApi } from '../lib/api';
 
 const AuthContext = createContext(null);
@@ -8,10 +8,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
   const [loading, setLoading] = useState(true); // true until session check completes
+  const [splashFading, setSplashFading] = useState(false); // controls fade-out transition
+  const [splashDone, setSplashDone] = useState(false); // hides splash from DOM entirely
+  const minSplashElapsed = useRef(false);
 
   // Check existing session on mount
   useEffect(() => {
     let cancelled = false;
+
+    // Ensure splash shows for at least 1.2s for a polished feel
+    const minTimer = setTimeout(() => {
+      minSplashElapsed.current = true;
+    }, 1200);
+
     async function checkSession() {
       try {
         const session = await authApi.getSession();
@@ -38,11 +47,37 @@ export function AuthProvider({ children }) {
       } catch {
         // No valid session — user stays null
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          // Wait for minimum splash duration if not yet elapsed
+          const proceed = () => {
+            setLoading(false);
+            setSplashFading(true);
+            // After fade-out animation completes, remove splash from DOM
+            setTimeout(() => setSplashDone(true), 600);
+          };
+
+          if (minSplashElapsed.current) {
+            proceed();
+          } else {
+            const remaining = 1200 - performance.now();
+            setTimeout(proceed, Math.max(0, remaining));
+          }
+        }
       }
     }
     checkSession();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(minTimer); };
+  }, []);
+
+  // Remove native HTML splash once React splash takes over
+  useEffect(() => {
+    const nativeSplash = document.getElementById('native-splash');
+    if (nativeSplash) {
+      // Fade out native splash immediately since React splash is now rendering
+      nativeSplash.style.opacity = '0';
+      nativeSplash.style.visibility = 'hidden';
+      setTimeout(() => nativeSplash.remove(), 500);
+    }
   }, []);
 
   const login = useCallback(async (nip, password) => {
@@ -88,14 +123,45 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  // Show nothing while checking session to prevent flash
-  if (loading) {
+  // Branded splash screen while checking session
+  if (!splashDone && (loading || splashFading)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[color:var(--color-bg-main)]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-djp-blue border-t-transparent" />
-          <p className="text-sm font-heading text-[color:var(--color-text-soft)]">Memuat sesi...</p>
-        </div>
+      <div
+        className="splash-screen"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 99999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(160deg, #152047 0%, #1a2a5e 40%, #1e3472 100%)',
+          opacity: splashFading ? 0 : 1,
+          transition: 'opacity 0.5s ease',
+        }}
+      >
+        <img
+          src="/iconweb.png"
+          alt="BOOKOLAKA"
+          width={120}
+          height={120}
+          style={{
+            animation: 'splash-pulse 2s ease-in-out infinite',
+            filter: 'drop-shadow(0 8px 32px rgba(255, 201, 27, 0.25))',
+          }}
+        />
+        <div
+          style={{
+            marginTop: 28,
+            width: 36,
+            height: 36,
+            border: '3px solid rgba(255,255,255,0.15)',
+            borderTopColor: '#FFC91B',
+            borderRadius: '50%',
+            animation: 'splash-spin 0.8s linear infinite',
+          }}
+        />
       </div>
     );
   }
