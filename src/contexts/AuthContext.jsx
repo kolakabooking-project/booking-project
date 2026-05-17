@@ -16,10 +16,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
-    // Ensure splash shows for at least 1.2s for a polished feel
+    // Ensure splash shows for at least 1.5s for a polished feel
     const minTimer = setTimeout(() => {
       minSplashElapsed.current = true;
-    }, 1200);
+    }, 1500);
 
     async function checkSession() {
       try {
@@ -48,18 +48,23 @@ export function AuthProvider({ children }) {
         // No valid session — user stays null
       } finally {
         if (!cancelled) {
-          // Wait for minimum splash duration if not yet elapsed
+          // Wait for minimum splash duration, then hold 1s after session resolves
           const proceed = () => {
-            setLoading(false);
-            setSplashFading(true);
-            // After fade-out animation completes, remove splash from DOM
-            setTimeout(() => setSplashDone(true), 600);
+            // Hold for 1 extra second so user sees the branded splash
+            setTimeout(() => {
+              setLoading(false);
+              setSplashFading(true);
+              // After fade-out animation completes, remove splash from DOM
+              setTimeout(() => setSplashDone(true), 600);
+            }, 1000);
           };
 
           if (minSplashElapsed.current) {
             proceed();
           } else {
-            const remaining = 1200 - performance.now();
+            // Wait until minimum splash time has passed
+            const elapsed = performance.now();
+            const remaining = 1500 - elapsed;
             setTimeout(proceed, Math.max(0, remaining));
           }
         }
