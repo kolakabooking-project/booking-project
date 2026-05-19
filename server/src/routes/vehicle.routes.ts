@@ -4,6 +4,7 @@ import { roleGuard } from '../middleware/roleGuard.js';
 import * as vehicleService from '../services/vehicle.service.js';
 import { upload, deleteUploadedFile } from '../utils/upload.js';
 import { AppError } from '../utils/errors.js';
+import { logActivity } from '../services/activity.service.js';
 
 const router = Router();
 
@@ -62,8 +63,20 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.post('/', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
     const vehicle = await vehicleService.createVehicle(req.body);
     res.status(201).json({ data: vehicle });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'VEHICLE_CREATED',
+      targetId: vehicle.id,
+      targetName: `${vehicle.merek} (${vehicle.platNomor})`,
+      detail: `Kendaraan baru ditambahkan: ${vehicle.merek} - ${vehicle.platNomor}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -75,8 +88,20 @@ router.post('/', roleGuard('admin'), async (req: Request, res: Response) => {
  */
 router.put('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
     const vehicle = await vehicleService.updateVehicle(req.params.id as string, req.body);
     res.json({ data: vehicle });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'VEHICLE_UPDATED',
+      targetId: vehicle.id,
+      targetName: `${vehicle.merek} (${vehicle.platNomor})`,
+      detail: `Data kendaraan diperbarui: ${vehicle.merek} - ${vehicle.platNomor}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -88,8 +113,24 @@ router.put('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
  */
 router.delete('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
+    // Get vehicle info before deleting
+    const vehicle = await vehicleService.getVehicleById(req.params.id as string);
+    const vehicleName = `${vehicle.merek} (${vehicle.platNomor})`;
+
     await vehicleService.deleteVehicle(req.params.id as string);
     res.json({ message: 'Kendaraan berhasil dihapus.' });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'VEHICLE_DELETED',
+      targetId: req.params.id as string,
+      targetName: vehicleName,
+      detail: `Kendaraan dihapus: ${vehicleName}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -119,6 +160,18 @@ router.post(
       const photoPath = req.file.filename;
       const vehicle = await vehicleService.updateVehicle(req.params.id as string, { foto: photoPath });
       res.json({ data: vehicle, photoUrl: `/uploads/${photoPath}` });
+
+      // Log activity
+      const actor = (req as any).user;
+      logActivity({
+        userId: actor.id,
+        userName: actor.name,
+        action: 'VEHICLE_UPDATED',
+        targetId: vehicle.id,
+        targetName: `${vehicle.merek} (${vehicle.platNomor})`,
+        detail: `Foto kendaraan diperbarui: ${vehicle.merek} - ${vehicle.platNomor}`,
+        ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+      });
     } catch (err: any) {
       const status = err instanceof AppError ? err.statusCode : 500;
       res.status(status).json({ error: err.message });

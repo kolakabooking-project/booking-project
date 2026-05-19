@@ -13,9 +13,15 @@ import driverRoutes from './routes/driver.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import chatRoutes from './routes/chat.js';
+import superadminRoutes from './routes/superadmin.routes.js';
 
-// Auth guard for /api/me
+// Middleware
 import { authGuard } from './middleware/authGuard.js';
+import { roleGuard } from './middleware/roleGuard.js';
+import { maintenanceGuard } from './middleware/maintenanceGuard.js';
+
+// Services
+import { cleanupOldLogs } from './services/activity.service.js';
 
 export function createApp() {
   const app = express();
@@ -156,12 +162,28 @@ export function createApp() {
   });
 
 
-  // ─── API Routes — with standard rate limit ───
-  app.use('/api/vehicles', apiLimiter, vehicleRoutes);
-  app.use('/api/drivers', apiLimiter, driverRoutes);
-  app.use('/api/bookings', apiLimiter, bookingRoutes);
-  app.use('/api/reports', apiLimiter, reportRoutes);
-  app.use('/api/chat', apiLimiter, authGuard, chatRoutes);
+  // ─── Service Status Check (public, for frontend maintenance page) ───
+  app.get('/api/service-status', async (_req, res) => {
+    try {
+      const { db } = await import('./config/db.js');
+      const { systemSettings } = await import('./db/schema.js');
+      const { eq } = await import('drizzle-orm');
+      const [setting] = await db.select().from(systemSettings).where(eq(systemSettings.key, 'service_active'));
+      res.json({ data: { active: setting?.value !== 'false' } });
+    } catch {
+      res.json({ data: { active: true } }); // Default to active on error
+    }
+  });
+
+  // ─── Superadmin Routes — strict access control ───
+  app.use('/api/superadmin', apiLimiter, authGuard, roleGuard('superadmin'), superadminRoutes);
+
+  // ─── API Routes — with standard rate limit + maintenance guard ───
+  app.use('/api/vehicles', apiLimiter, authGuard, maintenanceGuard, vehicleRoutes);
+  app.use('/api/drivers', apiLimiter, authGuard, maintenanceGuard, driverRoutes);
+  app.use('/api/bookings', apiLimiter, maintenanceGuard, bookingRoutes);
+  app.use('/api/reports', apiLimiter, authGuard, maintenanceGuard, reportRoutes);
+  app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {
@@ -201,6 +223,13 @@ export function createApp() {
   app.use((_req, res) => {
     res.status(404).json({ error: 'Endpoint tidak ditemukan.' });
   });
+
+  // ─── Schedule daily log cleanup ───
+  // Run on startup and every 24 hours
+  cleanupOldLogs().catch(() => {});
+  setInterval(() => {
+    cleanupOldLogs().catch(() => {});
+  }, 24 * 60 * 60 * 1000);
 
   return app;
 }

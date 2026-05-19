@@ -7,9 +7,11 @@ import { Toaster } from 'sonner';
 // Layouts
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import SuperadminLayout from './components/layout/SuperadminLayout';
 
 // Pages
 import LoginPage from './pages/auth/LoginPage';
+import MaintenancePage from './pages/MaintenancePage';
 import UserDashboard from './pages/user/DashboardPage';
 import MyBookingsPage from './pages/user/MyBookingsPage';
 import UserChatPage from './pages/user/ChatPage';
@@ -21,12 +23,26 @@ import DriversPage from './pages/admin/DriversPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import AdminChatPage from './pages/admin/AdminChatPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import SuperadminDashboard from './pages/superadmin/DashboardPage';
+import AccountManagementPage from './pages/superadmin/AccountManagementPage';
+import ServiceControlPage from './pages/superadmin/ServiceControlPage';
+import ActivityLogPage from './pages/superadmin/ActivityLogPage';
+import SuperadminSettingsPage from './pages/superadmin/SettingsPage';
 
 function ProtectedRoute({ children, role }) {
-  const { activeRole, isAuthenticated } = useAuth();
+  const { activeRole, isAuthenticated, serviceActive, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // Show maintenance page for non-superadmin users when service is off
+  if (!serviceActive && user?.role !== 'superadmin') {
+    return <MaintenancePage />;
+  }
+
   if (role && activeRole !== role) {
-    return <Navigate to={activeRole === 'admin' ? '/admin/dashboard' : '/user/dashboard'} replace />;
+    // Redirect to appropriate dashboard based on active role
+    if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
+    if (activeRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/user/dashboard" replace />;
   }
   return children;
 }
@@ -34,7 +50,9 @@ function ProtectedRoute({ children, role }) {
 function PublicRoute({ children }) {
   const { activeRole, isAuthenticated } = useAuth();
   if (isAuthenticated) {
-    return <Navigate to={activeRole === 'admin' ? '/admin/dashboard' : '/user/dashboard'} replace />;
+    if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
+    if (activeRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/user/dashboard" replace />;
   }
   return children;
 }
@@ -58,6 +76,13 @@ function AppRoutes() {
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/chat" element={<ProtectedRoute role="admin"><AdminLayout><AdminChatPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminLayout><AdminSettingsPage /></AdminLayout></ProtectedRoute>} />
+
+      {/* Superadmin Routes */}
+      <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
+      <Route path="/superadmin/accounts" element={<ProtectedRoute role="superadmin"><SuperadminLayout><AccountManagementPage /></SuperadminLayout></ProtectedRoute>} />
+      <Route path="/superadmin/service" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ServiceControlPage /></SuperadminLayout></ProtectedRoute>} />
+      <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
+      <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/login" replace />} />

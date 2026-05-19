@@ -15,7 +15,7 @@ export const user = pgTable('user', {
 
   // ── Custom fields ──
   nip: text('nip').notNull().unique(),
-  role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+  role: text('role', { enum: ['user', 'admin', 'superadmin'] }).notNull().default('user'),
   jabatan: text('jabatan'),
   username: text('username').unique(),
   displayUsername: text('display_username'),
@@ -161,4 +161,46 @@ export const chatMessage = pgTable('chat_message', {
   content: text('content').notNull(),
   isRead: boolean('is_read').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// ─────────────────────────────────────────────
+//  Superadmin Domain Tables
+// ─────────────────────────────────────────────
+
+export const activityLog = pgTable('activity_log', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  userName: text('user_name').notNull(),
+  action: text('action', {
+    enum: [
+      // Auth events
+      'LOGIN', 'LOGOUT', 'PASSWORD_CHANGED',
+      // Booking — user
+      'BOOKING_CREATED', 'BOOKING_CANCELLED', 'BOOKING_REVIEW',
+      // Booking — admin
+      'BOOKING_APPROVED', 'BOOKING_REJECTED', 'BOOKING_MANDATORY',
+      'BOOKING_STARTED', 'BOOKING_COMPLETED',
+      // Fleet — admin
+      'VEHICLE_CREATED', 'VEHICLE_UPDATED', 'VEHICLE_DELETED',
+      'DRIVER_CREATED', 'DRIVER_UPDATED', 'DRIVER_DELETED',
+      // Superadmin — account management
+      'ACCOUNT_CREATED', 'ACCOUNT_DELETED', 'ACCOUNT_ROLE_CHANGED', 'ACCOUNT_PASSWORD_RESET',
+      // Superadmin — system
+      'SERVICE_TOGGLED',
+      // Profile
+      'PROFILE_UPDATED',
+    ]
+  }).notNull(),
+  targetId: text('target_id'),
+  targetName: text('target_name'),
+  detail: text('detail'),
+  ipAddress: text('ip_address'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const systemSettings = pgTable('system_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
 });

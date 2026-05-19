@@ -10,7 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   Menu, LogOut, ChevronLeft, Bell, Home, ChevronRight,
   LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle,
-  Settings, Plus,
+  Settings, Plus, Shield,
 } from 'lucide-react';
 import BookingModalFlow from '../shared/BookingModalFlow';
 
@@ -25,7 +25,7 @@ const breadcrumbMap = {
   '/admin/reports': 'Laporan & Ekspor',
 };
 
-function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, hasUnreadChat, handleSwitchToUser }) {
+function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, hasUnreadChat, handleSwitchToUser, handleSwitchToSuperadmin }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-4 pb-2 pt-6 flex justify-center items-center min-h-[5rem]">
@@ -92,7 +92,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         {(!collapsed || isMobile) && (
           <Link to="/admin/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
             <p className="truncate text-sm font-heading font-bold text-white">{user?.name || 'Administrator'}</p>
-            <p className="mt-1 truncate text-xs font-semibold text-djp-yellow">{user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
+            <p className="mt-1 truncate text-xs font-semibold text-djp-yellow">{user?.role === 'superadmin' ? 'Superadmin (Admin Mode)' : user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
             <p className="mt-1 truncate text-[10px] uppercase tracking-widest text-white/45">{user?.jabatan || 'Subbagian Umum'}</p>
           </Link>
         )}
@@ -104,6 +104,16 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
           >
             <Users size={20} className="flex-shrink-0" />
             {(!collapsed || isMobile) && <span>Mode Pegawai</span>}
+          </button>
+        )}
+        {user?.role === 'superadmin' && (
+          <button
+            onClick={handleSwitchToSuperadmin}
+            title={collapsed ? 'Mode Superadmin' : undefined}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white bg-red-500/80 hover:bg-red-500 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          >
+            <Shield size={20} className="flex-shrink-0" />
+            {(!collapsed || isMobile) && <span>Mode Superadmin</span>}
           </button>
         )}
         <button
@@ -142,7 +152,7 @@ export default function AdminLayout({ children }) {
   const ablyRef = useRef(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) return;
 
     if (!ablyRef.current) {
       const realtime = new Realtime({
@@ -197,6 +207,11 @@ export default function AdminLayout({ children }) {
     navigate('/user/dashboard');
   };
 
+  const handleSwitchToSuperadmin = () => {
+    switchRole('superadmin');
+    navigate('/superadmin/dashboard');
+  };
+
   const handleNotifClick = (bookingId) => {
     setNotifOpen(false);
     navigate('/admin/requests', { state: { openBookingId: bookingId } });
@@ -216,7 +231,7 @@ export default function AdminLayout({ children }) {
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col bg-[linear-gradient(180deg,#182553_0%,#101b3d_100%)] shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'
           }`}
       >
-        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} hasUnreadChat={hasUnreadChat} handleSwitchToUser={handleSwitchToUser} />
+        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} hasUnreadChat={hasUnreadChat} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} />
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-20 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors text-[color:var(--color-text-soft)] hover:text-[color:var(--color-heading)]"
@@ -237,7 +252,7 @@ export default function AdminLayout({ children }) {
         <aside
           className={`absolute left-0 top-0 h-full w-[280px] bg-[linear-gradient(180deg,#182553_0%,#101b3d_100%)] shadow-2xl transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <SidebarContent collapsed={collapsed} isMobile user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} hasUnreadChat={hasUnreadChat} handleSwitchToUser={handleSwitchToUser} />
+          <SidebarContent collapsed={collapsed} isMobile user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} hasUnreadChat={hasUnreadChat} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} />
         </aside>
       </div>
 

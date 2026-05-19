@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { user, session, account, vehicle, driver, booking, bookingReview, chatMessage } from './schema.js';
+import { user, session, account, vehicle, driver, booking, bookingReview, chatMessage, activityLog } from './schema.js';
 
 // ── User relations ──
 export const userRelations = relations(user, ({ many }) => ({
@@ -8,6 +8,7 @@ export const userRelations = relations(user, ({ many }) => ({
   bookings: many(booking),
   sentMessages: many(chatMessage, { relationName: 'sentMessages' }),
   receivedMessages: many(chatMessage, { relationName: 'receivedMessages' }),
+  activityLogs: many(activityLog),
 }));
 
 // ── Session relations ──
@@ -72,5 +73,13 @@ export const chatMessageRelations = relations(chatMessage, ({ one }) => ({
     fields: [chatMessage.receiverId],
     references: [user.id],
     relationName: 'receivedMessages',
+  }),
+}));
+
+// ── ActivityLog relations ──
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  user: one(user, {
+    fields: [activityLog.userId],
+    references: [user.id],
   }),
 }));

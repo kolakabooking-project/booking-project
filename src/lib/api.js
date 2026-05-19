@@ -215,3 +215,46 @@ export const chatApi = {
   markAsRead: (data) => request('/chat/mark-read', { method: 'POST', body: JSON.stringify(data) }),
   clearHistory: (userId, role) => request(`/chat/clear/${userId}`, { method: 'DELETE', body: JSON.stringify({ role }) }),
 };
+
+// ─── Service Status (public) ───
+
+export const serviceApi = {
+  getStatus: () => request('/service-status'),
+};
+
+// ─── Superadmin ───
+
+export const superadminApi = {
+  // Users
+  getUsers: () => request('/superadmin/users'),
+  getStats: () => request('/superadmin/stats'),
+  createUser: (data) => request('/superadmin/users', { method: 'POST', body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/superadmin/users/${id}`, { method: 'DELETE' }),
+  changeRole: (id, role) => request(`/superadmin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  resetPassword: (id) => request(`/superadmin/users/${id}/reset-password`, { method: 'PATCH' }),
+
+  // Service Control
+  getServiceStatus: () => request('/superadmin/settings/service-status'),
+  toggleService: (active) => request('/superadmin/settings/service-status', { method: 'PATCH', body: JSON.stringify({ active }) }),
+
+  // Activity Logs
+  getLogs: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.action) qs.set('action', params.action);
+    if (params.userId) qs.set('userId', params.userId);
+    if (params.search) qs.set('search', params.search);
+    if (params.startDate) qs.set('startDate', params.startDate);
+    if (params.endDate) qs.set('endDate', params.endDate);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/superadmin/logs${query ? `?${query}` : ''}`);
+  },
+  exportLogs: (startDate, endDate) => {
+    const qs = new URLSearchParams();
+    if (startDate) qs.set('startDate', startDate);
+    if (endDate) qs.set('endDate', endDate);
+    return request(`/superadmin/logs/export?${qs.toString()}`);
+  },
+  cleanupLogs: () => request('/superadmin/logs/cleanup', { method: 'POST' }),
+};

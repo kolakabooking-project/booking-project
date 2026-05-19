@@ -4,6 +4,7 @@ import { roleGuard } from '../middleware/roleGuard.js';
 import * as driverService from '../services/driver.service.js';
 import { upload, deleteUploadedFile } from '../utils/upload.js';
 import { AppError } from '../utils/errors.js';
+import { logActivity } from '../services/activity.service.js';
 
 const router = Router();
 
@@ -61,8 +62,20 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.post('/', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
     const driver = await driverService.createDriver(req.body);
     res.status(201).json({ data: driver });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'DRIVER_CREATED',
+      targetId: driver.id,
+      targetName: driver.name,
+      detail: `Pengemudi baru ditambahkan: ${driver.name}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -74,8 +87,20 @@ router.post('/', roleGuard('admin'), async (req: Request, res: Response) => {
  */
 router.put('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
     const driver = await driverService.updateDriver(req.params.id as string, req.body);
     res.json({ data: driver });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'DRIVER_UPDATED',
+      targetId: driver.id,
+      targetName: driver.name,
+      detail: `Data pengemudi diperbarui: ${driver.name}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -87,8 +112,24 @@ router.put('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
  */
 router.delete('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
+    // Get driver info before deleting
+    const driver = await driverService.getDriverById(req.params.id as string);
+    const driverName = driver.name;
+
     await driverService.deleteDriver(req.params.id as string);
     res.json({ message: 'Pengemudi berhasil dihapus.' });
+
+    // Log activity
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'DRIVER_DELETED',
+      targetId: req.params.id as string,
+      targetName: driverName,
+      detail: `Pengemudi dihapus: ${driverName}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });
@@ -117,6 +158,18 @@ router.post(
       const photoPath = req.file.filename;
       const driver = await driverService.updateDriver(req.params.id as string, { foto: photoPath });
       res.json({ data: driver, photoUrl: `/uploads/${photoPath}` });
+
+      // Log activity
+      const actor = (req as any).user;
+      logActivity({
+        userId: actor.id,
+        userName: actor.name,
+        action: 'DRIVER_UPDATED',
+        targetId: driver.id,
+        targetName: driver.name,
+        detail: `Foto pengemudi diperbarui: ${driver.name}`,
+        ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+      });
     } catch (err: any) {
       const status = err instanceof AppError ? err.statusCode : 500;
       res.status(status).json({ error: err.message });

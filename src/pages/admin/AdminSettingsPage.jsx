@@ -6,7 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'sonner';
 
@@ -70,6 +70,11 @@ export default function AdminSettingsPage() {
   const handleSwitchToUser = () => {
     switchRole('user');
     navigate('/user/dashboard');
+  };
+
+  const handleSwitchToSuperadmin = () => {
+    switchRole('superadmin');
+    navigate('/superadmin/dashboard');
   };
 
   // ─── Password validation ───
@@ -223,13 +228,25 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleSwitchToUser}
-          className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-yellow/10 font-semibold transition-all hover:bg-djp-yellow hover:text-djp-blue-dark"
-        >
-          <CircleUser size={18} />
-          Masuk Mode Pegawai
-        </button>
+        {user?.role === 'admin' && (
+          <button
+            onClick={handleSwitchToUser}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-yellow/10 font-semibold transition-all hover:bg-djp-yellow hover:text-djp-blue-dark"
+          >
+            <CircleUser size={18} />
+            Masuk Mode Pegawai
+          </button>
+        )}
+
+        {user?.role === 'superadmin' && (
+          <button
+            onClick={handleSwitchToSuperadmin}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-red-500/30 text-red-500 bg-red-500/10 font-semibold transition-all hover:bg-red-500 hover:text-white"
+          >
+            <Shield size={18} />
+            Kembali Mode Superadmin
+          </button>
+        )}
 
         <button
           onClick={handleLogout}

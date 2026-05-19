@@ -5,6 +5,9 @@ import type { Request, Response, NextFunction } from 'express';
  * Must be used AFTER authGuard so that req.user is available.
  *
  * Usage: roleGuard('admin') or roleGuard('admin', 'user')
+ *
+ * Security: superadmin role automatically has access to all guarded routes.
+ * This is by design — superadmin is the highest privilege level.
  */
 export function roleGuard(...allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -15,6 +18,12 @@ export function roleGuard(...allowedRoles: string[]) {
         error: 'Unauthorized',
         message: 'Sesi tidak ditemukan.',
       });
+      return;
+    }
+
+    // Superadmin bypasses all role checks — highest privilege level
+    if (user.role === 'superadmin') {
+      next();
       return;
     }
 

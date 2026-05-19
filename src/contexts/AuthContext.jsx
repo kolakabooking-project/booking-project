@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { authApi } from '../lib/api';
+import { authApi, serviceApi } from '../lib/api';
 import SplashScreen from '../components/shared/SplashScreen';
 
 const AuthContext = createContext(null);
@@ -8,6 +8,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
+  const [serviceActive, setServiceActive] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false); // true once API call resolves
   const [splashDone, setSplashDone] = useState(false); // true once splash animation is fully finished
   const sessionCheckedRef = useRef(false); // ref mirror for use inside SplashScreen callbacks
@@ -17,7 +18,16 @@ export function AuthProvider({ children }) {
     let cancelled = false;
     async function checkSession() {
       try {
-        const session = await authApi.getSession();
+        // Check service status in parallel with session
+        const [session, statusRes] = await Promise.all([
+          authApi.getSession(),
+          serviceApi.getStatus().catch(() => ({ data: { active: true } })),
+        ]);
+
+        if (!cancelled) {
+          setServiceActive(statusRes?.data?.active !== false);
+        }
+
         if (!cancelled && session?.user) {
           const userData = {
             id: session.user.id,
@@ -31,7 +41,11 @@ export function AuthProvider({ children }) {
           setUser(userData);
 
           const savedRole = localStorage.getItem('booking_active_role');
-          if (savedRole && (savedRole === 'admin' || savedRole === 'user')) {
+          if (userData.role === 'superadmin') {
+            // Superadmin defaults to superadmin role
+            setActiveRole('superadmin');
+            localStorage.setItem('booking_active_role', 'superadmin');
+          } else if (savedRole && (savedRole === 'admin' || savedRole === 'user')) {
             setActiveRole(savedRole);
           } else {
             setActiveRole(userData.role);
@@ -61,6 +75,19 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Periodically check service status (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await serviceApi.getStatus();
+        setServiceActive(res?.data?.active !== false);
+      } catch {
+        // Ignore errors
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const login = useCallback(async (nip, password) => {
     try {
       const result = await authApi.signIn(nip, password);
@@ -75,10 +102,24 @@ export function AuthProvider({ children }) {
           image: result.user.image,
         };
         setUser(userData);
-        setActiveRole(userData.role);
-        localStorage.setItem('booking_active_role', userData.role);
 
-        return { success: true, role: userData.role };
+        // Determine active role
+        let role = userData.role;
+        if (role === 'superadmin') {
+          setActiveRole('superadmin');
+          localStorage.setItem('booking_active_role', 'superadmin');
+        } else {
+          setActiveRole(role);
+          localStorage.setItem('booking_active_role', role);
+        }
+
+        // Re-check service status after login
+        try {
+          const statusRes = await serviceApi.getStatus();
+          setServiceActive(statusRes?.data?.active !== false);
+        } catch {}
+
+        return { success: true, role };
       }
       return { success: false, message: 'Login gagal. Periksa NIP dan password.' };
     } catch (err) {
@@ -98,7 +139,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const switchRole = useCallback((newRole) => {
-    if (user && user.role === 'admin' && (newRole === 'admin' || newRole === 'user')) {
+    if (!user) return;
+    
+    if (user.role === 'superadmin') {
+      // Superadmin can switch between superadmin, admin, and user views
+      if (['superadmin', 'admin', 'user'].includes(newRole)) {
+        setActiveRole(newRole);
+        localStorage.setItem('booking_active_role', newRole);
+      }
+    } else if (user.role === 'admin' && (newRole === 'admin' || newRole === 'user')) {
       setActiveRole(newRole);
       localStorage.setItem('booking_active_role', newRole);
     }
@@ -115,7 +164,15 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, activeRole, switchRole, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{
+      user,
+      activeRole,
+      serviceActive,
+      switchRole,
+      login,
+      logout,
+      isAuthenticated: !!user,
+    }}>
       {children}
     </AuthContext.Provider>
   );

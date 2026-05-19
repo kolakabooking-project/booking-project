@@ -1,6 +1,7 @@
 export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
+  SUPERADMIN: 'superadmin',
 };
 
 export const BOOKING_STATUS = {
@@ -62,3 +63,11 @@ export const NAV_ADMIN = [
   { path: '/admin/reports', label: 'Laporan & Ekspor', icon: 'FileSpreadsheet' },
   { path: '/admin/chat', label: 'Live Chat', icon: 'MessageCircle' },
 ];
+
+export const NAV_SUPERADMIN = [
+  { path: '/superadmin/dashboard', label: 'Dashboard', icon: 'Shield' },
+  { path: '/superadmin/accounts', label: 'Manajemen Akun', icon: 'UsersCog' },
+  { path: '/superadmin/service', label: 'Kontrol Layanan', icon: 'Power' },
+  { path: '/superadmin/logs', label: 'Log Aktivitas', icon: 'ScrollText' },
+];
+

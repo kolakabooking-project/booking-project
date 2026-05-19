@@ -26,7 +26,8 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate(result.role === 'admin' ? '/admin/dashboard' : '/user/dashboard', { replace: true });
+      const target = result.role === 'superadmin' ? '/superadmin/dashboard' : result.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+      navigate(target, { replace: true });
     } else {
       setError(result.message);
     }
