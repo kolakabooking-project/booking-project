@@ -101,7 +101,7 @@ export default function SuperadminDashboard() {
     try {
       const [statsRes, logsRes, statusRes, usersRes] = await Promise.all([
         superadminApi.getStats(),
-        superadminApi.getLogs({ limit: 7 }),
+        superadminApi.getLogs({ limit: 6 }),
         superadminApi.getServiceStatus(),
         superadminApi.getUsers(),
       ]);
@@ -205,7 +205,7 @@ export default function SuperadminDashboard() {
               <span className={`text-xs font-bold ${serviceStatus?.active
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-red-600 dark:text-red-400'
-              }`}>
+                }`}>
                 {serviceStatus?.active ? 'All Systems Operational' : 'Maintenance Mode'}
               </span>
             </div>
@@ -256,7 +256,7 @@ export default function SuperadminDashboard() {
               <div className={`relative rounded-2xl border transition-all duration-200 ${searchFocused
                 ? 'border-blue-500/50 shadow-[0_0_0_3px_rgba(59,130,246,0.1)]'
                 : ''
-              }`} style={!searchFocused ? { borderColor: 'var(--color-border)' } : undefined}>
+                }`} style={!searchFocused ? { borderColor: 'var(--color-border)' } : undefined}>
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[color:var(--color-text-soft)]" />
                 <input
                   type="text"
@@ -361,11 +361,10 @@ export default function SuperadminDashboard() {
 
             <div className="flex items-center gap-4">
               {/* Power indicator */}
-              <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                serviceStatus?.active
-                  ? 'bg-emerald-500/10 border border-emerald-500/20'
-                  : 'bg-red-500/10 border border-red-500/20'
-              }`}>
+              <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${serviceStatus?.active
+                ? 'bg-emerald-500/10 border border-emerald-500/20'
+                : 'bg-red-500/10 border border-red-500/20'
+                }`}>
                 <Power size={28} className={serviceStatus?.active ? 'text-emerald-500' : 'text-red-500'} />
                 {serviceStatus?.active && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-elevated)] animate-pulse" />
@@ -373,11 +372,10 @@ export default function SuperadminDashboard() {
               </div>
 
               <div className="flex-1">
-                <p className={`text-lg font-heading font-extrabold ${
-                  serviceStatus?.active
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}>
+                <p className={`text-lg font-heading font-extrabold ${serviceStatus?.active
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-red-600 dark:text-red-400'
+                  }`}>
                   {serviceStatus?.active ? 'Layanan Aktif' : 'Maintenance Mode'}
                 </p>
                 <p className="text-xs text-[color:var(--color-text-soft)] mt-0.5">
@@ -401,7 +399,7 @@ export default function SuperadminDashboard() {
                   <Activity size={16} className="text-purple-500" />
                   <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                 </div>
-                <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">PulseStream</h3>
+                <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">Log Aktivitas</h3>
               </div>
               <Link to="/superadmin/logs"
                 className="text-[11px] font-semibold text-djp-blue hover:underline flex items-center gap-1">
@@ -417,7 +415,7 @@ export default function SuperadminDashboard() {
                     Belum ada aktivitas tercatat
                   </div>
                 ) : (
-                  recentLogs.map((log) => {
+                  recentLogs.slice(0, 6).map((log) => {
                     const meta = getActionMeta(log.action);
                     const IconComponent = meta.icon;
                     const timeAgo = getTimeAgo(log.createdAt);

@@ -22,7 +22,7 @@ export default function ActivityLogPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await superadminApi.getLogs({ action, search, startDate, endDate, page, limit: 25 });
+      const res = await superadminApi.getLogs({ action, search, startDate, endDate, page, limit: 10 });
       setLogs(res.data?.logs || []);
       setPagination(res.data?.pagination || { page: 1, total: 0, totalPages: 1 });
     } catch {
@@ -205,26 +205,30 @@ export default function ActivityLogPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-4">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page <= 1}
-            className="p-2 rounded-xl border disabled:opacity-30 transition-colors hover:bg-[color:var(--color-surface-muted)]"
-            style={{ borderColor: 'var(--color-border)' }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-sm font-semibold text-[color:var(--color-heading)]">
-            {page} / {pagination.totalPages}
-          </span>
-          <button
-            onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
-            disabled={page >= pagination.totalPages}
-            className="p-2 rounded-xl border disabled:opacity-30 transition-colors hover:bg-[color:var(--color-surface-muted)]"
-            style={{ borderColor: 'var(--color-border)' }}
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <p className="text-xs text-[color:var(--color-text-soft)]">
+            Menampilkan halaman {page} dari {pagination.totalPages} (Total {pagination.total} log)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(Math.max(1, page - 1))}
+              className="text-xs py-1.5 px-3"
+            >
+              Sebelumnya
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= pagination.totalPages}
+              onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
+              className="text-xs py-1.5 px-3"
+            >
+              Selanjutnya
+            </Button>
+          </div>
         </div>
       )}
 

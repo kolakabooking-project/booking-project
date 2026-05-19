@@ -38,13 +38,29 @@ export async function listAllUsers() {
  * Get summary statistics for dashboard.
  */
 export async function getUserStats() {
-  const allUsers = await db.select({ id: user.id, role: user.role }).from(user);
-  
+  const result = await db
+    .select({
+      role: user.role,
+      count: count(),
+    })
+    .from(user)
+    .groupBy(user.role);
+
+  let totalAdmins = 0;
+  let totalSuperadmins = 0;
+  let totalRegularUsers = 0;
+
+  for (const row of result) {
+    if (row.role === 'admin') totalAdmins += row.count;
+    else if (row.role === 'superadmin') totalSuperadmins += row.count;
+    else if (row.role === 'user') totalRegularUsers += row.count;
+  }
+
   return {
-    totalUsers: allUsers.length,
-    totalAdmins: allUsers.filter(u => u.role === 'admin').length,
-    totalSuperadmins: allUsers.filter(u => u.role === 'superadmin').length,
-    totalRegularUsers: allUsers.filter(u => u.role === 'user').length,
+    totalUsers: totalAdmins + totalSuperadmins + totalRegularUsers,
+    totalAdmins,
+    totalSuperadmins,
+    totalRegularUsers,
   };
 }
 

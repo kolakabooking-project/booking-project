@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { activityLog, user } from '../db/schema.js';
-import { eq, desc, and, gte, lte, ilike, or, lt } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, ilike, or, lt, count } from 'drizzle-orm';
 
 // ─── Types ───
 
@@ -103,18 +103,20 @@ export async function getActivityLogs(filters?: LogQueryFilters) {
       .limit(limit)
       .offset(offset),
     db
-      .select({ count: activityLog.id })
+      .select({ value: count(activityLog.id) })
       .from(activityLog)
       .where(whereClause),
   ]);
+
+  const total = countResult[0].value;
 
   return {
     logs,
     pagination: {
       page,
       limit,
-      total: countResult.length,
-      totalPages: Math.ceil(countResult.length / limit),
+      total,
+      totalPages: Math.ceil(total / limit),
     },
   };
 }
