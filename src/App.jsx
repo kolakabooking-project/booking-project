@@ -4,6 +4,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +108,7 @@ function AppShell() {
   return (
     <>
       <AppRoutes />
+      <PWAInstallPrompt />
       <Toaster
         position="top-center"
         theme={theme}
