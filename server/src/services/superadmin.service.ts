@@ -1,10 +1,11 @@
 import { db } from '../config/db.js';
 import { user, account, session, systemSettings } from '../db/schema.js';
-import { eq, ne, desc, count } from 'drizzle-orm';
+import { eq, ne, desc, count, ilike, or, and } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors.js';
 import { logActivity } from './activity.service.js';
-import { invalidateMaintenanceCache } from '../middleware/maintenanceGuard.js';
+import { getServiceStatusCached, invalidateServiceStatusCache } from '../lib/serviceStatusCache.js';
+import { invalidateUserSessions } from '../middleware/authGuard.js';
 
 // ─── Constants ───
 
@@ -32,6 +33,94 @@ export async function listAllUsers() {
     .orderBy(desc(user.createdAt));
 
   return users;
+}
+
+/**
+ * List recent users (limited) — for dashboard preview widgets.
+ * Much lighter than listAllUsers() which returns every user.
+ */
+export async function listRecentUsers(limit: number = 6) {
+  const users = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      nip: user.nip,
+      role: user.role,
+      jabatan: user.jabatan,
+    })
+    .from(user)
+    .orderBy(desc(user.createdAt))
+    .limit(limit);
+
+  return users;
+}
+
+/**
+ * List users with server-side search, role filter, and pagination.
+ * Replaces client-side filtering of the full user list.
+ */
+export async function listUsers(filters?: {
+  search?: string;
+  role?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const page = filters?.page || 1;
+  const limit = filters?.limit || 10;
+  const offset = (page - 1) * limit;
+  const conditions: any[] = [];
+
+  if (filters?.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(user.name, term),
+        ilike(user.nip, term),
+        ilike(user.jabatan, term),
+      )
+    );
+  }
+
+  if (filters?.role) {
+    conditions.push(eq(user.role, filters.role as any));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [users, countResult] = await Promise.all([
+    db
+      .select({
+        id: user.id,
+        name: user.name,
+        nip: user.nip,
+        email: user.email,
+        role: user.role,
+        jabatan: user.jabatan,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user)
+      .where(whereClause)
+      .orderBy(desc(user.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ value: count() })
+      .from(user)
+      .where(whereClause),
+  ]);
+
+  const total = countResult[0].value;
+
+  return {
+    users,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 /**
@@ -156,6 +245,9 @@ export async function deleteUser(
   await db.delete(account).where(eq(account.userId, targetUserId));
   await db.delete(user).where(eq(user.id, targetUserId));
 
+  // Invalidate session cache so stale sessions aren't served
+  invalidateUserSessions(targetUserId);
+
   await logActivity({
     userId: actorId,
     userName: actorName,
@@ -206,6 +298,9 @@ export async function changeUserRole(
     .set({ role: newRole, updatedAt: new Date() })
     .where(eq(user.id, targetUserId));
 
+  // Invalidate session cache so the user gets the new role on next request
+  invalidateUserSessions(targetUserId);
+
   await logActivity({
     userId: actorId,
     userName: actorName,
@@ -254,6 +349,9 @@ export async function resetUserPassword(
   // Invalidate all sessions for this user (force re-login)
   await db.delete(session).where(eq(session.userId, targetUserId));
 
+  // Invalidate session cache so stale sessions aren't served
+  invalidateUserSessions(targetUserId);
+
   await logActivity({
     userId: actorId,
     userName: actorName,
@@ -271,17 +369,10 @@ export async function resetUserPassword(
 
 /**
  * Get current service status.
+ * Uses shared cache to avoid redundant DB queries.
  */
 export async function getServiceStatus() {
-  const [setting] = await db
-    .select()
-    .from(systemSettings)
-    .where(eq(systemSettings.key, 'service_active'));
-
-  return {
-    active: setting?.value !== 'false',
-    updatedAt: setting?.updatedAt || null,
-  };
+  return getServiceStatusCached();
 }
 
 /**
@@ -317,8 +408,8 @@ export async function toggleService(
     });
   }
 
-  // Invalidate the cached maintenance status
-  invalidateMaintenanceCache();
+  // Invalidate the cached service status (shared cache)
+  invalidateServiceStatusCache();
 
   await logActivity({
     userId: actorId,

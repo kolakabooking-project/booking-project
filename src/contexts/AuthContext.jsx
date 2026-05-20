@@ -75,8 +75,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Periodically check service status (every 30 seconds)
+  // Periodically check service status (every 2 minutes)
+  // Superadmin bypasses maintenance mode, so no need to poll for them
   useEffect(() => {
+    // Skip polling for superadmin — they always have access regardless of service status
+    if (user?.role === 'superadmin') return;
+
     const interval = setInterval(async () => {
       try {
         const res = await serviceApi.getStatus();
@@ -84,9 +88,9 @@ export function AuthProvider({ children }) {
       } catch {
         // Ignore errors
       }
-    }, 30000);
+    }, 120000); // 2 minutes instead of 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.role]);
 
   const login = useCallback(async (nip, password) => {
     try {

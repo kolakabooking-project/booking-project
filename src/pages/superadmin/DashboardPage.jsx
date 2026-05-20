@@ -87,7 +87,7 @@ export default function SuperadminDashboard() {
   const { user, switchRole } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [allUsers, setAllUsers] = useState([]);
+  const [recentUsers, setRecentUsers] = useState([]);
   const [recentLogs, setRecentLogs] = useState([]);
   const [serviceStatus, setServiceStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,16 +99,14 @@ export default function SuperadminDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, logsRes, statusRes, usersRes] = await Promise.all([
-        superadminApi.getStats(),
-        superadminApi.getLogs({ limit: 6 }),
-        superadminApi.getServiceStatus(),
-        superadminApi.getUsers(),
-      ]);
-      setStats(statsRes.data);
-      setRecentLogs(logsRes.data?.logs || []);
-      setServiceStatus(statusRes.data);
-      setAllUsers(usersRes.data || []);
+      // Single consolidated API call replaces 4 parallel calls
+      // This means only 1 authGuard session check instead of 4
+      const res = await superadminApi.getDashboard();
+      const data = res.data;
+      setStats(data.stats);
+      setRecentLogs(data.recentLogs || []);
+      setServiceStatus(data.serviceStatus);
+      setRecentUsers(data.recentUsers || []);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -129,16 +127,16 @@ export default function SuperadminDashboard() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Filtered users for search
+  // Filtered users for search (operates on the limited preview set)
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return allUsers.slice(0, 5);
+    if (!searchQuery.trim()) return recentUsers.slice(0, 5);
     const q = searchQuery.toLowerCase();
-    return allUsers.filter(u =>
+    return recentUsers.filter(u =>
       u.name.toLowerCase().includes(q) ||
       u.nip.toLowerCase().includes(q) ||
       (u.jabatan || '').toLowerCase().includes(q)
     ).slice(0, 6);
-  }, [searchQuery, allUsers]);
+  }, [searchQuery, recentUsers]);
 
   // Donut chart segments
   const donutSegments = useMemo(() => {
@@ -307,14 +305,14 @@ export default function SuperadminDashboard() {
                           </span>
                         </Link>
                       ))}
-                      {allUsers.length > filteredUsers.length && (
+                      {recentUsers.length > filteredUsers.length && (
                         <Link
                           to="/superadmin/accounts"
                           onClick={() => { setSearchFocused(false); setSearchQuery(''); }}
                           className="block px-4 py-3 text-center text-xs font-semibold text-djp-blue hover:underline"
                           style={{ background: 'var(--color-surface-muted)' }}
                         >
-                          Lihat semua {allUsers.length} akun →
+                          Lihat semua akun →
                         </Link>
                       )}
                     </>
@@ -325,7 +323,7 @@ export default function SuperadminDashboard() {
 
             {/* Recent accounts mini-grid */}
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {allUsers.slice(0, 6).map((u) => (
+              {recentUsers.slice(0, 6).map((u) => (
                 <div key={u.id}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors
                     hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"

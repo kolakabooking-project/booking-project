@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { superadminApi } from '../../lib/api';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
@@ -25,38 +25,60 @@ export default function AccountManagementPage() {
   const [createForm, setCreateForm] = useState({ nip: '', name: '', jabatan: '', role: 'user' });
   const [submitting, setSubmitting] = useState(false);
 
+  // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
 
+  // Debounce search to avoid excessive API calls
+  const searchTimeoutRef = useRef(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1); // Reset to page 1 on search change
+    }, 350);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [search]);
+
+  // Reset page when role filter changes
+  useEffect(() => { setCurrentPage(1); }, [filterRole]);
+
   const fetchUsers = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await superadminApi.getUsers();
-      setUsers(res.data || []);
+      const res = await superadminApi.getUsers({
+        search: debouncedSearch || undefined,
+        role: filterRole || undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+      const data = res.data;
+      // Server returns { users, pagination } when params provided
+      if (data?.users) {
+        setUsers(data.users);
+        setTotalUsers(data.pagination?.total || 0);
+        setTotalPages(data.pagination?.totalPages || 1);
+      } else if (Array.isArray(data)) {
+        // Backward compatible: array response (no pagination)
+        setUsers(data);
+        setTotalUsers(data.length);
+        setTotalPages(Math.ceil(data.length / itemsPerPage));
+      }
     } catch (err) {
       toast.error('Gagal memuat daftar akun');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [debouncedSearch, filterRole, currentPage]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  // Filter users
-  const filtered = users.filter((u) => {
-    const matchSearch = !search || 
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.nip.toLowerCase().includes(search.toLowerCase()) ||
-      (u.jabatan || '').toLowerCase().includes(search.toLowerCase());
-    const matchRole = !filterRole || u.role === filterRole;
-    return matchSearch && matchRole;
-  });
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterRole]);
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // currentItems = users from server (already paginated)
+  const currentItems = users;
 
   // Create user
   const handleCreate = async (e) => {
@@ -117,17 +139,9 @@ export default function AccountManagementPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-3 border-djp-blue border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="pb-10">
-      <PageHeader title="Manajemen Akun" subtitle={`Total ${users.length} akun terdaftar dalam sistem.`} />
+      <PageHeader title="Manajemen Akun" subtitle={`Total ${totalUsers} akun terdaftar dalam sistem.`} />
 
       {/* Actions Bar */}
       <div className="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
@@ -171,7 +185,15 @@ export default function AccountManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {currentItems.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-djp-blue border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  </td>
+                </tr>
+              ) : currentItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-[color:var(--color-text-soft)]">
                     {search || filterRole ? 'Tidak ada akun yang cocok dengan filter' : 'Belum ada akun terdaftar'}
@@ -234,13 +256,13 @@ export default function AccountManagementPage() {
       {totalPages > 1 && (
         <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
           <p className="text-xs text-[color:var(--color-text-soft)]">
-            Menampilkan {(currentPage - 1) * itemsPerPage + 1} hingga {Math.min(currentPage * itemsPerPage, filtered.length)} dari {filtered.length} entri
+            Menampilkan {(currentPage - 1) * itemsPerPage + 1} hingga {Math.min(currentPage * itemsPerPage, totalUsers)} dari {totalUsers} entri
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               className="text-xs py-1.5 px-3"
             >
@@ -249,7 +271,7 @@ export default function AccountManagementPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               className="text-xs py-1.5 px-3"
             >
@@ -258,9 +280,9 @@ export default function AccountManagementPage() {
           </div>
         </div>
       )}
-      {totalPages <= 1 && (
+      {totalPages <= 1 && !loading && (
         <p className="mt-3 text-xs text-[color:var(--color-text-soft)] text-center">
-          Menampilkan {filtered.length} akun
+          Menampilkan {totalUsers} akun
         </p>
       )}
 

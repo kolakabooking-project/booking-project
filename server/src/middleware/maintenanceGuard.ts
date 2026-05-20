@@ -1,7 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { db } from '../config/db.js';
-import { systemSettings } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { isServiceActive, invalidateServiceStatusCache } from '../lib/serviceStatusCache.js';
 
 /**
  * Maintenance mode guard.
@@ -9,41 +7,11 @@ import { eq } from 'drizzle-orm';
  * Superadmin always bypasses maintenance mode.
  * Must be used AFTER authGuard so that req.user is available.
  *
- * Caches the status in memory for 10 seconds to avoid excessive DB queries.
+ * Uses shared service status cache (10s TTL) from serviceStatusCache module.
  */
 
-let cachedStatus: { active: boolean; checkedAt: number } | null = null;
-const CACHE_TTL_MS = 10_000; // 10 seconds
-
-async function getServiceStatus(): Promise<boolean> {
-  const now = Date.now();
-
-  if (cachedStatus && (now - cachedStatus.checkedAt) < CACHE_TTL_MS) {
-    return cachedStatus.active;
-  }
-
-  try {
-    const [setting] = await db
-      .select()
-      .from(systemSettings)
-      .where(eq(systemSettings.key, 'service_active'));
-
-    const active = setting?.value !== 'false';
-    cachedStatus = { active, checkedAt: now };
-    return active;
-  } catch (err) {
-    console.error('[MaintenanceGuard] Error checking service status:', err);
-    // Default to active on error to avoid accidentally blocking all users
-    return true;
-  }
-}
-
-/**
- * Invalidate cache — called when superadmin toggles service status.
- */
-export function invalidateMaintenanceCache(): void {
-  cachedStatus = null;
-}
+// Re-export for backward compatibility
+export const invalidateMaintenanceCache = invalidateServiceStatusCache;
 
 export async function maintenanceGuard(req: Request, res: Response, next: NextFunction) {
   const user = (req as any).user;
@@ -54,9 +22,9 @@ export async function maintenanceGuard(req: Request, res: Response, next: NextFu
     return;
   }
 
-  const isActive = await getServiceStatus();
+  const active = await isServiceActive();
 
-  if (!isActive) {
+  if (!active) {
     res.status(503).json({
       error: 'SERVICE_UNAVAILABLE',
       message: 'Sistem sedang dalam perbaikan/maintenance. Silakan coba kembali nanti.',

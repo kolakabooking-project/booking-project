@@ -24,6 +24,7 @@ interface LogQueryFilters {
   endDate?: string;
   page?: number;
   limit?: number;
+  skipCount?: boolean; // Skip COUNT query when pagination info isn't needed (e.g., dashboard widget)
 }
 
 // ─── Constants ───
@@ -94,6 +95,27 @@ export async function getActivityLogs(filters?: LogQueryFilters) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  // When skipCount is true (e.g., dashboard widget), skip the expensive COUNT query
+  if (filters?.skipCount) {
+    const logs = await db
+      .select()
+      .from(activityLog)
+      .where(whereClause)
+      .orderBy(desc(activityLog.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      logs,
+      pagination: {
+        page,
+        limit,
+        total: -1,
+        totalPages: -1,
+      },
+    };
+  }
+
   const [logs, countResult] = await Promise.all([
     db
       .select()
@@ -138,11 +160,13 @@ export async function getActivityLogsForExport(startDate?: string, endDate?: str
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  // Hard limit to prevent memory bombs on unbounded exports
   return db
     .select()
     .from(activityLog)
     .where(whereClause)
-    .orderBy(desc(activityLog.createdAt));
+    .orderBy(desc(activityLog.createdAt))
+    .limit(5000);
 }
 
 // ─── Maintenance ───
@@ -155,14 +179,22 @@ export async function cleanupOldLogs(): Promise<number> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - LOG_RETENTION_DAYS);
 
-  const deleted = await db
-    .delete(activityLog)
-    .where(lt(activityLog.createdAt, cutoff))
-    .returning({ id: activityLog.id });
+  // Use a subquery approach: count first, then delete
+  // Avoids .returning() which loads all deleted row IDs into memory
+  const countResult = await db
+    .select({ value: count(activityLog.id) })
+    .from(activityLog)
+    .where(lt(activityLog.createdAt, cutoff));
 
-  if (deleted.length > 0) {
-    console.log(`[ActivityLog] Cleaned up ${deleted.length} logs older than ${LOG_RETENTION_DAYS} days.`);
+  const toDelete = countResult[0]?.value || 0;
+
+  if (toDelete > 0) {
+    await db
+      .delete(activityLog)
+      .where(lt(activityLog.createdAt, cutoff));
+
+    console.log(`[ActivityLog] Cleaned up ${toDelete} logs older than ${LOG_RETENTION_DAYS} days.`);
   }
 
-  return deleted.length;
+  return toDelete;
 }

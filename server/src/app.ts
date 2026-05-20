@@ -117,6 +117,18 @@ export function createApp() {
     ...(isProd && { keyGenerator: (req) => req.ip || 'unknown' }),
   });
 
+  // Export limiter — very strict to prevent CU spikes from data exports
+  const exportLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Max 5 exports per 15 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Terlalu banyak permintaan export. Coba lagi dalam 15 menit.',
+    },
+    ...(isProd && { keyGenerator: (req) => req.ip || 'unknown' }),
+  });
+
   // ─── Body Parsers ───
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
@@ -163,13 +175,12 @@ export function createApp() {
 
 
   // ─── Service Status Check (public, for frontend maintenance page) ───
+  // Uses shared cache to avoid redundant DB queries
   app.get('/api/service-status', async (_req, res) => {
     try {
-      const { db } = await import('./config/db.js');
-      const { systemSettings } = await import('./db/schema.js');
-      const { eq } = await import('drizzle-orm');
-      const [setting] = await db.select().from(systemSettings).where(eq(systemSettings.key, 'service_active'));
-      res.json({ data: { active: setting?.value !== 'false' } });
+      const { isServiceActive } = await import('./lib/serviceStatusCache.js');
+      const active = await isServiceActive();
+      res.json({ data: { active } });
     } catch {
       res.json({ data: { active: true } }); // Default to active on error
     }

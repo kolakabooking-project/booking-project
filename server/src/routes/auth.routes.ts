@@ -2,6 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from '../auth/auth.js';
 import { logActivity } from '../services/activity.service.js';
+import { invalidateUserSessions } from '../middleware/authGuard.js';
 
 const router = Router();
 
@@ -90,6 +91,9 @@ function authResponseInterceptor(req: Request, res: Response, next: NextFunction
         if (isSignOut) {
           const capturedUser = (req as any).__preAuthUser;
           if (capturedUser?.id) {
+            // Invalidate session cache for this user
+            invalidateUserSessions(capturedUser.id);
+
             logActivity({
               userId: capturedUser.id,
               userName: capturedUser.name || 'Unknown',
@@ -103,6 +107,9 @@ function authResponseInterceptor(req: Request, res: Response, next: NextFunction
         if (isChangePassword) {
           const capturedUser = (req as any).__preAuthUser;
           if (capturedUser?.id) {
+            // Invalidate session cache so re-auth uses fresh credentials
+            invalidateUserSessions(capturedUser.id);
+
             logActivity({
               userId: capturedUser.id,
               userName: capturedUser.name || 'Unknown',

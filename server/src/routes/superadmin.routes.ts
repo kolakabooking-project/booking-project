@@ -2,8 +2,24 @@ import { Router, type Request, type Response } from 'express';
 import { AppError } from '../utils/errors.js';
 import * as superadminService from '../services/superadmin.service.js';
 import * as activityService from '../services/activity.service.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+// Export limiter — very strict to prevent CU spikes from data exports
+const exportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Max 5 exports per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Terlalu banyak permintaan export. Coba lagi dalam 15 menit.',
+  },
+  keyGenerator: (req: Request) => {
+    const ip = req.ip;
+    return Array.isArray(ip) ? ip[0] : (ip || 'unknown');
+  },
+});
 
 /** Safely extract client IP (req.ip can be string | string[] in some Express versions) */
 function getClientIp(req: Request): string | undefined {
@@ -11,18 +27,75 @@ function getClientIp(req: Request): string | undefined {
   return Array.isArray(ip) ? ip[0] : ip;
 }
 
+/** Centralized and Sanitized Error Handler to prevent leakage of internal DB error messages */
+function handleError(err: any, res: Response) {
+  const status = err instanceof AppError ? err.statusCode : 500;
+  const message = status === 500 ? 'Terjadi kesalahan internal pada server' : err.message;
+  if (status === 500) {
+    console.error('[Superadmin Route Error]', err);
+  }
+  res.status(status).json({ error: message });
+}
+
+// ─── Consolidated Dashboard Endpoint ───
+
+/**
+ * GET /api/superadmin/dashboard — Single aggregated endpoint for dashboard
+ *
+ * Combines stats, recent logs, service status, and recent users into one response.
+ * This eliminates 4 separate API calls (each with its own authGuard DB validation)
+ * and reduces total queries from ~9 to ~4-5.
+ */
+router.get('/dashboard', async (_req: Request, res: Response) => {
+  try {
+    const [stats, logsResult, serviceStatus, recentUsers] = await Promise.all([
+      superadminService.getUserStats(),
+      activityService.getActivityLogs({ limit: 6, skipCount: true }),
+      superadminService.getServiceStatus(),
+      superadminService.listRecentUsers(6),
+    ]);
+
+    res.json({
+      data: {
+        stats,
+        recentLogs: logsResult.logs,
+        serviceStatus,
+        recentUsers,
+      },
+    });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
 // ─── User Management Routes ───
 
 /**
- * GET /api/superadmin/users — List all users
+ * GET /api/superadmin/users — List users (with optional server-side search & pagination)
+ * 
+ * Query params: search, role, page, limit
+ * When no params provided, returns all users (backward compatible).
  */
-router.get('/users', async (_req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response) => {
   try {
-    const users = await superadminService.listAllUsers();
-    res.json({ data: users });
+    const { search, role, page, limit } = req.query;
+
+    // If any filter/pagination params provided, use server-side pagination
+    if (search || role || page || limit) {
+      const result = await superadminService.listUsers({
+        search: search as string,
+        role: role as string,
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+      });
+      res.json({ data: result });
+    } else {
+      // Backward compatible: return all users (for legacy calls)
+      const users = await superadminService.listAllUsers();
+      res.json({ data: users });
+    }
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -34,8 +107,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
     const stats = await superadminService.getUserStats();
     res.json({ data: stats });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -61,8 +133,7 @@ router.post('/users', async (req: Request, res: Response) => {
 
     res.status(201).json({ data: created });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -80,8 +151,7 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
     );
     res.json({ data: result });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -107,8 +177,7 @@ router.patch('/users/:id/role', async (req: Request, res: Response) => {
     );
     res.json({ data: result });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -126,8 +195,7 @@ router.patch('/users/:id/reset-password', async (req: Request, res: Response) =>
     );
     res.json({ data: result });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -141,7 +209,7 @@ router.get('/settings/service-status', async (_req: Request, res: Response) => {
     const status = await superadminService.getServiceStatus();
     res.json({ data: status });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -166,8 +234,7 @@ router.patch('/settings/service-status', async (req: Request, res: Response) => 
     );
     res.json({ data: result });
   } catch (err: any) {
-    const status = err instanceof AppError ? err.statusCode : 500;
-    res.status(status).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -190,14 +257,15 @@ router.get('/logs', async (req: Request, res: Response) => {
     });
     res.json({ data: result });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
 /**
  * GET /api/superadmin/logs/export — Export activity logs (all, for Excel)
+ * Strict rate limiting applied to prevent CU consumption spikes
  */
-router.get('/logs/export', async (req: Request, res: Response) => {
+router.get('/logs/export', exportLimiter, async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
     const logs = await activityService.getActivityLogsForExport(
@@ -206,7 +274,7 @@ router.get('/logs/export', async (req: Request, res: Response) => {
     );
     res.json({ data: logs });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    handleError(err, res);
   }
 });
 
@@ -218,7 +286,7 @@ router.post('/logs/cleanup', async (_req: Request, res: Response) => {
     const deletedCount = await activityService.cleanupOldLogs();
     res.json({ data: { deletedCount, message: `${deletedCount} log lama berhasil dihapus.` } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    handleError(err, res);
   }
 });
 

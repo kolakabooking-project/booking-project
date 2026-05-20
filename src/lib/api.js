@@ -225,8 +225,19 @@ export const serviceApi = {
 // ─── Superadmin ───
 
 export const superadminApi = {
+  // Consolidated dashboard — single request replaces 4 parallel calls
+  getDashboard: () => request('/superadmin/dashboard'),
+
   // Users
-  getUsers: () => request('/superadmin/users'),
+  getUsers: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.role) qs.set('role', params.role);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/superadmin/users${query ? `?${query}` : ''}`);
+  },
   getStats: () => request('/superadmin/stats'),
   createUser: (data) => request('/superadmin/users', { method: 'POST', body: JSON.stringify(data) }),
   deleteUser: (id) => request(`/superadmin/users/${id}`, { method: 'DELETE' }),
