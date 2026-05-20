@@ -8,8 +8,8 @@ export default function PWAInstallPrompt() {
 
   useEffect(() => {
     // 1. Detect if running standalone (already installed)
-    const isStandalone = 
-      window.matchMedia('(display-mode: standalone)').matches || 
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
 
     if (isStandalone) return;
@@ -74,22 +74,22 @@ export default function PWAInstallPrompt() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-[999] p-4 sm:hidden animate-slide-up">
       {/* Backdrop overlay */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm -z-10"
         onClick={() => setShowPrompt(false)}
       />
 
       {/* Main Bottom Sheet */}
-      <div 
+      <div
         className="mx-auto max-w-md rounded-3xl border p-5 shadow-2xl relative"
-        style={{ 
-          borderColor: 'var(--color-border)', 
+        style={{
+          borderColor: 'var(--color-border)',
           background: 'var(--color-surface-elevated)',
           backdropFilter: 'blur(20px)'
         }}
       >
         {/* Dismiss button */}
-        <button 
+        <button
           onClick={handleDismiss}
           className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-[color:var(--color-text-soft)] transition-colors"
         >
@@ -99,7 +99,7 @@ export default function PWAInstallPrompt() {
         <div className="flex gap-4">
           {/* Logo with pulse glow */}
           <div className="relative h-14 w-14 rounded-2xl flex-shrink-0 bg-white shadow-md border border-slate-100 flex items-center justify-center p-1 overflow-hidden">
-            <img src="/iconweb.png" alt="BOOKOLAKA Logo" className="w-full h-full object-contain rounded-xl" />
+            <img src="/logoweb.png" alt="BOOKOLAKA Logo" className="w-full h-full object-contain rounded-xl" />
             <div className="absolute inset-0 bg-blue-500/10 animate-pulse -z-10" />
           </div>
 
@@ -124,7 +124,7 @@ export default function PWAInstallPrompt() {
               <p className="text-[11px] font-bold text-[color:var(--color-heading)] leading-relaxed">
                 Silakan ikuti langkah-langkah di bawah ini pada browser Safari:
               </p>
-              
+
               <div className="space-y-2.5">
                 <div className="flex items-center gap-3">
                   <div className="h-6 w-6 rounded-lg bg-blue-500/10 text-djp-blue flex items-center justify-center text-xs font-bold">
@@ -160,7 +160,7 @@ export default function PWAInstallPrompt() {
               <p className="text-[11px] text-[color:var(--color-text-muted)] leading-relaxed">
                 Ketuk tombol di bawah untuk langsung memasang aplikasi di perangkat Android Anda.
               </p>
-              
+
               <button
                 onClick={handleInstallClick}
                 className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-djp-blue to-indigo-600 hover:from-djp-blue-dark hover:to-indigo-700 text-white font-heading font-bold text-xs shadow-md shadow-blue-500/15 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 transition-all"
@@ -177,7 +177,7 @@ export default function PWAInstallPrompt() {
               onClick={handleDismiss}
               className="text-[11px] font-semibold text-[color:var(--color-text-soft)] hover:underline"
             >
-              Nanti Saja (Tanyakan 7 hari lagi)
+              Nanti Saja
             </button>
           </div>
         </div>
