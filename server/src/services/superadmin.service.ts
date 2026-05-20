@@ -1,5 +1,5 @@
 import { db } from '../config/db.js';
-import { user, account, session, systemSettings } from '../db/schema.js';
+import { user, account, session, systemSettings, booking, driver, vehicle } from '../db/schema.js';
 import { eq, ne, desc, count, ilike, or, and } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors.js';
@@ -422,4 +422,72 @@ export async function toggleService(
   });
 
   return { active };
+}
+
+/**
+ * Securely reset bookings, vehicles, or drivers with password verification.
+ */
+export async function resetData(
+  type: 'booking' | 'driver' | 'vehicle',
+  superadminPasswordConfirm: string,
+  superadminId: string,
+  actorName: string,
+  ipAddress?: string
+) {
+  // 1. Retrieve the superadmin's account credentials
+  const [saAccount] = await db
+    .select({ password: account.password })
+    .from(account)
+    .where(eq(account.userId, superadminId));
+
+  if (!saAccount || !saAccount.password) {
+    throw new ForbiddenError('Akun superadmin tidak terkonfigurasi dengan benar.');
+  }
+
+  // 2. Cryptographically verify the superadmin password
+  const bcrypt = await import('better-auth/crypto');
+  const isValid = await bcrypt.verifyPassword({
+    password: superadminPasswordConfirm,
+    hash: saAccount.password,
+  });
+
+  if (!isValid) {
+    throw new ValidationError('Password konfirmasi superadmin salah.');
+  }
+
+  // 3. Perform data reset based on type
+  if (type === 'booking') {
+    // Deleting all bookings will automatically cascade delete all booking reviews in db schema
+    await db.delete(booking);
+    
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: 'Reset data peminjaman (bookings) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  } else if (type === 'driver') {
+    await db.delete(driver);
+    
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: 'Reset data pengemudi (drivers) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  } else if (type === 'vehicle') {
+    await db.delete(vehicle);
+    
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: 'Reset data kendaraan (vehicles) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  }
+
+  return { success: true };
 }

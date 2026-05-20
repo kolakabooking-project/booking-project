@@ -3,6 +3,9 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from '../auth/auth.js';
 import { logActivity } from '../services/activity.service.js';
 import { invalidateUserSessions } from '../middleware/authGuard.js';
+import { db } from '../config/db.js';
+import { user } from '../db/schema.js';
+import { eq, or } from 'drizzle-orm';
 
 const router = Router();
 
@@ -30,6 +33,54 @@ async function captureSessionPreAuth(req: Request, _res: Response, next: NextFun
         }
       }
     } catch { /* silent */ }
+  }
+  next();
+}
+
+/**
+ * Pre-auth middleware: Account Lockout Guard.
+ * Checks if the account is currently locked out before running Better Auth logic.
+ * Returns dynamic remaining lockout time in minutes & seconds.
+ */
+async function lockoutGuard(req: Request, res: Response, next: NextFunction) {
+  const url = req.originalUrl || req.url;
+  if (req.method === 'POST' && (url.includes('/sign-in/username') || url.includes('/sign-in/email'))) {
+    const { username, email } = req.body;
+    const loginIdentifier = username || email;
+
+    if (loginIdentifier) {
+      try {
+        const [foundUser] = await db
+          .select()
+          .from(user)
+          .where(
+            or(
+              eq(user.nip, loginIdentifier),
+              eq(user.username, loginIdentifier),
+              eq(user.email, loginIdentifier)
+            )
+          );
+
+        if (foundUser && foundUser.lockoutUntil) {
+          const lockoutUntil = new Date(foundUser.lockoutUntil);
+          const now = new Date();
+
+          if (lockoutUntil > now) {
+            const diffMs = lockoutUntil.getTime() - now.getTime();
+            const minutes = Math.floor(diffMs / 60000);
+            const seconds = Math.floor((diffMs % 60000) / 1000);
+
+            res.status(400).json({
+              error: 'AccountLocked',
+              message: `Akun Anda terkunci sementara akibat terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam ${minutes} menit ${seconds} detik.`,
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('[LockoutGuard Error]', err);
+      }
+    }
   }
   next();
 }
@@ -79,6 +130,12 @@ function authResponseInterceptor(req: Request, res: Response, next: NextFunction
         try { data = JSON.parse(body); } catch { /* not JSON */ }
 
         if (isSignIn && data?.user?.id) {
+          // Reset failed attempts on successful login
+          db.update(user)
+            .set({ failedLoginAttempts: 0, lockoutUntil: null })
+            .where(eq(user.id, data.user.id))
+            .catch((err) => console.error('[Lockout Reset Error]', err));
+
           logActivity({
             userId: data.user.id,
             userName: data.user.name || 'Unknown',
@@ -119,6 +176,44 @@ function authResponseInterceptor(req: Request, res: Response, next: NextFunction
             });
           }
         }
+      } else if (statusCode >= 400 && isSignIn) {
+        // Increment failed attempts on failed login
+        const { username, email } = req.body;
+        const loginIdentifier = username || email;
+
+        if (loginIdentifier) {
+          (async () => {
+            const [foundUser] = await db
+              .select()
+              .from(user)
+              .where(
+                or(
+                  eq(user.nip, loginIdentifier),
+                  eq(user.username, loginIdentifier),
+                  eq(user.email, loginIdentifier)
+                )
+              );
+
+            if (foundUser) {
+              const newAttempts = foundUser.failedLoginAttempts + 1;
+              const updates: any = { failedLoginAttempts: newAttempts };
+
+              if (newAttempts >= 5) {
+                updates.lockoutUntil = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes lockout
+
+                logActivity({
+                  userId: foundUser.id,
+                  userName: foundUser.name,
+                  action: 'LOGIN',
+                  detail: `Akun terkunci otomatis selama 5 menit karena 5 kali gagal login berturut-turut.`,
+                  ipAddress: ip,
+                }).catch(() => {});
+              }
+
+              await db.update(user).set(updates).where(eq(user.id, foundUser.id));
+            }
+          })().catch((err) => console.error('[Lockout Increment Error]', err));
+        }
       }
     } catch { /* silent — never break auth flow */ }
 
@@ -140,6 +235,7 @@ function authResponseInterceptor(req: Request, res: Response, next: NextFunction
 router.all(
   '/api/auth/*splat',
   captureSessionPreAuth,
+  lockoutGuard,
   authResponseInterceptor,
   toNodeHandler(auth)
 );

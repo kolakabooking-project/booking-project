@@ -66,3 +66,43 @@ export function deleteUploadedFile(filename: string): void {
     fs.unlinkSync(filePath);
   }
 }
+
+/**
+ * Validate file signature bytes (Magic Numbers) to ensure the file is a real image.
+ * Supports JPEG, PNG, and WebP.
+ */
+export function validateImageSignature(filePath: string): boolean {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const buffer = Buffer.alloc(12);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 12, 0);
+    fs.closeSync(fd);
+
+    // Convert first 4 and 3 bytes to hex strings
+    const hex4 = buffer.subarray(0, 4).toString('hex').toUpperCase();
+    const hex3 = buffer.subarray(0, 3).toString('hex').toUpperCase();
+
+    // JPEG: FF D8 FF
+    if (hex3 === 'FFD8FF') {
+      return true;
+    }
+
+    // PNG: 89 50 4E 47
+    if (hex4 === '89504E47') {
+      return true;
+    }
+
+    // WebP: RIFF (first 4 bytes: 52 49 46 46) and WEBP (bytes 8-11: 57 45 42 50)
+    const riff = buffer.subarray(0, 4).toString('utf-8');
+    const webp = buffer.subarray(8, 12).toString('utf-8');
+    if (riff === 'RIFF' && webp === 'WEBP') {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('[Signature Validation Error]', error);
+    return false;
+  }
+}

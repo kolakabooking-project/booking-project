@@ -4,7 +4,7 @@ import { getDaysInMonth, getFirstDayOfMonth, MONTH_NAMES, DAY_NAMES, isPastDate,
 import { useBooking } from '../../contexts/BookingContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function Calendar({ onDateClick, allowPastClick = false }) {
+export default function Calendar({ onDateClick, onMandatoryBookingClick, allowPastClick = false }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -50,6 +50,8 @@ export default function Calendar({ onDateClick, allowPastClick = false }) {
     if (status === 'partial') return 'bg-djp-yellow/15 text-djp-yellow-dark border border-djp-yellow/25';
     return '';
   };
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   return (
     <div className="surface-card overflow-hidden">
@@ -108,7 +110,7 @@ export default function Calendar({ onDateClick, allowPastClick = false }) {
                 }
               }}
               className={`
-                relative min-h-[70px] overflow-hidden border-b border-r p-1.5 transition-colors duration-150 sm:min-h-[96px] sm:p-3
+                group relative min-h-[70px] overflow-hidden border-b border-r p-1.5 transition-colors duration-150 sm:min-h-[96px] sm:p-3
                 ${(status === 'past' && !allowPastClick) ? 'cursor-default' : 'cursor-pointer hover:bg-djp-blue/[0.04] dark:hover:bg-djp-blue/10'}
                 ${isT ? 'bg-djp-blue/[0.04] dark:bg-djp-blue/10' : ''}
                 ${colIdx === 6 ? 'border-r-0' : ''}
@@ -120,18 +122,39 @@ export default function Calendar({ onDateClick, allowPastClick = false }) {
                   : undefined,
               }}
             >
-              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-1 sm:gap-0">
-                <span className={`
-                  inline-flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-heading font-semibold
-                  ${isT ? 'bg-djp-blue text-white' : status === 'past' ? 'text-[color:var(--color-text-soft)]' : 'text-[color:var(--color-text-main)]'}
-                `}>
-                  {date.getDate()}
-                </span>
-                {isT && (
-                  <span className="text-[8px] sm:text-[10px] font-heading font-bold uppercase tracking-wider sm:tracking-[0.18em] text-djp-blue hidden sm:block">Today</span>
-                )}
-                {isT && (
-                  <span className="w-1 h-1 rounded-full bg-djp-blue sm:hidden"></span>
+              <div className="flex flex-row items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`
+                    inline-flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-heading font-semibold
+                    ${isT ? 'bg-djp-blue text-white' : status === 'past' ? 'text-[color:var(--color-text-soft)]' : 'text-[color:var(--color-text-main)]'}
+                  `}>
+                    {date.getDate()}
+                  </span>
+                  {isT && (
+                    <span className="text-[8px] sm:text-[10px] font-heading font-bold uppercase tracking-wider sm:tracking-[0.18em] text-djp-blue hidden sm:block">Today</span>
+                  )}
+                  {isT && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-djp-blue sm:hidden"></span>
+                  )}
+                </div>
+
+                {/* Admin Mode - Mandatory Booking Button (+ Icon) — Hidden on mobile, hover revealed on desktop */}
+                {isAdmin && (status !== 'past' || allowPastClick) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Stop click from bubbling up to cell detailing
+                      onMandatoryBookingClick?.(date);
+                    }}
+                    className="
+                      hidden sm:inline-flex opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                      h-6 w-6 items-center justify-center rounded-full bg-djp-blue text-white hover:bg-djp-blue-dark shadow-sm
+                      text-xs font-bold leading-none hover:scale-105 active:scale-95 transition-transform
+                    "
+                    title="Buat Peminjaman Mandatori"
+                    type="button"
+                  >
+                    +
+                  </button>
                 )}
               </div>
 

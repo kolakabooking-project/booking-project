@@ -3,6 +3,17 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Toaster } from 'sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes stale time
+    },
+  },
+});
 
 // Layouts
 import UserLayout from './components/layout/UserLayout';
@@ -112,14 +123,16 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <BookingProvider>
-            <AppShell />
-          </BookingProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <BookingProvider>
+              <AppShell />
+            </BookingProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

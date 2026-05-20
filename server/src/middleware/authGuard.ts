@@ -86,6 +86,14 @@ export function invalidateUserSessions(userId: string): void {
  */
 export async function authGuard(req: Request, res: Response, next: NextFunction) {
   try {
+    // Vercel Cron secret bypass
+    const authHeader = req.headers.authorization;
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+      (req as any).user = { id: 'cron-job', name: 'Vercel Cron Job', role: 'superadmin' };
+      return next();
+    }
+
     const token = extractSessionToken(req);
 
     // Check cache first

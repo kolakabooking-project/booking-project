@@ -1,88 +1,65 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Realtime } from 'ably';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bookingApi, vehicleApi, driverApi } from '../lib/api';
 import { useAuth } from './AuthContext';
 
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [bookings, setBookings] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // ─── TanStack Queries (Server Cache) ───
 
-  // Track if initial data has been fetched
-  const hasFetched = useRef(false);
+  const vehiclesQuery = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: async () => {
+      const res = await vehicleApi.getAll();
+      return res?.data || [];
+    },
+    enabled: isAuthenticated,
+  });
 
-  // ─── Data Fetching ───
+  const driversQuery = useQuery({
+    queryKey: ['drivers'],
+    queryFn: async () => {
+      const res = await driverApi.getAll();
+      return res?.data || [];
+    },
+    enabled: isAuthenticated,
+  });
 
-  const fetchAllData = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setIsLoading(true);
-    try {
-      const [vehiclesRes, driversRes] = await Promise.all([
-        vehicleApi.getAll(),
-        driverApi.getAll(),
-      ]);
-      setVehicles(vehiclesRes?.data || []);
-      setDrivers(driversRes?.data || []);
+  const bookingsQuery = useQuery({
+    queryKey: ['bookings'],
+    queryFn: async () => {
+      const res = await bookingApi.getAll();
+      return res?.data || [];
+    },
+    enabled: isAuthenticated,
+  });
 
-      // Fetch all bookings globally so availability logic works and users can see schedules
-      const bookingsRes = await bookingApi.getAll();
-      setBookings(bookingsRes?.data || []);
-    } catch (err) {
-      console.error('[BookingContext] Failed to fetch data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated, user?.role]);
+  // Expose arrays or default to empty lists
+  const bookings = useMemo(() => bookingsQuery.data || [], [bookingsQuery.data]);
+  const vehicles = useMemo(() => vehiclesQuery.data || [], [vehiclesQuery.data]);
+  const drivers = useMemo(() => driversQuery.data || [], [driversQuery.data]);
 
-  // Fetch on mount and when auth state changes
-  useEffect(() => {
-    if (isAuthenticated && !hasFetched.current) {
-      hasFetched.current = true;
-      fetchAllData();
-    }
-    if (!isAuthenticated) {
-      hasFetched.current = false;
-      setBookings([]);
-      setVehicles([]);
-      setDrivers([]);
-    }
-  }, [isAuthenticated, fetchAllData]);
+  const isLoading = bookingsQuery.isLoading || vehiclesQuery.isLoading || driversQuery.isLoading;
 
-  // ─── Refresh helpers ───
+  // ─── Invalidation helpers (Syncs cache on demand) ───
 
   const refreshBookings = useCallback(async () => {
-    try {
-      // Always fetch all bookings to ensure availability calculations are accurate
-      const res = await bookingApi.getAll();
-      setBookings(res?.data || []);
-    } catch (err) {
-      console.error('[BookingContext] refreshBookings error:', err);
-    }
-  }, [user?.role]);
+    await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+  }, [queryClient]);
 
   const refreshVehicles = useCallback(async () => {
-    try {
-      const res = await vehicleApi.getAll();
-      setVehicles(res?.data || []);
-    } catch (err) {
-      console.error('[BookingContext] refreshVehicles error:', err);
-    }
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+  }, [queryClient]);
 
   const refreshDrivers = useCallback(async () => {
-    try {
-      const res = await driverApi.getAll();
-      setDrivers(res?.data || []);
-    } catch (err) {
-      console.error('[BookingContext] refreshDrivers error:', err);
-    }
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: ['drivers'] });
+  }, [queryClient]);
 
   // ─── Real-Time Ably Subscription ───
   const ablyRef = useRef(null);
@@ -106,19 +83,29 @@ export function BookingProvider({ children }) {
 
       const channel = realtime.channels.get('bookings');
       channel.subscribe('update', (message) => {
-        console.log('[ABLY] Update received:', message.data);
+        console.log('[ABLY] Realtime Update received:', message.data);
         const { type, booking } = message.data;
         
         if (!booking) {
-          // Fallback if payload is missing
           refreshBookings();
           return;
         }
 
+        // Intelligently mutate the server cache directly for zero-delay optimistic UI updates
         if (type === 'BOOKING_CREATED') {
-          setBookings(prev => [booking, ...prev]);
+          queryClient.setQueryData(['bookings'], (old) => {
+            const current = old || [];
+            if (current.some(b => b.id === booking.id)) return current;
+            return [booking, ...current];
+          });
         } else if (['BOOKING_APPROVED', 'BOOKING_REJECTED', 'BOOKING_CANCELLED', 'REVIEW_SUBMITTED'].includes(type)) {
-          setBookings(prev => prev.map(b => b.id === booking.id ? booking : b));
+          queryClient.setQueryData(['bookings'], (old) => {
+            const current = old || [];
+            return current.map(b => b.id === booking.id ? booking : b);
+          });
+          // Invalidate vehicles and drivers in case status/availability changed
+          queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+          queryClient.invalidateQueries({ queryKey: ['drivers'] });
         } else {
           refreshBookings();
         }
@@ -127,12 +114,12 @@ export function BookingProvider({ children }) {
       ablyRef.current = realtime;
     }
 
-    // Cleanup when user logs out
+    // Cleanup Ably subscription when auth state ends
     if (!isAuthenticated && ablyRef.current) {
       ablyRef.current.close();
       ablyRef.current = null;
     }
-  }, [isAuthenticated, refreshBookings, refreshVehicles]);
+  }, [isAuthenticated, queryClient, refreshBookings, refreshVehicles]);
 
   // ─── Booking Actions ───
 
@@ -212,8 +199,6 @@ export function BookingProvider({ children }) {
   }, [refreshDrivers]);
 
   // ─── Query Helpers ───
-  // These maintain the same synchronous API surface the pages expect,
-  // but now operate on server-fetched data.
 
   const getBookingsForDate = useCallback(
     (date) => {
@@ -234,7 +219,6 @@ export function BookingProvider({ children }) {
 
   const getAvailableVehicles = useCallback(
     (startTime, endTime) => {
-      // Filter from locally cached data for instant UI feedback
       const bookedVehicleIds = bookings
         .filter((b) => {
           if (['Ditolak', 'Dibatalkan', 'Selesai', 'Selesai dengan Catatan'].includes(b.status)) return false;

@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { vehicle, booking } from '../db/schema.js';
-import { eq, and, not, or, lte, gte, inArray } from 'drizzle-orm';
+import { eq, and, not, or, lte, gte, inArray, isNull } from 'drizzle-orm';
 import { BOOKING_STATUS, VEHICLE_STATUS, TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -13,7 +13,7 @@ type VehicleUpdate = Partial<Omit<VehicleInsert, 'id' | 'createdAt'>>;
  */
 export async function getAllVehicles() {
   const now = new Date();
-  const allVehicles = await db.select().from(vehicle);
+  const allVehicles = await db.select().from(vehicle).where(isNull(vehicle.deletedAt));
 
   // Get active bookings to compute "in-use" status
   const activeBookings = await db
@@ -58,7 +58,7 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
   const allVehicles = await db
     .select()
     .from(vehicle)
-    .where(eq(vehicle.status, 'Tersedia'));
+    .where(and(eq(vehicle.status, 'Tersedia'), isNull(vehicle.deletedAt)));
 
   return allVehicles.filter((v) => !bookedIds.has(v.id));
 }
@@ -67,7 +67,7 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
  * Get a single vehicle by ID.
  */
 export async function getVehicleById(id: string) {
-  const [found] = await db.select().from(vehicle).where(eq(vehicle.id, id));
+  const [found] = await db.select().from(vehicle).where(and(eq(vehicle.id, id), isNull(vehicle.deletedAt)));
   if (!found) throw new NotFoundError('Kendaraan');
   return found;
 }
@@ -110,7 +110,11 @@ export async function updateVehicle(id: string, data: any) {
  * Delete a vehicle.
  */
 export async function deleteVehicle(id: string) {
-  const [deleted] = await db.delete(vehicle).where(eq(vehicle.id, id)).returning();
+  const [deleted] = await db
+    .update(vehicle)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(vehicle.id, id), isNull(vehicle.deletedAt)))
+    .returning();
   if (!deleted) throw new NotFoundError('Kendaraan');
   return deleted;
 }

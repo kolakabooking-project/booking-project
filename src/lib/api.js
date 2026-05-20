@@ -268,4 +268,5 @@ export const superadminApi = {
     return request(`/superadmin/logs/export?${qs.toString()}`);
   },
   cleanupLogs: () => request('/superadmin/logs/cleanup', { method: 'POST' }),
+  resetData: (type, password) => request('/superadmin/reset', { method: 'POST', body: JSON.stringify({ type, password }) }),
 };

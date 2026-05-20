@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { driver, booking } from '../db/schema.js';
-import { eq, and, not, lte, gte, inArray } from 'drizzle-orm';
+import { eq, and, not, lte, gte, inArray, isNull } from 'drizzle-orm';
 import { TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -11,7 +11,7 @@ type DriverUpdate = Partial<Omit<DriverInsert, 'id' | 'createdAt'>>;
  * Get all drivers.
  */
 export async function getAllDrivers() {
-  return db.select().from(driver);
+  return db.select().from(driver).where(isNull(driver.deletedAt));
 }
 
 /**
@@ -34,7 +34,7 @@ export async function getAvailableDrivers(startTime: Date, endTime: Date) {
   const allDrivers = await db
     .select()
     .from(driver)
-    .where(eq(driver.status, 'Tersedia'));
+    .where(and(eq(driver.status, 'Tersedia'), isNull(driver.deletedAt)));
 
   return allDrivers.filter((d) => !busyIds.has(d.id));
 }
@@ -43,7 +43,7 @@ export async function getAvailableDrivers(startTime: Date, endTime: Date) {
  * Get a single driver by ID.
  */
 export async function getDriverById(id: string) {
-  const [found] = await db.select().from(driver).where(eq(driver.id, id));
+  const [found] = await db.select().from(driver).where(and(eq(driver.id, id), isNull(driver.deletedAt)));
   if (!found) throw new NotFoundError('Pengemudi');
   return found;
 }
@@ -85,7 +85,11 @@ export async function updateDriver(id: string, data: any) {
  * Delete a driver.
  */
 export async function deleteDriver(id: string) {
-  const [deleted] = await db.delete(driver).where(eq(driver.id, id)).returning();
+  const [deleted] = await db
+    .update(driver)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(driver.id, id), isNull(driver.deletedAt)))
+    .returning();
   if (!deleted) throw new NotFoundError('Pengemudi');
   return deleted;
 }

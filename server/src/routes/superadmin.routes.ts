@@ -48,17 +48,21 @@ function handleError(err: any, res: Response) {
  */
 router.get('/dashboard', async (_req: Request, res: Response) => {
   try {
-    const [stats, logsResult, serviceStatus, recentUsers] = await Promise.all([
+    const [stats, serviceStatus, recentUsers] = await Promise.all([
       superadminService.getUserStats(),
-      activityService.getActivityLogs({ limit: 6, skipCount: true }),
       superadminService.getServiceStatus(),
       superadminService.listRecentUsers(6),
     ]);
 
+    // Lazy cleanup: trigger asynchronous background log cleanup to prevent database ballooning
+    // without blocking the dashboard API response time (perfect for Vercel Free tier)
+    activityService.cleanupOldLogs().catch((err) => {
+      console.error('[Lazy Cleanup Error]', err);
+    });
+
     res.json({
       data: {
         stats,
-        recentLogs: logsResult.logs,
         serviceStatus,
         recentUsers,
       },
@@ -285,6 +289,38 @@ router.post('/logs/cleanup', async (_req: Request, res: Response) => {
   try {
     const deletedCount = await activityService.cleanupOldLogs();
     res.json({ data: { deletedCount, message: `${deletedCount} log lama berhasil dihapus.` } });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * POST /api/superadmin/reset — Secure reset of system components
+ */
+router.post('/reset', async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const { type, password } = req.body;
+
+    if (!type || !['booking', 'driver', 'vehicle'].includes(type)) {
+      res.status(400).json({ error: 'Tipe reset tidak valid (booking, driver, vehicle).' });
+      return;
+    }
+
+    if (!password) {
+      res.status(400).json({ error: 'Password konfirmasi superadmin wajib diisi.' });
+      return;
+    }
+
+    const result = await superadminService.resetData(
+      type as 'booking' | 'driver' | 'vehicle',
+      password,
+      actor.id,
+      actor.name,
+      getClientIp(req)
+    );
+
+    res.json({ data: result, message: `Reset data ${type} berhasil dilakukan.` });
   } catch (err: any) {
     handleError(err, res);
   }

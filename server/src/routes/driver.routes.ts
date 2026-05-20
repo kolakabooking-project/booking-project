@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { authGuard } from '../middleware/authGuard.js';
 import { roleGuard } from '../middleware/roleGuard.js';
 import * as driverService from '../services/driver.service.js';
-import { upload, deleteUploadedFile } from '../utils/upload.js';
+import { upload, deleteUploadedFile, validateImageSignature } from '../utils/upload.js';
 import { AppError } from '../utils/errors.js';
 import { logActivity } from '../services/activity.service.js';
 
@@ -147,6 +147,12 @@ router.post(
     try {
       if (!req.file) {
         res.status(400).json({ error: 'File foto wajib diupload.' });
+        return;
+      }
+
+      if (!validateImageSignature(req.file.path)) {
+        deleteUploadedFile(req.file.filename);
+        res.status(400).json({ error: 'Format berkas tidak valid. Harap unggah gambar JPEG, PNG, atau WebP asli.' });
         return;
       }
 

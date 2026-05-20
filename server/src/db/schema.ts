@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, date } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, timestamp, date, index } from 'drizzle-orm/pg-core';
 
 // ─────────────────────────────────────────────
 //  Better Auth Core Tables
@@ -19,6 +19,8 @@ export const user = pgTable('user', {
   jabatan: text('jabatan'),
   username: text('username').unique(),
   displayUsername: text('display_username'),
+  failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+  lockoutUntil: timestamp('lockout_until'),
 });
 
 export const session = pgTable('session', {
@@ -80,9 +82,12 @@ export const vehicle = pgTable('vehicle', {
   jadwalServis: date('jadwal_servis'),
   warna: text('warna'),
   foto: text('foto'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('vehicle_deleted_idx').on(table.deletedAt),
+]);
 
 export const driver = pgTable('driver', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -94,9 +99,12 @@ export const driver = pgTable('driver', {
   simJenis: text('sim_jenis').notNull().default('SIM A'),
   simExpiry: date('sim_expiry'),
   foto: text('foto'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('driver_deleted_idx').on(table.deletedAt),
+]);
 
 export const booking = pgTable('booking', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -138,7 +146,13 @@ export const booking = pgTable('booking', {
   kondisiKebersihan: text('kondisi_kebersihan'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('booking_user_idx').on(table.userId),
+  index('booking_vehicle_idx').on(table.vehicleId),
+  index('booking_driver_idx').on(table.driverId),
+  index('booking_status_idx').on(table.status),
+  index('booking_time_range_idx').on(table.startTime, table.endTime),
+]);
 
 export const bookingReview = pgTable('booking_review', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -161,7 +175,11 @@ export const chatMessage = pgTable('chat_message', {
   content: text('content').notNull(),
   isRead: boolean('is_read').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('chat_msg_sender_idx').on(table.senderId),
+  index('chat_msg_receiver_idx').on(table.receiverId),
+  index('chat_msg_created_idx').on(table.createdAt),
+]);
 
 // ─────────────────────────────────────────────
 //  Superadmin Domain Tables
@@ -196,7 +214,10 @@ export const activityLog = pgTable('activity_log', {
   detail: text('detail'),
   ipAddress: text('ip_address'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('activity_log_user_idx').on(table.userId),
+  index('activity_log_created_at_idx').on(table.createdAt),
+]);
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),

@@ -5,9 +5,13 @@ import { getActionMeta } from '../../utils/actionConfig';
 import {
   ArrowRight, Search, Power, LayoutDashboard, Shield,
   Users, UserCog, ChevronRight, Zap, Circle,
-  ServerCog, Activity, Clock, ExternalLink,
+  ServerCog, Activity, Clock, ExternalLink, DatabaseBackup, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
+import FormInput from '../../components/ui/FormInput';
+import { toast } from 'sonner';
 
 /* ═══════════════════════════════════════════════════════════════
    SVG Donut Chart — pure CSS + SVG, no dependencies
@@ -88,9 +92,37 @@ export default function SuperadminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
-  const [recentLogs, setRecentLogs] = useState([]);
   const [serviceStatus, setServiceStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Secure System Reset States
+  const [resetType, setResetType] = useState(null); // 'booking', 'driver', 'vehicle'
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleResetData = async (e) => {
+    e.preventDefault();
+    if (!confirmPassword) {
+      toast.error('Masukkan password Anda untuk konfirmasi');
+      return;
+    }
+    
+    setResetLoading(true);
+    try {
+      await superadminApi.resetData(resetType, confirmPassword);
+      toast.success(`Reset data ${resetType === 'booking' ? 'peminjaman' : resetType === 'driver' ? 'pengemudi' : 'kendaraan'} berhasil dilakukan!`);
+      setResetType(null);
+      setConfirmPassword('');
+      // Invalidate cache and reload to guarantee interface sync
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      toast.error(err.message || 'Gagal melakukan reset data');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   // Account search
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,7 +136,6 @@ export default function SuperadminDashboard() {
       const res = await superadminApi.getDashboard();
       const data = res.data;
       setStats(data.stats);
-      setRecentLogs(data.recentLogs || []);
       setServiceStatus(data.serviceStatus);
       setRecentUsers(data.recentUsers || []);
     } catch (err) {
@@ -230,10 +261,10 @@ export default function SuperadminDashboard() {
       </div>
 
       {/* ─── Bento Grid ─── */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* ── LEFT: Quick Actions (3 cols) ── */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* ── LEFT: Kelola Akun (2 cols on medium/large screens) ── */}
+        <div className="md:col-span-2 space-y-6">
 
           {/* Account Omnibox */}
           <div className="rounded-3xl border p-5 sm:p-6"
@@ -326,7 +357,7 @@ export default function SuperadminDashboard() {
               {recentUsers.slice(0, 6).map((u) => (
                 <div key={u.id}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors
-                    hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
+                  hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
                   style={{ borderColor: 'var(--color-border)' }}>
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-300
                     dark:from-slate-700 dark:to-slate-600 flex items-center justify-center flex-shrink-0">
@@ -342,122 +373,169 @@ export default function SuperadminDashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* ── RIGHT: Status Layanan & System Controls (1 col on medium/large screens) ── */}
+        <div className="md:col-span-1 space-y-6">
 
           {/* Service Control Widget */}
+          <div className="rounded-3xl border p-5 sm:p-6 flex flex-col justify-between"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ServerCog size={16} className="text-amber-500" />
+                  <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">Status Layanan</h3>
+                </div>
+                <Link to="/superadmin/service"
+                  className="text-[11px] font-semibold text-djp-blue hover:underline flex items-center gap-1">
+                  Kelola <ArrowRight size={11} />
+                </Link>
+              </div>
+
+              <div className="flex items-center gap-4 mt-4">
+                {/* Power indicator */}
+                <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${serviceStatus?.active
+                  ? 'bg-emerald-500/10 border border-emerald-500/20'
+                  : 'bg-red-500/10 border border-red-500/20'
+                  }`}>
+                  <Power size={28} className={serviceStatus?.active ? 'text-emerald-500' : 'text-red-500'} />
+                  {serviceStatus?.active && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-elevated)] animate-pulse" />
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <p className={`text-lg font-heading font-extrabold ${serviceStatus?.active
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-red-600 dark:text-red-400'
+                    }`}>
+                    {serviceStatus?.active ? 'Layanan Aktif' : 'Maintenance Mode'}
+                  </p>
+                  <p className="text-xs text-[color:var(--color-text-soft)] mt-0.5">
+                    {serviceStatus?.active
+                      ? 'Semua pengguna dapat mengakses sistem dengan normal.'
+                      : 'Akses ditangguhkan untuk semua user non-superadmin.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick access shortcut to Logs since we removed preview */}
+            <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <Link to="/superadmin/logs"
+                className="flex items-center justify-between p-3 rounded-2xl border transition-colors
+                  hover:bg-black/[0.02] dark:hover:bg-white/[0.02] text-xs font-semibold text-[color:var(--color-heading)]"
+                style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
+                <span className="flex items-center gap-2">
+                  <Activity size={14} className="text-purple-500" />
+                  Buka Log Aktivitas Sistem
+                </span>
+                <ChevronRight size={14} className="text-[color:var(--color-text-soft)]" />
+              </Link>
+            </div>
+          </div>
+
+          {/* System Reset Control Widget */}
           <div className="rounded-3xl border p-5 sm:p-6"
             style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ServerCog size={16} className="text-amber-500" />
-                <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">Status Layanan</h3>
-              </div>
-              <Link to="/superadmin/service"
-                className="text-[11px] font-semibold text-djp-blue hover:underline flex items-center gap-1">
-                Kelola <ArrowRight size={11} />
-              </Link>
+            <div className="flex items-center gap-2 mb-3">
+              <DatabaseBackup size={16} className="text-red-500 animate-pulse" />
+              <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">🔧 Reset Data Sistem</h3>
             </div>
+            
+            <p className="text-xs text-[color:var(--color-text-soft)] mb-5 leading-relaxed">
+              Tindakan Kritis: Kosongkan data secara menyeluruh. Tindakan ini memerlukan konfirmasi password Superadmin Anda dan tidak dapat dibatalkan.
+            </p>
 
-            <div className="flex items-center gap-4">
-              {/* Power indicator */}
-              <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${serviceStatus?.active
-                ? 'bg-emerald-500/10 border border-emerald-500/20'
-                : 'bg-red-500/10 border border-red-500/20'
-                }`}>
-                <Power size={28} className={serviceStatus?.active ? 'text-emerald-500' : 'text-red-500'} />
-                {serviceStatus?.active && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-elevated)] animate-pulse" />
-                )}
-              </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => setResetType('booking')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-colors text-xs font-semibold text-red-600 dark:text-red-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Booking
+                </span>
+                <ChevronRight size={14} />
+              </button>
 
-              <div className="flex-1">
-                <p className={`text-lg font-heading font-extrabold ${serviceStatus?.active
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-red-600 dark:text-red-400'
-                  }`}>
-                  {serviceStatus?.active ? 'Layanan Aktif' : 'Maintenance Mode'}
-                </p>
-                <p className="text-xs text-[color:var(--color-text-soft)] mt-0.5">
-                  {serviceStatus?.active
-                    ? 'Semua pengguna dapat mengakses sistem dengan normal.'
-                    : 'Akses ditangguhkan untuk semua user non-superadmin.'}
-                </p>
-              </div>
+              <button
+                onClick={() => setResetType('driver')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors text-xs font-semibold text-amber-600 dark:text-amber-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Pengemudi
+                </span>
+                <ChevronRight size={14} />
+              </button>
+
+              <button
+                onClick={() => setResetType('vehicle')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 transition-colors text-xs font-semibold text-orange-600 dark:text-orange-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Kendaraan
+                </span>
+                <ChevronRight size={14} />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ── RIGHT: PulseStream (2 cols) ── */}
-        <div className="lg:col-span-2">
-          <div className="rounded-3xl border h-full flex flex-col"
-            style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Activity size={16} className="text-purple-500" />
-                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                </div>
-                <h3 className="font-heading font-bold text-sm text-[color:var(--color-heading)]">Log Aktivitas</h3>
-              </div>
-              <Link to="/superadmin/logs"
-                className="text-[11px] font-semibold text-djp-blue hover:underline flex items-center gap-1">
-                Semua Log <ArrowRight size={11} />
-              </Link>
-            </div>
-
-            {/* Feed */}
-            <div className="flex-1 relative overflow-hidden">
-              <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-                {recentLogs.length === 0 ? (
-                  <div className="px-5 py-10 text-center text-xs text-[color:var(--color-text-soft)]">
-                    Belum ada aktivitas tercatat
-                  </div>
-                ) : (
-                  recentLogs.slice(0, 6).map((log) => {
-                    const meta = getActionMeta(log.action);
-                    const IconComponent = meta.icon;
-                    const timeAgo = getTimeAgo(log.createdAt);
-                    return (
-                      <div key={log.id}
-                        className="flex items-start gap-3 px-5 sm:px-6 py-3.5
-                          transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${meta.bgClass}`}>
-                          <IconComponent size={13} strokeWidth={2.2} className={meta.iconClass} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] text-[color:var(--color-heading)] leading-snug">
-                            <span className="font-semibold">{log.userName}</span>
-                            <span className="text-[color:var(--color-text-muted)]"> · {meta.label}</span>
-                          </p>
-                          {log.detail && (
-                            <p className="text-[11px] text-[color:var(--color-text-soft)] mt-0.5 line-clamp-1">
-                              {log.detail}
-                            </p>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-[color:var(--color-text-soft)] flex-shrink-0 tabular-nums mt-0.5">
-                          {timeAgo}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Fade-out overlay at bottom */}
-              {recentLogs.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(to top, var(--color-surface-elevated) 0%, transparent 100%)`,
-                  }}
-                />
-              )}
-            </div>
-
-
-          </div>
-        </div>
       </div>
+
+      {/* SECURE RESET CONFIRMATION DIALOG MODAL */}
+      <Modal
+        isOpen={!!resetType}
+        onClose={() => { setResetType(null); setConfirmPassword(''); }}
+        title="Konfirmasi Reset Data Sistem"
+        size="sm"
+      >
+        <form onSubmit={handleResetData} className="space-y-4">
+          <div className="flex items-start gap-3 p-3 rounded-2xl bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5 animate-bounce" size={20} />
+            <div className="text-xs text-red-700 dark:text-red-400 leading-relaxed font-semibold">
+              Tindakan ini akan menghapus seluruh data <span className="uppercase underline">{resetType === 'booking' ? 'Booking / Peminjaman' : resetType === 'driver' ? 'Pengemudi' : 'Kendaraan'}</span> pada database secara permanen. Tindakan ini TIDAK DAPAT DIBATALKAN.
+            </div>
+          </div>
+
+          <p className="text-xs text-[color:var(--color-text-soft)]">
+            Silakan masukkan password Superadmin Anda untuk memverifikasi tindakan kritis ini:
+          </p>
+
+          <FormInput
+            label="Password Superadmin"
+            id="confirmPassword"
+            type="password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Ketik password Anda"
+          />
+
+          <div className="flex justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={resetLoading}
+              onClick={() => { setResetType(null); setConfirmPassword(''); }}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              loading={resetLoading}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
+              Hapus Permanen
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -20,8 +20,7 @@ import { authGuard } from './middleware/authGuard.js';
 import { roleGuard } from './middleware/roleGuard.js';
 import { maintenanceGuard } from './middleware/maintenanceGuard.js';
 
-// Services
-import { cleanupOldLogs } from './services/activity.service.js';
+
 
 export function createApp() {
   const app = express();
@@ -234,13 +233,6 @@ export function createApp() {
   app.use((_req, res) => {
     res.status(404).json({ error: 'Endpoint tidak ditemukan.' });
   });
-
-  // ─── Schedule daily log cleanup ───
-  // Run on startup and every 24 hours
-  cleanupOldLogs().catch(() => {});
-  setInterval(() => {
-    cleanupOldLogs().catch(() => {});
-  }, 24 * 60 * 60 * 1000);
 
   return app;
 }

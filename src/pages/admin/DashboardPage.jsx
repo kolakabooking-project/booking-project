@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
 import FleetCommandCenter from '../../components/dashboard/FleetCommandCenter';
+import FleetTimetableBoard from '../../components/dashboard/FleetTimetableBoard';
 import Button from '../../components/ui/Button';
 import Calendar from '../../components/shared/Calendar';
 import BookingModalFlow from '../../components/shared/BookingModalFlow';
@@ -14,6 +15,7 @@ import { isToday, formatDateShort, formatTime } from '../../utils/helpers';
 export default function AdminDashboardPage() {
   const { bookings, vehicles, getPendingBookings, getBookingsForDate } = useBooking();
   const [selectedDate, setSelectedDate] = useState(null);
+  const [bookingFlowDate, setBookingFlowDate] = useState(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const pending = getPendingBookings();
@@ -39,8 +41,18 @@ export default function AdminDashboardPage() {
       {/* Interactive Fleet Command Center */}
       <FleetCommandCenter />
 
+      {/* Dynamic Gantt Chart KDO Occupancy Timetable Board */}
+      <FleetTimetableBoard />
+
       <div className="mb-6 sm:mb-8 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Calendar onDateClick={handleDateClick} allowPastClick={true} />
+        <Calendar 
+          onDateClick={handleDateClick} 
+          onMandatoryBookingClick={(date) => {
+            setBookingFlowDate(date);
+            setIsBookingModalOpen(true);
+          }}
+          allowPastClick={true} 
+        />
         <Card className="p-6">
           <span className="page-kicker">Insight Hari Ini</span>
           <h2 className="mt-4 text-xl font-heading font-bold text-[color:var(--color-heading)]">Prioritas admin</h2>
@@ -60,31 +72,52 @@ export default function AdminDashboardPage() {
       <Modal isOpen={!!selectedDate} onClose={() => setSelectedDate(null)} title={selectedDate ? `Booking: ${formatDateShort(selectedDate)}` : ''} size="md">
         <div className="space-y-4">
           {dayBookings.length === 0 ? (
-            <div className="py-8 text-center text-[color:var(--color-text-soft)]">Tidak ada peminjaman di hari ini.</div>
+            <div className="py-8 text-center text-[color:var(--color-text-soft)] font-medium">Tidak ada peminjaman di hari ini.</div>
           ) : (
-            dayBookings.map(b => (
-              <div key={b.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-heading font-bold text-[color:var(--color-heading)]">{b.userName}</span>
-                  <Badge status={b.status} />
+            <div className="space-y-3">
+              {dayBookings.map(b => (
+                <div key={b.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-heading font-bold text-[color:var(--color-heading)]">{b.userName}</span>
+                    <Badge status={b.status} />
+                  </div>
+                  <div className="text-sm text-[color:var(--color-text-muted)]">
+                    <p><span className="font-semibold">Waktu:</span> {formatTime(b.startTime)} - {formatTime(b.endTime)}</p>
+                    <p><span className="font-semibold">Tujuan:</span> {b.keperluan}</p>
+                    <p><span className="font-semibold">Kendaraan:</span> {b.vehicleName || 'Belum dialokasikan'}</p>
+                  </div>
                 </div>
-                <div className="text-sm text-[color:var(--color-text-muted)]">
-                  <p><span className="font-semibold">Waktu:</span> {formatTime(b.startTime)} - {formatTime(b.endTime)}</p>
-                  <p><span className="font-semibold">Tujuan:</span> {b.keperluan}</p>
-                  <p><span className="font-semibold">Kendaraan:</span> {b.vehicleName || 'Belum dialokasikan'}</p>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
-          <div className="flex justify-end mt-6">
-            <Button variant="secondary" onClick={() => setSelectedDate(null)}>Tutup</Button>
+          
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const dateToUse = selectedDate;
+                setSelectedDate(null);
+                setBookingFlowDate(dateToUse);
+                setIsBookingModalOpen(true);
+              }}
+              className="w-full sm:w-auto"
+            >
+              + Buat Peminjaman (Mandatory)
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedDate(null)} className="w-full sm:w-auto">
+              Tutup
+            </Button>
           </div>
         </div>
       </Modal>
 
       <BookingModalFlow
         isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          setBookingFlowDate(null);
+        }}
+        selectedDate={bookingFlowDate}
         isAdmin={true}
         dateBookings={[]}
       />

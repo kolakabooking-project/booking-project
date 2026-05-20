@@ -93,7 +93,15 @@ router.get('/date/:date', async (req: Request, res: Response) => {
  */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const actor = (req as any).user;
     const booking = await bookingService.getBookingById(req.params.id as string);
+
+    // Standard user can only read their own bookings (IDOR protection)
+    if (actor.role === 'user' && booking.userId !== actor.id) {
+      res.status(403).json({ error: 'Forbidden', message: 'Anda tidak memiliki akses untuk melihat peminjaman ini.' });
+      return;
+    }
+
     res.json({ data: booking });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
@@ -244,6 +252,14 @@ router.post('/:id/review', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
     const { reviewNotes } = req.body;
+
+    // Validate ownership before submitting review (IDOR protection)
+    const booking = await bookingService.getBookingById(req.params.id as string);
+    if (booking.userId !== actor.id) {
+      res.status(403).json({ error: 'Forbidden', message: 'Anda tidak memiliki akses untuk mereview peminjaman ini.' });
+      return;
+    }
+
     const review = await bookingService.submitReview(req.params.id as string, reviewNotes, actor.id);
     res.json({ data: review });
 

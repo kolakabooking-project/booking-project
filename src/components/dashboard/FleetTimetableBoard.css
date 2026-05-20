@@ -1,0 +1,363 @@
+.ftb-card {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.ftb-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-border-strong);
+}
+
+.ftb-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(33, 44, 95, 0.02) 0%, rgba(33, 44, 95, 0) 100%);
+}
+
+@media (min-width: 640px) {
+  .ftb-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.ftb-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ftb-title-icon {
+  color: var(--color-brand);
+}
+
+.dark .ftb-title-icon {
+  color: #8ea4ff;
+}
+
+.ftb-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-heading);
+  letter-spacing: -0.02em;
+}
+
+.ftb-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ftb-date-display {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: var(--color-surface-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-soft);
+  border: 1px solid var(--color-border);
+  min-width: 140px;
+  text-align: center;
+}
+
+/* Timeline Layout */
+.ftb-timeline-wrap {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.ftb-timeline-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ftb-timeline-wrap::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+.ftb-grid-container {
+  min-width: 900px; /* Force minimum width to guarantee horizontal scroll on small devices */
+  position: relative;
+}
+
+/* Header Row */
+.ftb-row-header {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-surface-muted);
+}
+
+.ftb-vehicle-col-title {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+  border-right: 1px solid var(--color-border);
+}
+
+.ftb-hours-col {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  position: relative;
+}
+
+.ftb-hour-tick {
+  padding: 0.875rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  text-align: center;
+  border-right: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.ftb-hour-tick:last-child {
+  border-right: none;
+}
+
+/* Vehicle Rows */
+.ftb-row-vehicle {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  border-bottom: 1px solid var(--color-border);
+  min-height: 4.75rem;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.ftb-row-vehicle:hover {
+  background-color: rgba(33, 44, 95, 0.015);
+}
+
+.dark .ftb-row-vehicle:hover {
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.ftb-vehicle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  border-right: 1px solid var(--color-border);
+  height: 100%;
+  justify-content: center;
+}
+
+.ftb-vehicle-merek {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-heading);
+  letter-spacing: -0.01em;
+}
+
+.ftb-vehicle-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-soft);
+}
+
+/* Timeline grid row */
+.ftb-timeline-track {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  height: 100%;
+  position: relative;
+}
+
+.ftb-grid-cell {
+  height: 100%;
+  border-right: 1px solid rgba(148, 163, 184, 0.06);
+}
+
+.ftb-grid-cell:last-child {
+  border-right: none;
+}
+
+/* Active Bookings Container */
+.ftb-bars-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Timeline bar styling */
+.ftb-booking-bar {
+  position: absolute;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ftb-booking-bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+  filter: brightness(1.05);
+}
+
+/* Visual states */
+.ftb-booking-bar--ongoing {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.ftb-booking-bar--approved {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+.ftb-booking-bar--pending {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+.ftb-booking-bar--selesai {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Maintenance Row Overlay */
+.ftb-maintenance-bar {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2.25rem;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(148, 163, 184, 0.06),
+    rgba(148, 163, 184, 0.06) 10px,
+    rgba(148, 163, 184, 0.12) 10px,
+    rgba(148, 163, 184, 0.12) 20px
+  );
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-soft);
+  z-index: 5;
+}
+
+/* Legend section */
+.ftb-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.ftb-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ftb-legend-color {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 0.25rem;
+}
+
+.ftb-legend-color--ongoing { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+.ftb-legend-color--approved { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); }
+.ftb-legend-color--pending { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.ftb-legend-color--selesai { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.ftb-legend-color--maintenance {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(148, 163, 184, 0.1),
+    rgba(148, 163, 184, 0.1) 3px,
+    rgba(148, 163, 184, 0.2) 3px,
+    rgba(148, 163, 184, 0.2) 6px
+  );
+  border: 1px dashed var(--color-text-soft);
+}
+
+/* Premium dynamic hover tooltip */
+.ftb-bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.95);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 0 10px 25px -10px rgba(15, 23, 42, 0.3);
+  padding: 0.75rem 1rem;
+  border-radius: 0.875rem;
+  color: var(--color-text-main);
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: max-content;
+  max-width: 260px;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 50;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+}
+
+.ftb-booking-bar:hover .ftb-bar-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) scale(1);
+}
+
+.ftb-tooltip-header {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+  color: var(--color-heading);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.25rem;
+}
+
+.ftb-tooltip-line {
+  margin-bottom: 0.1875rem;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.ftb-tooltip-label {
+  font-weight: 600;
+  color: var(--color-text-soft);
+}

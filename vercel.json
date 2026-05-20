@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/superadmin/logs/cleanup",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install && cd server && npm install",
