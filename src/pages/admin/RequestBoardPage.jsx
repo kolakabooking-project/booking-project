@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -15,6 +16,7 @@ import { CheckCircle, XCircle, Eye, Search, Filter } from 'lucide-react';
 
 export default function RequestBoardPage() {
   const { bookings, vehicles, drivers, approveBooking, rejectBooking } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -101,25 +103,31 @@ export default function RequestBoardPage() {
   const handleApprove = async () => {
     if (!modal) return;
     if (!modal.vehicleId) { toast.error('Kendaraan belum dipilih oleh pengguna'); return; }
+    showLoading('Menyetujui peminjaman kendaraan...');
     try {
       await approveBooking(modal.id, modal.vehicleId, null);
       toast.success(`✅ Peminjaman ${modal.userName} disetujui`);
+      setModal(null);
     } catch (err) {
       toast.error(err.message || 'Gagal menyetujui peminjaman');
+    } finally {
+      hideLoading();
     }
-    setModal(null);
   };
 
   const handleReject = async () => {
     if (!modal) return;
     if (!rejectReason.trim()) { toast.error('Masukkan alasan penolakan'); return; }
+    showLoading('Menolak pengajuan peminjaman...');
     try {
       await rejectBooking(modal.id, rejectReason);
       toast.success(`Peminjaman ${modal.userName} ditolak`);
+      setModal(null);
     } catch (err) {
       toast.error(err.message || 'Gagal menolak peminjaman');
+    } finally {
+      hideLoading();
     }
-    setModal(null);
   };
 
   const columns = [

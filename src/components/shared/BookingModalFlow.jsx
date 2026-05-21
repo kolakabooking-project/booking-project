@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { BOOKING_STATUS } from '../../utils/constants';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -13,6 +14,7 @@ import { toast } from 'sonner';
 export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBookings, isAdmin = false }) {
   const { user } = useAuth();
   const { createBooking, createMandatoryBooking, getAvailableVehicles, getBookingsForDate } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   
   const [mode, setMode] = useState('list'); // 'list', 'select_type', 'form_single', 'form_multiple'
   const [loading, setLoading] = useState(false);
@@ -124,6 +126,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
     }
 
     setLoading(true);
+    showLoading(isAdmin ? 'Membuat booking mandatory...' : 'Mengirim pengajuan peminjaman...');
 
     let startIso, endIso;
     if (mode === 'form_single') {
@@ -162,6 +165,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
       toast.error(err.message || 'Gagal mengirim pengajuan');
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 

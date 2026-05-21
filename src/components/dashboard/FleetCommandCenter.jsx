@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { VEHICLE_STATUS, BOOKING_STATUS } from '../../utils/constants';
 import { Warehouse, ShieldAlert, Navigation, Wrench, CarFront, Bike, PackageCheck, CircleDashed, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -54,6 +55,7 @@ function VehicleSlot({ vehicle, variant = 'available', booking, onClick }) {
 export default function FleetCommandCenter() {
   const navigate = useNavigate();
   const { vehicles, bookings, getPendingBookings, approveBooking, rejectBooking } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
 
   const [modal, setModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -108,25 +110,31 @@ export default function FleetCommandCenter() {
   const handleApprove = async () => {
     if (!modal) return;
     if (!modal.vehicleId) { toast.error('Kendaraan belum dipilih oleh pengguna'); return; }
+    showLoading('Menyetujui peminjaman kendaraan...');
     try {
       await approveBooking(modal.id, modal.vehicleId, null);
       toast.success(`✅ Peminjaman ${modal.userName} disetujui`);
+      setModal(null);
     } catch (err) {
       toast.error(err.message || 'Gagal menyetujui peminjaman');
+    } finally {
+      hideLoading();
     }
-    setModal(null);
   };
 
   const handleReject = async () => {
     if (!modal) return;
     if (!rejectReason.trim()) { toast.error('Masukkan alasan penolakan'); return; }
+    showLoading('Menolak pengajuan peminjaman...');
     try {
       await rejectBooking(modal.id, rejectReason);
       toast.success(`Peminjaman ${modal.userName} ditolak`);
+      setModal(null);
     } catch (err) {
       toast.error(err.message || 'Gagal menolak peminjaman');
+    } finally {
+      hideLoading();
     }
-    setModal(null);
   };
 
   const availableCount = garageVehicles.filter((v) => v.status !== VEHICLE_STATUS.MAINTENANCE).length;

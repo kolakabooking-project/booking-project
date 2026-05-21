@@ -1,5 +1,4 @@
 import { Router, type Request, type Response } from 'express';
-import { authGuard } from '../middleware/authGuard.js';
 import { db } from '../config/db.js';
 import { pushSubscription } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
@@ -9,8 +8,7 @@ import { env } from '../config/env.js';
 
 const router = Router();
 
-// Protect all push routes
-router.use(authGuard);
+// authGuard sudah diterapkan di app.ts saat mounting router ini
 
 /**
  * POST /api/push/subscribe — Register or update a push subscription

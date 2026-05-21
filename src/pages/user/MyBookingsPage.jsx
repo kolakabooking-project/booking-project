@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -19,6 +20,7 @@ const TABS = ['Semua', BOOKING_STATUS.PENDING, BOOKING_STATUS.APPROVED, BOOKING_
 export default function MyBookingsPage() {
   const { user } = useAuth();
   const { getUserBookings, cancelBooking, submitReview } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(location.state?.filterStatus || 'Semua');
@@ -54,7 +56,15 @@ export default function MyBookingsPage() {
 
   const handleCancel = async () => {
     if (cancelTarget) {
-      try { await cancelBooking(cancelTarget); toast.success('Peminjaman dibatalkan.'); } catch (err) { toast.error(err.message || 'Gagal membatalkan'); }
+      showLoading('Membatalkan peminjaman...');
+      try { 
+        await cancelBooking(cancelTarget); 
+        toast.success('Peminjaman dibatalkan.'); 
+      } catch (err) { 
+        toast.error(err.message || 'Gagal membatalkan'); 
+      } finally {
+        hideLoading();
+      }
       setCancelTarget(null);
     }
   };
@@ -65,14 +75,17 @@ export default function MyBookingsPage() {
       toast.error('Ulasan tidak boleh kosong');
       return;
     }
+    showLoading('Mengirim catatan review...');
     try {
       await submitReview(reviewTarget.id, reviewNotes);
       toast.success('Terima kasih, catatan Anda telah tersimpan.');
+      setReviewTarget(null);
+      setReviewNotes('');
     } catch (err) {
       toast.error(err.message || 'Gagal mengirim catatan');
+    } finally {
+      hideLoading();
     }
-    setReviewTarget(null);
-    setReviewNotes('');
   };
 
   return (

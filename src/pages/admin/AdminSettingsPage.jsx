@@ -90,9 +90,10 @@ export default function AdminSettingsPage() {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
           await sub.unsubscribe();
-          // Notify backend
+          // Notify backend — credentials: 'include' wajib agar cookie sesi terkirim
           await fetch('/api/push/unsubscribe', {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
             },
@@ -112,7 +113,9 @@ export default function AdminSettingsPage() {
         }
 
         // 2. Fetch VAPID public key from server
-        const keyRes = await fetch('/api/push/vapid-public-key');
+        const keyRes = await fetch('/api/push/vapid-public-key', {
+          credentials: 'include',
+        });
         if (!keyRes.ok) throw new Error('Gagal mengambil VAPID key dari server');
         const { publicKey } = await keyRes.json();
 
@@ -127,6 +130,7 @@ export default function AdminSettingsPage() {
         const subData = JSON.parse(JSON.stringify(newSub));
         const registerRes = await fetch('/api/push/subscribe', {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },

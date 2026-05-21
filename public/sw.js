@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v1';
+const CACHE_NAME = 'bookolaka-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -13,6 +13,23 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
+  // Langsung aktifkan SW baru tanpa menunggu tab lama ditutup
+  self.skipWaiting();
+});
+
+// Activate — ambil alih kontrol halaman segera dan bersihkan cache lama
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    }).then(() => {
+      return clients.claim();
     })
   );
 });
@@ -36,31 +53,44 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
+  let data;
   try {
-    const data = event.data.json();
-    const options = {
-      body: data.body || 'Ada notifikasi baru dari sistem BOOKOLAKA.',
-      icon: '/logo.png', // Ikon notifikasi
-      badge: '/favicon.svg', // Ikon status bar
-      vibrate: [100, 50, 100],
-      data: {
-        url: data.url || '/user/my-bookings'
-      }
+    data = event.data.json();
+  } catch (e) {
+    // Fallback jika payload bukan JSON
+    data = {
+      title: 'BOOKOLAKA',
+      body: event.data.text(),
     };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'BOOKOLAKA', options)
-    );
-  } catch (err) {
-    console.error('Failed to show push notification:', err);
   }
+
+  const options = {
+    body: data.body || 'Ada notifikasi baru dari sistem BOOKOLAKA.',
+    icon: '/logo.png',
+    badge: '/iconweb.png',
+    tag: data.tag || 'bookolaka-notification',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/user/my-bookings'
+    },
+    actions: [
+      {
+        action: 'open',
+        title: 'Buka Bookolaka',
+      },
+    ],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'BOOKOLAKA', options)
+  );
 });
 
 // Mendengarkan Klik pada Notifikasi
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification.data.url;
+  const targetUrl = event.notification.data?.url || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

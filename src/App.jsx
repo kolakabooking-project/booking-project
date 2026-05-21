@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { LoadingProvider } from './contexts/LoadingContext';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
@@ -130,7 +131,9 @@ export default function App() {
         <ThemeProvider>
           <AuthProvider>
             <BookingProvider>
-              <AppShell />
+              <LoadingProvider>
+                <AppShell />
+              </LoadingProvider>
             </BookingProvider>
           </AuthProvider>
         </ThemeProvider>
