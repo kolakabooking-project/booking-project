@@ -143,6 +143,18 @@ export default function AdminLayout({ children }) {
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const { isDark } = useTheme();
 
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (location.pathname === '/admin/chat') {
       setHasUnreadChat(false);
@@ -272,7 +284,7 @@ export default function AdminLayout({ children }) {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 relative">
+          <div className="flex items-center gap-3 relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}
               className="relative flex h-11 w-11 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-djp-blue"
@@ -284,9 +296,6 @@ export default function AdminLayout({ children }) {
               )}
             </button>
 
-            {notifOpen && (
-              <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setNotifOpen(false)} />
-            )}
             {notifOpen && (
               <div className="fixed left-2 right-2 top-20 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-14 w-auto sm:w-80 overflow-hidden rounded-3xl border shadow-2xl animate-fade-in" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
                 <div className="border-b px-4 py-3" style={{ borderColor: 'var(--color-border)', background: 'color-mix(in srgb, var(--color-surface-muted) 65%, transparent)' }}>

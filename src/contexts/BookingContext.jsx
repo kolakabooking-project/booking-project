@@ -122,42 +122,46 @@ export function BookingProvider({ children }) {
   }, [isAuthenticated, queryClient, refreshBookings, refreshVehicles]);
 
   // ─── Booking Actions ───
+  // Pattern: await the mutation (must succeed), then trigger background refresh.
+  // Ably real-time subscription (line 85-111) provides instant optimistic cache updates.
+  // Background refreshes are fire-and-forget for eventual consistency.
 
   const createBooking = useCallback(async (bookingData) => {
     const res = await bookingApi.create(bookingData);
-    await refreshBookings();
+    refreshBookings();
     return res?.data;
   }, [refreshBookings]);
 
   const createMandatoryBooking = useCallback(async (bookingData) => {
     const res = await bookingApi.createMandatory(bookingData);
-    await refreshBookings();
+    refreshBookings();
     return res?.data;
   }, [refreshBookings]);
 
   const cancelBooking = useCallback(async (bookingId) => {
     await bookingApi.cancel(bookingId);
-    await refreshBookings();
+    refreshBookings();
   }, [refreshBookings]);
 
   const approveBooking = useCallback(async (bookingId, vehicleId, driverId) => {
     await bookingApi.approve(bookingId, vehicleId, driverId);
-    await Promise.all([refreshBookings(), refreshVehicles()]);
+    refreshBookings();
+    refreshVehicles();
   }, [refreshBookings, refreshVehicles]);
 
   const rejectBooking = useCallback(async (bookingId, alasan) => {
     await bookingApi.reject(bookingId, alasan);
-    await refreshBookings();
+    refreshBookings();
   }, [refreshBookings]);
 
   const submitReview = useCallback(async (bookingId, notes) => {
     await bookingApi.submitReview(bookingId, notes);
-    await refreshBookings();
+    refreshBookings();
   }, [refreshBookings]);
 
   const markReviewAsRead = useCallback(async (bookingId) => {
     await bookingApi.markReviewRead(bookingId);
-    await refreshBookings();
+    refreshBookings();
   }, [refreshBookings]);
 
   // ─── Vehicle Actions ───

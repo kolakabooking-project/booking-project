@@ -177,15 +177,14 @@ router.patch('/:id/approve', roleGuard('admin'), async (req: Request, res: Respo
     const booking = await bookingService.approveBooking(req.params.id as string, vehicleId, driverId || null);
     res.json({ data: booking });
 
-    // Log: admin approve
-    const fullBooking = await bookingService.getBookingById(booking.id);
+    // Log: admin approve — booking already contains userName/keperluan (no extra DB call)
     logActivity({
       userId: actor.id,
       userName: actor.name,
       action: 'BOOKING_APPROVED',
       targetId: booking.id,
-      targetName: fullBooking.userName || undefined,
-      detail: `Peminjaman disetujui: ${fullBooking.keperluan || '-'}`,
+      targetName: booking.userName || undefined,
+      detail: `Peminjaman disetujui: ${booking.keperluan || '-'}`,
       ipAddress: getIp(req),
     });
   } catch (err: any) {
@@ -204,14 +203,13 @@ router.patch('/:id/reject', roleGuard('admin'), async (req: Request, res: Respon
     const booking = await bookingService.rejectBooking(req.params.id as string, alasan);
     res.json({ data: booking });
 
-    // Log: admin reject
-    const fullBooking = await bookingService.getBookingById(booking.id);
+    // Log: admin reject — booking already contains userName/keperluan (no extra DB call)
     logActivity({
       userId: actor.id,
       userName: actor.name,
       action: 'BOOKING_REJECTED',
       targetId: booking.id,
-      targetName: fullBooking.userName || undefined,
+      targetName: booking.userName || undefined,
       detail: `Peminjaman ditolak: ${alasan || '-'}`,
       ipAddress: getIp(req),
     });

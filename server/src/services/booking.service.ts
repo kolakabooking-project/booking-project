@@ -212,6 +212,7 @@ export async function getReviewNotifications() {
  * Get a single booking by ID.
  */
 export async function getBookingById(id: string) {
+  // Single query with LEFT JOIN for review — eliminates a separate DB roundtrip
   const [result] = await db
     .select({
       booking: booking,
@@ -219,20 +220,17 @@ export async function getBookingById(id: string) {
       vehiclePlat: vehicle.platNomor,
       vehicleMerek: vehicle.merek,
       driverName: driver.name,
+      reviewNotes: bookingReview.reviewNotes,
+      isNewReview: bookingReview.isNew,
     })
     .from(booking)
     .leftJoin(user, eq(booking.userId, user.id))
     .leftJoin(vehicle, eq(booking.vehicleId, vehicle.id))
     .leftJoin(driver, eq(booking.driverId, driver.id))
+    .leftJoin(bookingReview, eq(bookingReview.bookingId, booking.id))
     .where(eq(booking.id, id));
 
   if (!result) throw new NotFoundError('Peminjaman');
-
-  // Check for review
-  const [review] = await db
-    .select()
-    .from(bookingReview)
-    .where(eq(bookingReview.bookingId, id));
 
   return {
     ...computeBookingStatus(result.booking),
@@ -241,8 +239,8 @@ export async function getBookingById(id: string) {
       ? `${result.vehicleMerek} (${result.vehiclePlat})`
       : null,
     driverName: result.driverName,
-    reviewNotes: review?.reviewNotes || null,
-    isNewReview: review?.isNew || false,
+    reviewNotes: result.reviewNotes || null,
+    isNewReview: result.isNewReview || false,
   };
 }
 
@@ -258,36 +256,38 @@ export async function createBooking(data: BookingInsert) {
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
 
+  // ── Core mutation (awaited — must succeed) ──
   const [created] = await db
     .insert(booking)
     .values({ ...data, startTime, endTime, status: BOOKING_STATUS.PENDING })
     .returning();
 
   const fullBooking = await getBookingById(created.id);
-  await broadcastBookingUpdate('BOOKING_CREATED', { booking: fullBooking });
 
-  // Send push notification to all admins
-  try {
-    const adminUsers = await db.select().from(user).where(eq(user.role, 'admin'));
-    const requester = await db.select().from(user).where(eq(user.id, created.userId)).limit(1);
-    const requesterName = requester[0]?.name || 'Pegawai';
-    const requesterNip = requester[0]?.nip || '';
-    const formattedStart = formatDateTime(startTime);
+  // ── Side-effects: fire-and-forget (non-blocking) ──
+  // DB mutation is committed; broadcast & push are best-effort.
+  broadcastBookingUpdate('BOOKING_CREATED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
 
-    const payload = {
-      title: 'Pengajuan Peminjaman Baru',
-      body: `Pegawai ${requesterName} (${requesterNip}) mengajukan peminjaman ${created.jenisKendaraan} untuk keperluan "${created.keperluan}" pada ${formattedStart}. Mohon segera ditinjau.`,
-      url: '/admin/requests',
-    };
+  // Push notification to admins — uses fullBooking.userName instead of separate DB query
+  (async () => {
+    try {
+      const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
+      const formattedStart = formatDateTime(startTime);
+      const payload = {
+        title: 'Pengajuan Peminjaman Baru',
+        body: `Pegawai ${fullBooking.userName || 'Pegawai'} mengajukan peminjaman ${created.jenisKendaraan} untuk keperluan "${created.keperluan}" pada ${formattedStart}. Mohon segera ditinjau.`,
+        url: '/admin/requests',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notifications for new booking:', err);
+    }
+  })();
 
-    const { sendPushNotification } = await import('./push.service.js');
-    // Send to all admins concurrently
-    await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
-  } catch (err) {
-    console.error('[BookingService] Failed to send push notifications for new booking:', err);
-  }
-
-  return created;
+  return fullBooking;
 }
 
 /**
@@ -300,15 +300,20 @@ export async function createMandatoryBooking(data: BookingInsert) {
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
 
+  // ── Core mutation (awaited) ──
   const [created] = await db
     .insert(booking)
     .values({ ...data, startTime, endTime, status: BOOKING_STATUS.APPROVED })
     .returning();
 
   const fullBooking = await getBookingById(created.id);
-  await broadcastBookingUpdate('BOOKING_CREATED', { booking: fullBooking });
 
-  return created;
+  // ── Fire-and-forget broadcast ──
+  broadcastBookingUpdate('BOOKING_CREATED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
+
+  return fullBooking;
 }
 
 /**
@@ -320,14 +325,14 @@ export async function approveBooking(
   vehicleId: string,
   driverId: string | null
 ) {
-  // Get the target booking
+  // ── Validation (awaited — security critical) ──
   const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman');
   if (target.status !== BOOKING_STATUS.PENDING) {
     throw new ValidationError('Hanya peminjaman dengan status Pending yang bisa disetujui.');
   }
 
-  // Update the booking to approved
+  // ── Core mutation (awaited) ──
   const [approved] = await db
     .update(booking)
     .set({
@@ -339,47 +344,54 @@ export async function approveBooking(
     .where(eq(booking.id, bookingId))
     .returning();
 
-  // Auto-reject overlapping PENDING bookings for the same vehicle
+  // ── Parallelise: auto-reject overlapping + fetch full booking ──
   const tStart = new Date(target.startTime);
   const tEnd = new Date(target.endTime);
 
-  await db
-    .update(booking)
-    .set({
-      status: BOOKING_STATUS.REJECTED,
-      alasanPenolakan:
-        'Sistem Otomatis: Kendaraan telah disetujui untuk pengajuan lain pada waktu yang bersamaan.',
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(booking.vehicleId, vehicleId),
-        eq(booking.status, BOOKING_STATUS.PENDING),
-        not(eq(booking.id, bookingId)),
-        lte(booking.startTime, tEnd),
-        gte(booking.endTime, tStart)
-      )
-    );
+  const [, fullBooking] = await Promise.all([
+    // Auto-reject overlapping PENDING bookings (data-integrity, must succeed)
+    db
+      .update(booking)
+      .set({
+        status: BOOKING_STATUS.REJECTED,
+        alasanPenolakan:
+          'Sistem Otomatis: Kendaraan telah disetujui untuk pengajuan lain pada waktu yang bersamaan.',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(booking.vehicleId, vehicleId),
+          eq(booking.status, BOOKING_STATUS.PENDING),
+          not(eq(booking.id, bookingId)),
+          lte(booking.startTime, tEnd),
+          gte(booking.endTime, tStart)
+        )
+      ),
+    // Fetch enriched booking data
+    getBookingById(approved.id),
+  ]);
 
-  const fullBooking = await getBookingById(approved.id);
-  await broadcastBookingUpdate('BOOKING_APPROVED', { booking: fullBooking });
+  // ── Side-effects: fire-and-forget (non-blocking) ──
+  broadcastBookingUpdate('BOOKING_APPROVED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
 
-  // Send push notification to the user
-  try {
-    const formattedStart = formatDateTime(new Date(fullBooking.startTime));
-    const payload = {
-      title: 'Pengajuan Peminjaman Disetujui',
-      body: `Halo ${fullBooking.userName}, pengajuan kendaraan untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} telah disetujui menggunakan ${fullBooking.vehicleName || 'kendaraan dinas'}.`,
-      url: '/user/my-bookings',
-    };
+  (async () => {
+    try {
+      const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+      const payload = {
+        title: 'Pengajuan Peminjaman Disetujui',
+        body: `Halo ${fullBooking.userName}, pengajuan kendaraan untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} telah disetujui menggunakan ${fullBooking.vehicleName || 'kendaraan dinas'}.`,
+        url: '/user/my-bookings',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await sendPushNotification(fullBooking.userId, payload);
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notification for approved booking:', err);
+    }
+  })();
 
-    const { sendPushNotification } = await import('./push.service.js');
-    await sendPushNotification(fullBooking.userId, payload);
-  } catch (err) {
-    console.error('[BookingService] Failed to send push notification for approved booking:', err);
-  }
-
-  return approved;
+  return fullBooking;
 }
 
 /**
@@ -388,6 +400,7 @@ export async function approveBooking(
 export async function rejectBooking(bookingId: string, alasan: string) {
   if (!alasan?.trim()) throw new ValidationError('Alasan penolakan wajib diisi.');
 
+  // ── Core mutation (awaited) ──
   const [rejected] = await db
     .update(booking)
     .set({
@@ -401,30 +414,35 @@ export async function rejectBooking(bookingId: string, alasan: string) {
   if (!rejected) throw new NotFoundError('Peminjaman Pending');
   
   const fullBooking = await getBookingById(rejected.id);
-  await broadcastBookingUpdate('BOOKING_REJECTED', { booking: fullBooking });
 
-  // Send push notification to the user
-  try {
-    const formattedStart = formatDateTime(new Date(fullBooking.startTime));
-    const payload = {
-      title: 'Pengajuan Peminjaman Ditolak',
-      body: `Halo ${fullBooking.userName}, pengajuan peminjaman untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} ditolak. Alasan: ${rejected.alasanPenolakan || '-'}`,
-      url: '/user/my-bookings',
-    };
+  // ── Side-effects: fire-and-forget ──
+  broadcastBookingUpdate('BOOKING_REJECTED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
 
-    const { sendPushNotification } = await import('./push.service.js');
-    await sendPushNotification(fullBooking.userId, payload);
-  } catch (err) {
-    console.error('[BookingService] Failed to send push notification for rejected booking:', err);
-  }
+  (async () => {
+    try {
+      const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+      const payload = {
+        title: 'Pengajuan Peminjaman Ditolak',
+        body: `Halo ${fullBooking.userName}, pengajuan peminjaman untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} ditolak. Alasan: ${rejected.alasanPenolakan || '-'}`,
+        url: '/user/my-bookings',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await sendPushNotification(fullBooking.userId, payload);
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notification for rejected booking:', err);
+    }
+  })();
 
-  return rejected;
+  return fullBooking;
 }
 
 /**
  * Cancel a booking (only PENDING can be cancelled by users).
  */
 export async function cancelBooking(bookingId: string, userId: string) {
+  // ── Validation (awaited — security critical) ──
   const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman');
   if (target.userId !== userId) throw new ForbiddenError('Anda hanya bisa membatalkan peminjaman sendiri.');
@@ -432,6 +450,7 @@ export async function cancelBooking(bookingId: string, userId: string) {
     throw new ValidationError('Hanya peminjaman Pending yang bisa dibatalkan.');
   }
 
+  // ── Core mutation (awaited) ──
   const [cancelled] = await db
     .update(booking)
     .set({ status: BOOKING_STATUS.CANCELLED, updatedAt: new Date() })
@@ -439,9 +458,13 @@ export async function cancelBooking(bookingId: string, userId: string) {
     .returning();
 
   const fullBooking = await getBookingById(cancelled.id);
-  await broadcastBookingUpdate('BOOKING_CANCELLED', { booking: fullBooking });
 
-  return cancelled;
+  // ── Fire-and-forget broadcast ──
+  broadcastBookingUpdate('BOOKING_CANCELLED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
+
+  return fullBooking;
 }
 
 /**
@@ -450,10 +473,12 @@ export async function cancelBooking(bookingId: string, userId: string) {
 export async function submitReview(bookingId: string, reviewNotes: string, userId: string) {
   if (!reviewNotes?.trim()) throw new ValidationError('Catatan review tidak boleh kosong.');
 
+  // ── Validation (awaited — security critical) ──
   const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman');
   if (target.userId !== userId) throw new ForbiddenError('Anda hanya bisa memberikan review untuk peminjaman sendiri.');
 
+  // ── Core mutations (awaited) ──
   // Update booking status
   await db
     .update(booking)
@@ -474,7 +499,11 @@ export async function submitReview(bookingId: string, reviewNotes: string, userI
     .returning();
 
   const fullBooking = await getBookingById(bookingId);
-  await broadcastBookingUpdate('REVIEW_SUBMITTED', { booking: fullBooking });
+
+  // ── Fire-and-forget broadcast ──
+  broadcastBookingUpdate('REVIEW_SUBMITTED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
 
   return review;
 }

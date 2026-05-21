@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
@@ -21,6 +21,22 @@ export default function UserLayout({ children }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const { isDark } = useTheme();
+
+  const profileRef = useRef(null);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const myBookings = user ? getUserBookings(user.id) : [];
   const notifBookings = myBookings.filter(b => b.status === 'Disetujui' || b.status === 'Ditolak').slice(0, 5);
@@ -93,7 +109,7 @@ export default function UserLayout({ children }) {
                 )}
               </button>
 
-              <div className="relative">
+              <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center gap-3 rounded-full border px-3 py-2 text-[color:var(--color-text-muted)] transition-colors hover:border-djp-blue/20"
@@ -111,7 +127,6 @@ export default function UserLayout({ children }) {
 
                 {profileOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
                     <div className="absolute right-0 top-[3.75rem] z-20 w-64 rounded-3xl border p-2 shadow-2xl animate-scale-in" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
                       <Link 
                         to="/user/account"
@@ -161,8 +176,7 @@ export default function UserLayout({ children }) {
             {/* Shared Notification Dropdown (Desktop & Mobile) */}
             {notifOpen && (
               <>
-                <div className="fixed inset-0 z-40 md:hidden" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-4 md:right-0 top-[4.5rem] md:top-[110%] z-50 w-80 overflow-hidden rounded-3xl border shadow-2xl animate-fade-in" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
+                <div ref={notifRef} className="absolute right-4 md:right-0 top-[4.5rem] md:top-[110%] z-50 w-80 overflow-hidden rounded-3xl border shadow-2xl animate-fade-in" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
                   <div className="border-b px-4 py-3" style={{ borderColor: 'var(--color-border)', background: 'color-mix(in srgb, var(--color-surface-muted) 65%, transparent)' }}>
                     <div className="flex justify-between items-center">
                       <div>
