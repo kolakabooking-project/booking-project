@@ -113,8 +113,6 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
     
     if (avail.length === 0) {
       toast.error('Tidak ada kendaraan tersedia pada jadwal tersebut');
-    } else {
-      toast.success(`${avail.length} kendaraan tersedia`);
     }
   };
 
