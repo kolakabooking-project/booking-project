@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { authApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
@@ -54,6 +55,7 @@ function PasswordField({ label, id, value, onChange, required = true }) {
 
 export default function AccountPage() {
   const { user, logout, switchRole } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
 
@@ -204,6 +206,7 @@ export default function AccountPage() {
     }
 
     setLoading(true);
+    showLoading('Memperbarui password Anda...');
     try {
       await authApi.changePassword(pwdForm.old, pwdForm.new);
       toast.success('Password berhasil diperbarui');
@@ -219,6 +222,7 @@ export default function AccountPage() {
       }
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 

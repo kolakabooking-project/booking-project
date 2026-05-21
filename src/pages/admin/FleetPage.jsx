@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/ui/FormInput';
@@ -17,6 +18,7 @@ const INITIAL = { platNomor: '', merek: '', tipe: 'Mobil', tahun: new Date().get
 
 export default function FleetPage() {
   const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL);
@@ -27,16 +29,29 @@ export default function FleetPage() {
 
   const handleSave = async () => {
     if (!form.platNomor || !form.merek) { toast.error('Plat nomor dan merek wajib diisi'); return; }
+    showLoading(editing ? 'Memperbarui data kendaraan...' : 'Menambahkan kendaraan baru...');
     try {
       if (editing) { await updateVehicle(editing, form); toast.success('Data kendaraan diperbarui'); }
       else { await addVehicle(form); toast.success('Kendaraan baru ditambahkan'); }
       setModalOpen(false);
-    } catch (err) { toast.error(err.message || 'Gagal menyimpan data'); }
+    } catch (err) { 
+      toast.error(err.message || 'Gagal menyimpan data'); 
+    } finally {
+      hideLoading();
+    }
   };
 
   const handleDelete = async () => {
     if (deleteTarget) {
-      try { await deleteVehicle(deleteTarget); toast.success('Kendaraan dihapus'); } catch (err) { toast.error(err.message || 'Gagal menghapus'); }
+      showLoading('Menghapus data kendaraan...');
+      try { 
+        await deleteVehicle(deleteTarget); 
+        toast.success('Kendaraan dihapus'); 
+      } catch (err) { 
+        toast.error(err.message || 'Gagal menghapus'); 
+      } finally {
+        hideLoading();
+      }
       setDeleteTarget(null);
     }
   };

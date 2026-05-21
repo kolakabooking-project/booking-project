@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { vehicle, booking } from '../db/schema.js';
-import { eq, and, not, or, lte, gte, inArray, isNull } from 'drizzle-orm';
+import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull } from 'drizzle-orm';
 import { BOOKING_STATUS, VEHICLE_STATUS, TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -38,7 +38,11 @@ export async function getAllVehicles() {
 
 /**
  * Get available vehicles for a specific time range.
- * Excludes vehicles that have overlapping non-terminal bookings.
+ * Excludes vehicles that have overlapping non-terminal bookings,
+ * and vehicles currently under maintenance.
+ * NOTE: We do NOT filter by status = 'Tersedia' because 'Sedang Dipakai'
+ * is a computed/real-time status. A vehicle that is in-use RIGHT NOW
+ * may still be available for a booking at a different time.
  */
 export async function getAvailableVehicles(startTime: Date, endTime: Date) {
   // Get vehicle IDs that have overlapping bookings
@@ -48,17 +52,23 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
     .where(
       and(
         not(inArray(booking.status, [...TERMINAL_BOOKING_STATUSES])),
-        lte(booking.startTime, endTime),
-        gte(booking.endTime, startTime)
+        lt(booking.startTime, endTime),
+        gt(booking.endTime, startTime)
       )
     );
 
   const bookedIds = new Set(overlapping.map((b) => b.vehicleId).filter(Boolean));
 
+  // Exclude only vehicles under maintenance — not 'Sedang Dipakai' (which is computed)
   const allVehicles = await db
     .select()
     .from(vehicle)
-    .where(and(eq(vehicle.status, 'Tersedia'), isNull(vehicle.deletedAt)));
+    .where(
+      and(
+        not(eq(vehicle.status, VEHICLE_STATUS.MAINTENANCE)),
+        isNull(vehicle.deletedAt)
+      )
+    );
 
   return allVehicles.filter((v) => !bookedIds.has(v.id));
 }

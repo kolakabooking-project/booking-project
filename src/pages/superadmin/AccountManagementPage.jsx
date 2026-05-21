@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { superadminApi } from '../../lib/api';
+import { useLoading } from '../../contexts/LoadingContext';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
@@ -14,6 +15,7 @@ const ROLE_BADGES = {
 };
 
 export default function AccountManagementPage() {
+  const { showLoading, hideLoading } = useLoading();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -88,6 +90,7 @@ export default function AccountManagementPage() {
       return;
     }
     setSubmitting(true);
+    showLoading('Membuat akun baru...');
     try {
       await superadminApi.createUser(createForm);
       toast.success(`Akun ${createForm.name} berhasil dibuat`);
@@ -98,12 +101,14 @@ export default function AccountManagementPage() {
       toast.error(err.message || 'Gagal membuat akun');
     } finally {
       setSubmitting(false);
+      hideLoading();
     }
   };
 
   // Delete user
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    showLoading('Menghapus akun...');
     try {
       await superadminApi.deleteUser(deleteTarget.id);
       toast.success(`Akun ${deleteTarget.name} berhasil dihapus`);
@@ -111,24 +116,30 @@ export default function AccountManagementPage() {
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Gagal menghapus akun');
+    } finally {
+      hideLoading();
     }
   };
 
   // Reset password
   const handleReset = async () => {
     if (!resetTarget) return;
+    showLoading('Mereset password akun...');
     try {
       await superadminApi.resetPassword(resetTarget.id);
       toast.success(`Password ${resetTarget.name} berhasil direset ke default`);
       setResetTarget(null);
     } catch (err) {
       toast.error(err.message || 'Gagal mereset password');
+    } finally {
+      hideLoading();
     }
   };
 
   // Change role
   const handleRoleChange = async (newRole) => {
     if (!roleTarget) return;
+    showLoading(`Mengubah role menjadi ${newRole}...`);
     try {
       await superadminApi.changeRole(roleTarget.id, newRole);
       toast.success(`Role ${roleTarget.name} diubah menjadi ${newRole}`);
@@ -136,6 +147,8 @@ export default function AccountManagementPage() {
       fetchUsers();
     } catch (err) {
       toast.error(err.message || 'Gagal mengubah role');
+    } finally {
+      hideLoading();
     }
   };
 

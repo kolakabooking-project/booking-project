@@ -231,8 +231,12 @@ export function BookingProvider({ children }) {
         .map((b) => b.vehicleId)
         .filter(Boolean);
 
+      // Hanya exclude kendaraan yang sedang dalam perawatan (status DB asli).
+      // Jangan exclude berdasarkan status computed 'Sedang Dipakai' dari getAllVehicles,
+      // karena 'Sedang Dipakai' hanya berarti dipakai SEKARANG — bukan berarti
+      // tidak tersedia di waktu lain. Overlap waktu sudah ditangani oleh bookedVehicleIds.
       return vehicles.filter(
-        (v) => v.status === 'Tersedia' && !bookedVehicleIds.includes(v.id)
+        (v) => v.status !== 'Dalam Perawatan' && !bookedVehicleIds.includes(v.id)
       );
     },
     [bookings, vehicles]
@@ -252,8 +256,10 @@ export function BookingProvider({ children }) {
         .map((b) => b.driverId)
         .filter(Boolean);
 
+      // Hanya exclude pengemudi yang sedang libur.
+      // Status 'Bertugas' adalah computed real-time, bukan status permanen.
       return drivers.filter(
-        (d) => d.status === 'Tersedia' && !busyDriverIds.includes(d.id)
+        (d) => d.status !== 'Libur' && !busyDriverIds.includes(d.id)
       );
     },
     [bookings, drivers]

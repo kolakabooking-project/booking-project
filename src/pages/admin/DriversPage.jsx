@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -15,6 +16,7 @@ const INITIAL = { name: '', noHP: '', status: DRIVER_STATUS.AVAILABLE, simJenis:
 
 export default function DriversPage() {
   const { drivers, addDriver, updateDriver, deleteDriver } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL);
@@ -25,16 +27,29 @@ export default function DriversPage() {
 
   const handleSave = async () => {
     if (!form.name) { toast.error('Nama wajib diisi'); return; }
+    showLoading(editing ? 'Memperbarui data pengemudi...' : 'Menambahkan pengemudi baru...');
     try {
       if (editing) { await updateDriver(editing, form); toast.success('Data pengemudi diperbarui'); }
       else { await addDriver(form); toast.success('Pengemudi baru ditambahkan'); }
       setModalOpen(false);
-    } catch (err) { toast.error(err.message || 'Gagal menyimpan data'); }
+    } catch (err) { 
+      toast.error(err.message || 'Gagal menyimpan data'); 
+    } finally {
+      hideLoading();
+    }
   };
 
   const handleDelete = async () => {
     if (deleteTarget) {
-      try { await deleteDriver(deleteTarget); toast.success('Pengemudi dihapus'); } catch (err) { toast.error(err.message || 'Gagal menghapus'); }
+      showLoading('Menghapus data pengemudi...');
+      try { 
+        await deleteDriver(deleteTarget); 
+        toast.success('Pengemudi dihapus'); 
+      } catch (err) { 
+        toast.error(err.message || 'Gagal menghapus'); 
+      } finally {
+        hideLoading();
+      }
       setDeleteTarget(null);
     }
   };

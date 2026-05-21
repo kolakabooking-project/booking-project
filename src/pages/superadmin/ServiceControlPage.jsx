@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { superadminApi } from '../../lib/api';
+import { useLoading } from '../../contexts/LoadingContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { Power, Shield, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ServiceControlPage() {
+  const { showLoading, hideLoading } = useLoading();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
@@ -27,6 +29,7 @@ export default function ServiceControlPage() {
     const newActive = !status.active;
     
     setToggling(true);
+    showLoading(newActive ? 'Mengaktifkan layanan Bookolaka...' : 'Menonaktifkan layanan Bookolaka...');
     try {
       const res = await superadminApi.toggleService(newActive);
       setStatus({ ...status, active: res.data.active, updatedAt: new Date().toISOString() });
@@ -35,6 +38,7 @@ export default function ServiceControlPage() {
       toast.error(err.message || 'Gagal mengubah status layanan');
     } finally {
       setToggling(false);
+      hideLoading();
     }
   };
 
