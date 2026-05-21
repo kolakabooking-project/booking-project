@@ -122,45 +122,49 @@ export function BookingProvider({ children }) {
   }, [isAuthenticated, queryClient, refreshBookings, refreshVehicles]);
 
   // ─── Booking Actions ───
-  // Pattern: await the mutation (must succeed), then trigger background refresh.
+  // Pattern: await the mutation + minimum loading time, then trigger background refresh.
   // Ably real-time subscription (line 85-111) provides instant optimistic cache updates.
   // Background refreshes are fire-and-forget for eventual consistency.
+  // Minimum loading time prevents the loading overlay from flashing too briefly.
+
+  const MIN_LOADING_MS = 600;
+  const minDelay = () => new Promise((r) => setTimeout(r, MIN_LOADING_MS));
 
   const createBooking = useCallback(async (bookingData) => {
-    const res = await bookingApi.create(bookingData);
+    const [res] = await Promise.all([bookingApi.create(bookingData), minDelay()]);
     refreshBookings();
     return res?.data;
   }, [refreshBookings]);
 
   const createMandatoryBooking = useCallback(async (bookingData) => {
-    const res = await bookingApi.createMandatory(bookingData);
+    const [res] = await Promise.all([bookingApi.createMandatory(bookingData), minDelay()]);
     refreshBookings();
     return res?.data;
   }, [refreshBookings]);
 
   const cancelBooking = useCallback(async (bookingId) => {
-    await bookingApi.cancel(bookingId);
+    await Promise.all([bookingApi.cancel(bookingId), minDelay()]);
     refreshBookings();
   }, [refreshBookings]);
 
   const approveBooking = useCallback(async (bookingId, vehicleId, driverId) => {
-    await bookingApi.approve(bookingId, vehicleId, driverId);
+    await Promise.all([bookingApi.approve(bookingId, vehicleId, driverId), minDelay()]);
     refreshBookings();
     refreshVehicles();
   }, [refreshBookings, refreshVehicles]);
 
   const rejectBooking = useCallback(async (bookingId, alasan) => {
-    await bookingApi.reject(bookingId, alasan);
+    await Promise.all([bookingApi.reject(bookingId, alasan), minDelay()]);
     refreshBookings();
   }, [refreshBookings]);
 
   const submitReview = useCallback(async (bookingId, notes) => {
-    await bookingApi.submitReview(bookingId, notes);
+    await Promise.all([bookingApi.submitReview(bookingId, notes), minDelay()]);
     refreshBookings();
   }, [refreshBookings]);
 
   const markReviewAsRead = useCallback(async (bookingId) => {
-    await bookingApi.markReviewRead(bookingId);
+    await Promise.all([bookingApi.markReviewRead(bookingId), minDelay()]);
     refreshBookings();
   }, [refreshBookings]);
 
