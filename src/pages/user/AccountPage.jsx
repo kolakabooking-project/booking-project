@@ -258,7 +258,22 @@ export default function AccountPage() {
               </div>
             </button>
 
-            {pushSupported && (
+            {!pushSupported ? (
+              <div 
+                className="w-full flex items-center justify-between p-4 border-b text-left opacity-60"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--color-surface-muted)' }}>
+                    <Bell size={18} className="text-gray-400" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[color:var(--color-heading)] text-sm block">Notifikasi Sistem</span>
+                    <span className="text-[10px] text-danger block">Tidak didukung di browser/koneksi non-HTTPS ini</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
               <button 
                 onClick={handlePushToggle}
                 disabled={pushLoading}
