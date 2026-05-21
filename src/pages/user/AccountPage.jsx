@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Bell } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'sonner';
 
@@ -61,6 +61,103 @@ export default function AccountPage() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [pwdForm, setPwdForm] = useState({ old: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
+
+  // ─── Push Notification settings ───
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true);
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          setPushEnabled(!!sub);
+        });
+      });
+    }
+  }, []);
+
+  const handlePushToggle = async () => {
+    if (!pushSupported || pushLoading) return;
+    setPushLoading(true);
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      
+      if (pushEnabled) {
+        // Unsubscribe
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          // Notify backend
+          await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          });
+        }
+        setPushEnabled(false);
+        toast.success('Notifikasi sistem dinonaktifkan.');
+      } else {
+        // Subscribe
+        // 1. Request permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.error('Izin notifikasi ditolak. Harap aktifkan izin notifikasi di setelan browser Anda.');
+          setPushLoading(false);
+          return;
+        }
+
+        // 2. Fetch VAPID public key from server
+        const keyRes = await fetch('/api/push/vapid-public-key');
+        if (!keyRes.ok) throw new Error('Gagal mengambil VAPID key dari server');
+        const { publicKey } = await keyRes.json();
+
+        // 3. Subscribe to push manager
+        const subscribeOptions = {
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        };
+        const newSub = await reg.pushManager.subscribe(subscribeOptions);
+
+        // 4. Send subscription to backend
+        const subData = JSON.parse(JSON.stringify(newSub));
+        const registerRes = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ subscription: subData }),
+        });
+
+        if (!registerRes.ok) throw new Error('Gagal mengirim data subscription ke server');
+
+        setPushEnabled(true);
+        toast.success('Notifikasi sistem berhasil diaktifkan!');
+      }
+    } catch (err) {
+      console.error('[PushToggle] Error toggling push notifications:', err);
+      toast.error(err.message || 'Gagal mengubah pengaturan notifikasi.');
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -160,6 +257,39 @@ export default function AccountPage() {
                 <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
               </div>
             </button>
+
+            {pushSupported && (
+              <button 
+                onClick={handlePushToggle}
+                disabled={pushLoading}
+                className="w-full flex items-center justify-between p-4 border-b transition-colors hover:bg-[color:var(--color-surface-muted)] text-left"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--color-surface-muted)' }}>
+                    <Bell size={18} className="text-djp-blue" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[color:var(--color-heading)] text-sm block">Notifikasi Sistem</span>
+                    <span className="text-[10px] text-[color:var(--color-text-soft)] block">Terima notifikasi status booking secara real-time</span>
+                  </div>
+                </div>
+                <div className="flex items-center flex-shrink-0 pl-2">
+                  <div
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                      pushEnabled ? 'bg-djp-blue' : 'bg-gray-300 dark:bg-gray-700'
+                    } ${pushLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        pushEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </button>
+            )}
+
             <button 
               onClick={() => { setPasswordOpen(true); resetForm(); }}
               className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"

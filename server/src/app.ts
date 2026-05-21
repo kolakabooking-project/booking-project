@@ -14,6 +14,7 @@ import bookingRoutes from './routes/booking.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import chatRoutes from './routes/chat.js';
 import superadminRoutes from './routes/superadmin.routes.js';
+import pushRoutes from './routes/push.routes.js';
 
 // Middleware
 import { authGuard } from './middleware/authGuard.js';
@@ -194,6 +195,7 @@ export function createApp() {
   app.use('/api/bookings', apiLimiter, maintenanceGuard, bookingRoutes);
   app.use('/api/reports', apiLimiter, authGuard, maintenanceGuard, reportRoutes);
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
+  app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {

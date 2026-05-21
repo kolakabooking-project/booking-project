@@ -15,6 +15,13 @@
       "when": 1779247119014,
       "tag": "0001_modern_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779356500097,
+      "tag": "0002_spooky_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

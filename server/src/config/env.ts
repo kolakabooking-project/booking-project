@@ -12,6 +12,9 @@ const envSchema = z.object({
   MAX_FILE_SIZE_MB: z.coerce.number().default(1),
   ABLY_API_KEY: z.string().min(1, 'ABLY_API_KEY is required for realtime features'),
   ENCRYPTION_KEY: z.string().length(64, 'ENCRYPTION_KEY must be exactly 64 hex characters (256-bit key)'),
+  VAPID_PUBLIC_KEY: z.string().min(1, 'VAPID_PUBLIC_KEY is required'),
+  VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY is required'),
+  VAPID_SUBJECT: z.string().default('mailto:admin@kpp-kolaka.internal'),
 });
 
 const parsed = envSchema.safeParse(process.env);
