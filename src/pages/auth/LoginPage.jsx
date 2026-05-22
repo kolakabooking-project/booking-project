@@ -4,12 +4,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Button from '../../components/ui/Button';
 import { Eye, EyeOff, Sun, Moon } from 'lucide-react';
-import { useLoading } from '../../contexts/LoadingContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { showLoading, hideLoading } = useLoading();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [nip, setNip] = useState('');
@@ -26,7 +24,6 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    showLoading('Memverifikasi kredensial...');
     try {
       const result = await login(nip, password);
       if (result.success) {
@@ -37,7 +34,6 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
-      hideLoading();
     }
   };
 
