@@ -4,9 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Button from '../../components/ui/Button';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
+import { useLoading } from '../../contexts/LoadingContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
   const [nip, setNip] = useState('');
   const [password, setPassword] = useState('');
@@ -22,14 +24,18 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    const result = await login(nip, password);
-    setLoading(false);
-
-    if (result.success) {
-      const target = result.role === 'superadmin' ? '/superadmin/dashboard' : result.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-      navigate(target, { replace: true });
-    } else {
-      setError(result.message);
+    showLoading('Memverifikasi kredensial...');
+    try {
+      const result = await login(nip, password);
+      if (result.success) {
+        const target = result.role === 'superadmin' ? '/superadmin/dashboard' : result.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+        navigate(target, { replace: true });
+      } else {
+        setError(result.message);
+      }
+    } finally {
+      setLoading(false);
+      hideLoading();
     }
   };
 

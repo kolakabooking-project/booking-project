@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { authApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
@@ -35,6 +36,7 @@ function PasswordField({ label, id, value, onChange, required = true }) {
 
 export default function SuperadminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -42,7 +44,15 @@ export default function SuperadminSettingsPage() {
   const [pwdForm, setPwdForm] = useState({ old: '', new: '', confirm: '' });
   const [loading, setLoading] = useState(false);
 
-  const handleLogout = async () => { await logout(); navigate('/login'); };
+  const handleLogout = async () => {
+    showLoading('Melakukan logout...');
+    try {
+      await logout();
+    } finally {
+      hideLoading();
+      navigate('/login');
+    }
+  };
   const handleSwitchToAdmin = () => { switchRole('admin'); navigate('/admin/dashboard'); };
 
   const passwordStrength = PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(pwdForm.new) }));

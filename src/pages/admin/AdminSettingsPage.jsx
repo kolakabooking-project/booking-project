@@ -166,8 +166,13 @@ export default function AdminSettingsPage() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    showLoading('Melakukan logout...');
+    try {
+      await logout();
+    } finally {
+      hideLoading();
+      navigate('/login');
+    }
   };
 
   const handleSwitchToUser = () => {

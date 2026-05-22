@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Realtime } from 'ably';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_ADMIN } from '../../utils/constants';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
@@ -132,6 +133,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
 
 export default function AdminLayout({ children }) {
   const { user, switchRole, logout } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const { getPendingBookings, getReviewNotifications, markReviewAsRead } = useBooking();
   const navigate = useNavigate();
   const location = useLocation();
@@ -210,8 +212,13 @@ export default function AdminLayout({ children }) {
   const totalNotifs = pending.length + reviewNotifs.length;
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    showLoading('Melakukan logout...');
+    try {
+      await logout();
+    } finally {
+      hideLoading();
+      navigate('/login');
+    }
   };
 
   const handleSwitchToUser = () => {

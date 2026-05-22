@@ -22,6 +22,16 @@
   50% { opacity: 0.7; }
 }
 
+@keyframes splash-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes splash-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 :root {
   --font-heading: 'Aptos Display', 'Segoe UI Variable Display', 'Trebuchet MS', sans-serif;
   --font-body: 'Aptos', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;

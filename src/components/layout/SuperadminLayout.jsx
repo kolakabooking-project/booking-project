@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_SUPERADMIN } from '../../utils/constants';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
@@ -110,14 +111,20 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
 
 export default function SuperadminLayout({ children }) {
   const { user, switchRole, logout } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    showLoading('Melakukan logout...');
+    try {
+      await logout();
+    } finally {
+      hideLoading();
+      navigate('/login');
+    }
   };
 
   const handleSwitchToAdmin = () => {

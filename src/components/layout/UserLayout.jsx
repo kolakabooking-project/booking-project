@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
+import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_USER } from '../../utils/constants';
 import { LogOut, ChevronDown, LayoutDashboard, CalendarPlus, ClipboardList, Bell, Home, CalendarDays, MessageSquareText, CircleUser, Car, Plus } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -15,6 +16,7 @@ const iconMap = { LayoutDashboard, CalendarPlus, ClipboardList };
 
 export default function UserLayout({ children }) {
   const { user, logout, switchRole } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const { getUserBookings } = useBooking();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -42,8 +44,13 @@ export default function UserLayout({ children }) {
   const notifBookings = myBookings.filter(b => b.status === 'Disetujui' || b.status === 'Ditolak').slice(0, 5);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    showLoading('Melakukan logout...');
+    try {
+      await logout();
+    } finally {
+      hideLoading();
+      navigate('/login');
+    }
   };
 
   const handleSwitchToAdmin = () => {
