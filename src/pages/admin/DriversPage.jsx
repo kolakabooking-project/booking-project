@@ -73,7 +73,7 @@ export default function DriversPage() {
             <div className="mb-3 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-djp-blue/10 overflow-hidden">
                 {d.foto ? (
-                  <img src={d.foto} alt={d.name} className="h-full w-full object-cover" />
+                  <img src={d.foto} alt={d.name} className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <span className="text-lg font-heading font-bold text-djp-blue">{d.name.charAt(0)}</span>
                 )}

@@ -87,7 +87,7 @@ export default function FleetPage() {
               <div className="flex items-center gap-3">
                 {v.foto && (
                   <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
-                    <img src={v.foto} alt={v.merek} className="h-full w-full object-cover" />
+                    <img src={v.foto} alt={v.merek} className="h-full w-full object-cover" loading="lazy" />
                   </div>
                 )}
                 <div>

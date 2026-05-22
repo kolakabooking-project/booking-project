@@ -99,7 +99,7 @@ export default function PWAInstallPrompt() {
         <div className="flex gap-4">
           {/* Logo with pulse glow */}
           <div className="relative h-14 w-14 rounded-2xl flex-shrink-0 bg-white shadow-md border border-slate-100 flex items-center justify-center p-1 overflow-hidden">
-            <img src="/logoweb.png" alt="BOOKOLAKA Logo" className="w-full h-full object-contain rounded-xl" />
+            <img src="/logoweb.png" alt="BOOKOLAKA Logo" className="w-full h-full object-contain rounded-xl" loading="lazy" />
             <div className="absolute inset-0 bg-blue-500/10 animate-pulse -z-10" />
           </div>
 

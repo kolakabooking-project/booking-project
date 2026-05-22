@@ -10,7 +10,7 @@ import Badge from '../../components/ui/Badge';
 import { Download, BarChart3, Car } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../utils/helpers';
 import { BOOKING_STATUS } from '../../utils/constants';
-import { utils, writeFile } from 'xlsx';
+// xlsx is loaded dynamically on export to avoid ~400KB in the initial bundle
 import { toast } from 'sonner';
 
 export default function ReportsPage() {
@@ -32,7 +32,9 @@ export default function ReportsPage() {
   const pendingFiltered = filtered.filter((b) => b.status === BOOKING_STATUS.PENDING);
   const completedFiltered = filtered.filter((b) => b.status === BOOKING_STATUS.COMPLETED);
 
-  const exportData = (format) => {
+  const exportData = async (format) => {
+    const { utils, writeFile } = await import('xlsx');
+
     const data = filtered.map((b) => ({
       'Nama Pegawai': b.userName,
       'Tanggal': formatDateShort(b.startTime),

@@ -472,7 +472,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
           <div className="space-y-4">
             <div className="flex items-center justify-center h-32 rounded-3xl mb-4 overflow-hidden relative" style={{ background: 'var(--color-surface-muted)' }}>
               {vehicleDetailModal.foto ? (
-                <img src={vehicleDetailModal.foto} alt={vehicleDetailModal.merek} className="w-full h-full object-cover" />
+                <img src={vehicleDetailModal.foto} alt={vehicleDetailModal.merek} className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <Car size={48} className="text-[color:var(--color-text-soft)] opacity-40" />
               )}

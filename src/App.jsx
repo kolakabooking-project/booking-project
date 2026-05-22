@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
@@ -6,6 +7,7 @@ import { LoadingProvider } from './contexts/LoadingContext';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
+import PageLoader from './components/ui/PageLoader';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,30 +19,37 @@ const queryClient = new QueryClient({
   },
 });
 
-// Layouts
+// Layouts (kept static — they wrap every page in their role group)
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import SuperadminLayout from './components/layout/SuperadminLayout';
 
-// Pages
-import LoginPage from './pages/auth/LoginPage';
-import MaintenancePage from './pages/MaintenancePage';
-import UserDashboard from './pages/user/DashboardPage';
-import MyBookingsPage from './pages/user/MyBookingsPage';
-import UserChatPage from './pages/user/ChatPage';
-import AccountPage from './pages/user/AccountPage';
-import AdminDashboard from './pages/admin/DashboardPage';
-import RequestBoardPage from './pages/admin/RequestBoardPage';
-import FleetPage from './pages/admin/FleetPage';
-import DriversPage from './pages/admin/DriversPage';
-import ReportsPage from './pages/admin/ReportsPage';
-import AdminChatPage from './pages/admin/AdminChatPage';
-import AdminSettingsPage from './pages/admin/AdminSettingsPage';
-import SuperadminDashboard from './pages/superadmin/DashboardPage';
-import AccountManagementPage from './pages/superadmin/AccountManagementPage';
-import ServiceControlPage from './pages/superadmin/ServiceControlPage';
-import ActivityLogPage from './pages/superadmin/ActivityLogPage';
-import SuperadminSettingsPage from './pages/superadmin/SettingsPage';
+// ─── Lazy-loaded Pages ───
+// Auth (entry point)
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
+
+// User pages
+const UserDashboard = lazy(() => import('./pages/user/DashboardPage'));
+const MyBookingsPage = lazy(() => import('./pages/user/MyBookingsPage'));
+const UserChatPage = lazy(() => import('./pages/user/ChatPage'));
+const AccountPage = lazy(() => import('./pages/user/AccountPage'));
+
+// Admin pages (separate chunk group)
+const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'));
+const RequestBoardPage = lazy(() => import('./pages/admin/RequestBoardPage'));
+const FleetPage = lazy(() => import('./pages/admin/FleetPage'));
+const DriversPage = lazy(() => import('./pages/admin/DriversPage'));
+const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
+const AdminChatPage = lazy(() => import('./pages/admin/AdminChatPage'));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+
+// Superadmin pages (separate chunk group)
+const SuperadminDashboard = lazy(() => import('./pages/superadmin/DashboardPage'));
+const AccountManagementPage = lazy(() => import('./pages/superadmin/AccountManagementPage'));
+const ServiceControlPage = lazy(() => import('./pages/superadmin/ServiceControlPage'));
+const ActivityLogPage = lazy(() => import('./pages/superadmin/ActivityLogPage'));
+const SuperadminSettingsPage = lazy(() => import('./pages/superadmin/SettingsPage'));
 
 function ProtectedRoute({ children, role }) {
   const { activeRole, isAuthenticated, serviceActive, user } = useAuth();
@@ -72,6 +81,7 @@ function PublicRoute({ children }) {
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
 
@@ -100,6 +110,7 @@ function AppRoutes() {
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

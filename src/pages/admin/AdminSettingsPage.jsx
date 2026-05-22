@@ -480,7 +480,7 @@ export default function AdminSettingsPage() {
       <Modal isOpen={infoOpen} onClose={() => setInfoOpen(false)} title="Tentang Aplikasi" size="sm">
         <div className="space-y-4 text-center pb-4">
           <div className="mx-auto w-20 h-20 rounded-[1.5rem] flex items-center justify-center mb-6">
-            <img src="/logoweb.png" alt="Bookolaka" className="w-full h-full object-contain" />
+            <img src="/logoweb.png" alt="Bookolaka" className="w-full h-full object-contain" loading="lazy" />
           </div>
           <h3 className="text-xl font-heading font-bold text-[color:var(--color-heading)]">Bookolaka</h3>
           <p className="text-sm text-[color:var(--color-text-soft)] leading-relaxed px-4">
