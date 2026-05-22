@@ -128,7 +128,7 @@ function AppShell() {
         visibleToasts={1}
         toastOptions={{
           style: { fontFamily: "'Montserrat', sans-serif" },
-          duration: 3500,
+          duration: 1000,
         }}
       />
     </>

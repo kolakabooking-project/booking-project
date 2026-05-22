@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Button from '../../components/ui/Button';
-import { Eye, EyeOff, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import { useLoading } from '../../contexts/LoadingContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const { showLoading, hideLoading } = useLoading();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [nip, setNip] = useState('');
   const [password, setPassword] = useState('');
@@ -53,8 +55,15 @@ export default function LoginPage() {
                 LOGIN
               </h2>
             </div>
-            <div className="hidden h-14 w-14 items-center justify-center rounded-2xl bg-djp-blue text-white shadow-lg shadow-djp-blue/20 sm:flex">
-              <KeyRound size={22} />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-surface-muted)] text-[color:var(--color-heading)] shadow-md transition-colors hover:bg-[color:var(--color-border)]"
+                aria-label="Toggle theme"
+              >
+                {isDark ? <Moon size={22} className="text-djp-blue" /> : <Sun size={22} className="text-djp-yellow" />}
+              </button>
             </div>
           </div>
 
