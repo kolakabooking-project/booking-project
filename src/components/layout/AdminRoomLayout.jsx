@@ -2,35 +2,34 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Realtime } from 'ably';
 import { useAuth } from '../../contexts/AuthContext';
-import { useBooking } from '../../contexts/BookingContext';
+import { useRoomBooking } from '../../contexts/RoomBookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { NAV_ADMIN } from '../../utils/constants';
+import { NAV_ROOM_ADMIN } from '../../utils/constants';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   Menu, LogOut, ChevronLeft, Bell, Home, ChevronRight,
-  LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle,
-  Settings, Plus, Shield, ArrowLeft,
+  LayoutDashboard, CalendarCheck, Building2, FileSpreadsheet, MessageCircle,
+  Settings, Plus, Shield, ArrowLeft, Users
 } from 'lucide-react';
-import BookingModalFlow from '../shared/BookingModalFlow';
+import RoomBookingModalFlow from '../shared/RoomBookingModalFlow';
 
-const iconMap = { LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle };
+const iconMap = { LayoutDashboard, CalendarCheck, Building2, FileSpreadsheet, MessageCircle };
 
 // Map path to breadcrumb label
 const breadcrumbMap = {
-  '/admin/dashboard': 'Beranda',
-  '/admin/requests': 'Persetujuan',
-  '/admin/fleet': 'Manajemen Armada',
-  '/admin/drivers': 'Manajemen Pengemudi',
-  '/admin/reports': 'Laporan & Ekspor',
+  '/admin/room/dashboard': 'Beranda',
+  '/admin/room/requests': 'Booking Aktif',
+  '/admin/room/rooms': 'Manajemen Ruangan',
+  '/admin/room/reports': 'Laporan & Ekspor',
 };
 
 function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, hasUnreadChat, handleSwitchToUser, handleSwitchToSuperadmin }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-4 pb-2 pt-6 flex justify-center items-center min-h-[5rem]">
-        <Link to="/admin/dashboard" aria-label="Kembali ke home" className="inline-flex items-center rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30">
+        <Link to="/admin/room/dashboard" aria-label="Kembali ke home" className="inline-flex items-center rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30">
           <img
             src={collapsed && !isMobile ? "/djp.png" : "/logo.png"}
             alt="Logo BOOKOLAKA"
@@ -44,7 +43,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {NAV_ADMIN.map((item) => {
+        {NAV_ROOM_ADMIN.map((item) => {
           const Icon = iconMap[item.icon];
           return (
             <NavLink
@@ -54,15 +53,15 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
               title={collapsed && !isMobile ? item.label : undefined}
               className={({ isActive }) =>
                 `relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-heading font-semibold transition-all duration-200 ${isActive
-                  ? 'bg-white/15 text-white shadow-lg shadow-black/10'
-                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  ? 'bg-blue-600/30 text-white shadow-lg shadow-black/10'
+                  : 'text-white/70 hover:bg-blue-600/20 hover:text-white'
                 } ${collapsed && !isMobile ? 'justify-center' : ''}`
               }
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-djp-yellow" />
+                    <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-blue-500" />
                   )}
                   {Icon && (
                     <div className="relative flex-shrink-0">
@@ -91,17 +90,17 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
           />
         </div>
         {(!collapsed || isMobile) && (
-          <Link to="/admin/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
+          <div className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm">
             <p className="truncate text-sm font-heading font-bold text-white">{user?.name || 'Administrator'}</p>
-            <p className="mt-1 truncate text-xs font-semibold text-djp-yellow">{user?.role === 'superadmin' ? 'Superadmin (Admin Mode)' : user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
+            <p className="mt-1 truncate text-xs font-semibold text-blue-400">Admin Ruangan</p>
             <p className="mt-1 truncate text-[10px] uppercase tracking-widest text-white/45">{user?.jabatan || 'Subbagian Umum'}</p>
-          </Link>
+          </div>
         )}
         {user?.role === 'admin' && (
           <button
             onClick={handleSwitchToUser}
             title={collapsed ? 'Mode Pegawai' : undefined}
-            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-djp-blue bg-djp-yellow hover:bg-yellow-400 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
           >
             <Users size={20} className="flex-shrink-0" />
             {(!collapsed || isMobile) && <span>Mode Pegawai</span>}
@@ -120,7 +119,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         <Link
           to="/select-service"
           title={collapsed ? 'Ganti Layanan' : undefined}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-djp-blue bg-djp-blue/10 hover:bg-djp-blue/20 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
         >
           <ArrowLeft size={20} className="flex-shrink-0" />
           {(!collapsed || isMobile) && <span>Ganti Layanan</span>}
@@ -139,10 +138,10 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
   );
 }
 
-export default function AdminLayout({ children }) {
+export default function AdminRoomLayout({ children }) {
   const { user, switchRole, logout } = useAuth();
   const { showLoading, hideLoading } = useLoading();
-  const { getPendingBookings, getReviewNotifications, markReviewAsRead } = useBooking();
+  const { roomBookings, getRoomReviewNotifications, markRoomReviewAsRead } = useRoomBooking();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -165,59 +164,9 @@ export default function AdminLayout({ children }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (location.pathname === '/admin/chat') {
-      setHasUnreadChat(false);
-    }
-  }, [location.pathname]);
-
-  const ablyRef = useRef(null);
-
-  useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) return;
-
-    if (!ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
-          }
-        }
-      });
-
-      const channel = realtime.channels.get('chat:admin');
-      channel.subscribe('new_message', (msg) => {
-        const newMsg = msg.data;
-        if (newMsg.senderId !== user.id && window.location.pathname !== '/admin/chat') {
-          setHasUnreadChat(true);
-        }
-      });
-
-      ablyRef.current = realtime;
-    }
-
-    return () => {
-      if (ablyRef.current) {
-        // Wait a bit before closing to avoid strict mode promise rejection on pending auth
-        const currentAbly = ablyRef.current;
-        setTimeout(() => {
-           if (currentAbly.connection.state !== 'closed') {
-             currentAbly.close();
-           }
-        }, 1000);
-        ablyRef.current = null;
-      }
-    };
-  }, [user]);
-
-  const pending = getPendingBookings();
-  const reviewNotifs = getReviewNotifications();
-  const totalNotifs = pending.length + reviewNotifs.length;
+  const pending = roomBookings.filter(b => b.status === 'Disetujui' && new Date(b.startTime) > new Date()); // Example for pending admin tasks if any
+  const reviewNotifs = getRoomReviewNotifications();
+  const totalNotifs = reviewNotifs.length; // Admins don't 'approve' rooms, but they get review notifs
 
   const handleLogout = async () => {
     showLoading('Melakukan logout...');
@@ -231,7 +180,7 @@ export default function AdminLayout({ children }) {
 
   const handleSwitchToUser = () => {
     switchRole('user');
-    navigate('/user/dashboard');
+    navigate('/user/room/dashboard');
   };
 
   const handleSwitchToSuperadmin = () => {
@@ -239,15 +188,10 @@ export default function AdminLayout({ children }) {
     navigate('/superadmin/dashboard');
   };
 
-  const handleNotifClick = (bookingId) => {
-    setNotifOpen(false);
-    navigate('/admin/requests', { state: { openBookingId: bookingId } });
-  };
-
   const handleReviewNotifClick = async (bookingId) => {
-    await markReviewAsRead(bookingId);
+    await markRoomReviewAsRead(bookingId);
     setNotifOpen(false);
-    navigate('/admin/requests', { state: { openBookingId: bookingId } });
+    navigate('/admin/room/requests', { state: { openBookingId: bookingId } });
   };
 
   const currentLabel = breadcrumbMap[location.pathname] || 'Beranda';
@@ -286,14 +230,14 @@ export default function AdminLayout({ children }) {
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-[250px]'}`}>
         <header className="sticky top-0 z-20 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-4 border-b px-4 pb-3 pt-[max(env(safe-area-inset-top),12px)] shadow-[var(--shadow-navbar)] backdrop-blur-xl sm:px-6" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
           <div className="flex items-center gap-3">
-            <Link to="/admin/dashboard" className="mr-2 inline-flex items-center lg:hidden focus:outline-none focus:ring-2 focus:ring-djp-blue/30 rounded-lg">
+            <Link to="/admin/room/dashboard" className="mr-2 inline-flex items-center lg:hidden focus:outline-none focus:ring-2 focus:ring-blue-500/30 rounded-lg">
               <ThemeLogo className="h-8" />
             </Link>
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5 text-sm">
                 <Home size={14} className="text-[color:var(--color-text-soft)]" />
                 <ChevronRight size={12} className="text-[color:var(--color-text-soft)]" />
-                <span className="font-heading font-semibold text-[color:var(--color-text-muted)]">Admin</span>
+                <span className="font-heading font-semibold text-[color:var(--color-text-muted)]">Admin Ruangan</span>
                 <ChevronRight size={12} className="text-[color:var(--color-text-soft)]" />
                 <span className="font-heading font-semibold text-[color:var(--color-brand)]">{currentLabel}</span>
               </div>
@@ -302,7 +246,7 @@ export default function AdminLayout({ children }) {
           <div className="flex items-center gap-3 relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-djp-blue"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-blue-500"
               style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
             >
               <Bell size={20} />
@@ -324,24 +268,6 @@ export default function AdminLayout({ children }) {
                     </div>
                   ) : (
                     <>
-                      {pending.map((req) => (
-                        <button
-                          key={req.id}
-                          onClick={() => handleNotifClick(req.id)}
-                          className="w-full border-b p-4 text-left transition-colors hover:bg-[color:var(--color-surface-muted)]"
-                          style={{ borderColor: 'color-mix(in srgb, var(--color-border) 55%, transparent)' }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <p className="font-heading font-semibold text-[color:var(--color-heading)]">{req.userName}</p>
-                            <span className="text-[10px] text-[color:var(--color-text-soft)]">#{req.id.slice(-6)}</span>
-                          </div>
-                          <p className="mt-1 text-xs font-medium text-djp-blue line-clamp-1">{req.keperluan}</p>
-                          <div className="mt-1 flex items-center justify-between text-[11px] text-[color:var(--color-text-soft)]">
-                            <span>Menunggu persetujuan</span>
-                            <span>{new Date(req.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                        </button>
-                      ))}
                       {reviewNotifs.map((req) => (
                         <button
                           key={`rev-${req.id}`}
@@ -376,42 +302,39 @@ export default function AdminLayout({ children }) {
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
         <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
-          <NavLink to="/admin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/admin/room/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <Home size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Beranda</span>
           </NavLink>
           
-          <NavLink to="/admin/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <div className="relative">
-              <MessageCircle size={20} strokeWidth={2.5} />
-              {hasUnreadChat && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-            </div>
-            <span className="text-[10px] font-bold">Chat</span>
+          <NavLink to="/admin/room/requests" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <CalendarCheck size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Booking Aktif</span>
           </NavLink>
 
           <div className="w-16"></div>
 
           <button 
             onClick={() => setActionModalOpen(true)}
-            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-xl shadow-blue-500/40 border-[6px] transition-transform active:scale-95"
             style={{ borderColor: 'var(--color-bg-main)' }}
           >
             <div className="relative flex items-center justify-center">
-               <Car size={28} strokeWidth={2} className="text-white relative z-10" />
-               <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
+               <Building2 size={28} strokeWidth={2} className="text-white relative z-10" />
+               <div className="absolute -top-1 -right-2 bg-blue-200 text-blue-800 rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
                  <Plus size={12} strokeWidth={4} />
                </div>
             </div>
           </button>
 
-          <NavLink to="/admin/reports" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/admin/room/reports" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <FileSpreadsheet size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Laporan</span>
           </NavLink>
 
-          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/admin/room/rooms" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <Settings size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Settings</span>
+            <span className="text-[10px] font-bold">Ruangan</span>
           </NavLink>
         </div>
       </div>
@@ -424,13 +347,13 @@ export default function AdminLayout({ children }) {
             <div className="w-12 h-1.5 bg-[color:var(--color-border)] rounded-full mx-auto mb-6 sm:hidden" />
             <h3 className="text-lg font-heading font-bold mb-6 text-[color:var(--color-heading)] text-center">Pilih Tindakan</h3>
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => { setActionModalOpen(false); setBookingModalOpen(true); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-djp-blue/5 hover:border-djp-blue/30 transition-all active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-djp-blue/10 flex items-center justify-center text-djp-blue"><Car size={24} /></div>
+              <button onClick={() => { setActionModalOpen(false); setBookingModalOpen(true); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Building2 size={24} /></div>
                 <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Peminjaman<br/>(Mandatory)</span>
               </button>
-              <button onClick={() => { setActionModalOpen(false); navigate('/admin/requests'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-djp-blue/5 hover:border-djp-blue/30 transition-all active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-djp-blue/10 flex items-center justify-center text-djp-blue"><ClipboardCheck size={24} /></div>
-                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Daftar<br/>Persetujuan</span>
+              <button onClick={() => { setActionModalOpen(false); navigate('/admin/room/rooms'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Settings size={24} /></div>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Manajemen<br/>Ruangan</span>
               </button>
             </div>
             <button onClick={() => setActionModalOpen(false)} className="mt-6 w-full py-3.5 rounded-2xl font-bold text-[color:var(--color-text-muted)] bg-[color:var(--color-surface-muted)] hover:bg-[color:var(--color-border)] transition-colors">Batal</button>
@@ -439,7 +362,7 @@ export default function AdminLayout({ children }) {
       )}
 
       {/* Booking Modal */}
-      <BookingModalFlow 
+      <RoomBookingModalFlow 
         isOpen={bookingModalOpen} 
         onClose={() => setBookingModalOpen(false)} 
         selectedDate={null} 

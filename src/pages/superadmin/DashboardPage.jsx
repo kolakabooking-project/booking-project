@@ -110,7 +110,15 @@ export default function SuperadminDashboard() {
     setResetLoading(true);
     try {
       await superadminApi.resetData(resetType, confirmPassword);
-      toast.success(`Reset data ${resetType === 'booking' ? 'peminjaman' : resetType === 'driver' ? 'pengemudi' : 'kendaraan'} berhasil dilakukan!`);
+      let typeLabel = '';
+      switch (resetType) {
+        case 'booking': typeLabel = 'peminjaman KDO'; break;
+        case 'driver': typeLabel = 'pengemudi'; break;
+        case 'vehicle': typeLabel = 'kendaraan'; break;
+        case 'room_booking': typeLabel = 'peminjaman ruangan'; break;
+        case 'room': typeLabel = 'ruangan'; break;
+      }
+      toast.success(`Reset data ${typeLabel} berhasil dilakukan!`);
       setResetType(null);
       setConfirmPassword('');
       // Invalidate cache and reload to guarantee interface sync
@@ -207,6 +215,11 @@ export default function SuperadminDashboard() {
     );
   }
 
+  const isKdoActive = serviceStatus?.kdoActive;
+  const isRoomActive = serviceStatus?.roomActive;
+  const isFullyActive = isKdoActive && isRoomActive;
+  const isPartiallyActive = isKdoActive || isRoomActive;
+
   return (
     <div className="pb-10">
       {/* ─── Hero Section ─── */}
@@ -220,8 +233,10 @@ export default function SuperadminDashboard() {
               {user?.name || 'Super Admin'}
             </h1>
             <p className="mt-3 text-sm text-[color:var(--color-text-muted)] leading-relaxed max-w-md mx-auto lg:mx-0">
-              Sistem {serviceStatus?.active ? (
+              Sistem {isFullyActive ? (
                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">berjalan optimal</span>
+              ) : isPartiallyActive ? (
+                <span className="text-amber-600 dark:text-amber-400 font-semibold">berjalan sebagian</span>
               ) : (
                 <span className="text-red-600 dark:text-red-400 font-semibold">dalam maintenance</span>
               )}. Terdapat <span className="font-bold text-[color:var(--color-heading)]">{stats?.totalUsers || 0}</span> entitas aktif dalam jaringan.
@@ -230,12 +245,14 @@ export default function SuperadminDashboard() {
             {/* Service status pill */}
             <div className="mt-4 inline-flex items-center gap-2.5 px-4 py-2 rounded-full border"
               style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
-              <div className={`w-2.5 h-2.5 rounded-full ${serviceStatus?.active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-              <span className={`text-xs font-bold ${serviceStatus?.active
+              <div className={`w-2.5 h-2.5 rounded-full ${isFullyActive ? 'bg-emerald-500 animate-pulse' : isPartiallyActive ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={`text-xs font-bold ${isFullyActive
                 ? 'text-emerald-600 dark:text-emerald-400'
+                : isPartiallyActive
+                ? 'text-amber-600 dark:text-amber-400'
                 : 'text-red-600 dark:text-red-400'
                 }`}>
-                {serviceStatus?.active ? 'All Systems Operational' : 'Maintenance Mode'}
+                {isFullyActive ? 'Semua Sistem Operasional' : isPartiallyActive ? 'Beroperasi Sebagian' : 'Maintenance Mode'}
               </span>
             </div>
 
@@ -395,26 +412,30 @@ export default function SuperadminDashboard() {
 
               <div className="flex items-center gap-4 mt-4">
                 {/* Power indicator */}
-                <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${serviceStatus?.active
-                  ? 'bg-emerald-500/10 border border-emerald-500/20'
+                <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${isPartiallyActive
+                  ? (isFullyActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-amber-500/10 border border-amber-500/20')
                   : 'bg-red-500/10 border border-red-500/20'
                   }`}>
-                  <Power size={28} className={serviceStatus?.active ? 'text-emerald-500' : 'text-red-500'} />
-                  {serviceStatus?.active && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--color-surface-elevated)] animate-pulse" />
+                  <Power size={28} className={isFullyActive ? 'text-emerald-500' : isPartiallyActive ? 'text-amber-500' : 'text-red-500'} />
+                  {isPartiallyActive && (
+                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-[var(--color-surface-elevated)] animate-pulse ${isFullyActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   )}
                 </div>
 
                 <div className="flex-1">
-                  <p className={`text-lg font-heading font-extrabold ${serviceStatus?.active
+                  <p className={`text-lg font-heading font-extrabold ${isFullyActive
                     ? 'text-emerald-600 dark:text-emerald-400'
+                    : isPartiallyActive
+                    ? 'text-amber-600 dark:text-amber-400'
                     : 'text-red-600 dark:text-red-400'
                     }`}>
-                    {serviceStatus?.active ? 'Layanan Aktif' : 'Maintenance Mode'}
+                    {isFullyActive ? 'Layanan Aktif Penuh' : isPartiallyActive ? 'Layanan Aktif Sebagian' : 'Maintenance Mode'}
                   </p>
                   <p className="text-xs text-[color:var(--color-text-soft)] mt-0.5">
-                    {serviceStatus?.active
-                      ? 'Semua pengguna dapat mengakses sistem dengan normal.'
+                    {isFullyActive
+                      ? 'Semua layanan KDO dan Ruangan dapat diakses dengan normal.'
+                      : isPartiallyActive 
+                      ? 'Salah satu layanan (KDO atau Ruangan) sedang maintenance.'
                       : 'Akses ditangguhkan untuk semua user non-superadmin.'}
                   </p>
                 </div>
@@ -481,6 +502,28 @@ export default function SuperadminDashboard() {
                 </span>
                 <ChevronRight size={14} />
               </button>
+
+              <button
+                onClick={() => setResetType('room_booking')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 transition-colors text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Booking Ruangan
+                </span>
+                <ChevronRight size={14} />
+              </button>
+
+              <button
+                onClick={() => setResetType('room')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors text-xs font-semibold text-purple-600 dark:text-purple-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Ruangan
+                </span>
+                <ChevronRight size={14} />
+              </button>
             </div>
           </div>
         </div>
@@ -498,7 +541,13 @@ export default function SuperadminDashboard() {
           <div className="flex items-start gap-3 p-3 rounded-2xl bg-red-500/10 border border-red-500/20">
             <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5 animate-bounce" size={20} />
             <div className="text-xs text-red-700 dark:text-red-400 leading-relaxed font-semibold">
-              Tindakan ini akan menghapus seluruh data <span className="uppercase underline">{resetType === 'booking' ? 'Booking / Peminjaman' : resetType === 'driver' ? 'Pengemudi' : 'Kendaraan'}</span> pada database secara permanen. Tindakan ini TIDAK DAPAT DIBATALKAN.
+              Tindakan ini akan menghapus seluruh data <span className="uppercase underline">
+                {resetType === 'booking' ? 'Booking / Peminjaman KDO' 
+                 : resetType === 'driver' ? 'Pengemudi' 
+                 : resetType === 'vehicle' ? 'Kendaraan' 
+                 : resetType === 'room_booking' ? 'Booking / Peminjaman Ruangan' 
+                 : 'Ruangan'}
+              </span> pada database secara permanen. Tindakan ini TIDAK DAPAT DIBATALKAN.
             </div>
           </div>
 

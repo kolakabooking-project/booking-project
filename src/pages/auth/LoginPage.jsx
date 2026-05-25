@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       const result = await login(nip, password);
       if (result.success) {
-        const target = result.role === 'superadmin' ? '/superadmin/dashboard' : result.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+        const target = result.role === 'superadmin' ? '/superadmin/dashboard' : '/select-service';
         navigate(target, { replace: true });
       } else {
         setError(result.message);

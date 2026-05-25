@@ -1,5 +1,5 @@
 import { db } from '../config/db.js';
-import { user, account, session, systemSettings, booking, driver, vehicle } from '../db/schema.js';
+import { user, account, session, systemSettings, booking, driver, vehicle, room, roomBooking } from '../db/schema.js';
 import { eq, ne, desc, count, ilike, or, and } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors.js';
@@ -379,56 +379,87 @@ export async function getServiceStatus() {
  * Toggle service on/off.
  */
 export async function toggleService(
-  active: boolean,
+  kdoActive: boolean | undefined,
+  roomActive: boolean | undefined,
   actorId: string,
   actorName: string,
   ipAddress?: string
 ) {
-  // Upsert the setting
-  const existing = await db
-    .select()
-    .from(systemSettings)
-    .where(eq(systemSettings.key, 'service_active'));
+  // Upsert the kdo_service_active setting
+  if (kdoActive !== undefined) {
+    const existingKdo = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, 'kdo_service_active'));
 
-  if (existing.length > 0) {
-    await db
-      .update(systemSettings)
-      .set({
-        value: String(active),
+    if (existingKdo.length > 0) {
+      await db
+        .update(systemSettings)
+        .set({
+          value: String(kdoActive),
+          updatedAt: new Date(),
+          updatedBy: actorId,
+        })
+        .where(eq(systemSettings.key, 'kdo_service_active'));
+    } else {
+      await db.insert(systemSettings).values({
+        key: 'kdo_service_active',
+        value: String(kdoActive),
         updatedAt: new Date(),
         updatedBy: actorId,
-      })
-      .where(eq(systemSettings.key, 'service_active'));
-  } else {
-    await db.insert(systemSettings).values({
-      key: 'service_active',
-      value: String(active),
-      updatedAt: new Date(),
-      updatedBy: actorId,
-    });
+      });
+    }
+  }
+
+  // Upsert the room_service_active setting
+  if (roomActive !== undefined) {
+    const existingRoom = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, 'room_service_active'));
+
+    if (existingRoom.length > 0) {
+      await db
+        .update(systemSettings)
+        .set({
+          value: String(roomActive),
+          updatedAt: new Date(),
+          updatedBy: actorId,
+        })
+        .where(eq(systemSettings.key, 'room_service_active'));
+    } else {
+      await db.insert(systemSettings).values({
+        key: 'room_service_active',
+        value: String(roomActive),
+        updatedAt: new Date(),
+        updatedBy: actorId,
+      });
+    }
   }
 
   // Invalidate the cached service status (shared cache)
   invalidateServiceStatusCache();
+  
+  let detailMessage = [];
+  if (kdoActive !== undefined) detailMessage.push(`Layanan Booking KDO ${kdoActive ? 'diaktifkan' : 'dinonaktifkan'}`);
+  if (roomActive !== undefined) detailMessage.push(`Layanan Booking Ruangan ${roomActive ? 'diaktifkan' : 'dinonaktifkan'}`);
 
   await logActivity({
     userId: actorId,
     userName: actorName,
     action: 'SERVICE_TOGGLED',
-    detail: active
-      ? 'Layanan diaktifkan (Service ON)'
-      : 'Layanan dinonaktifkan (Service OFF — Maintenance Mode)',
+    detail: detailMessage.join(', '),
     ipAddress,
   });
 
-  return { active };
+  return getServiceStatusCached();
 }
 
 /**
  * Securely reset bookings, vehicles, or drivers with password verification.
  */
 export async function resetData(
-  type: 'booking' | 'driver' | 'vehicle',
+  type: 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking',
   superadminPasswordConfirm: string,
   superadminId: string,
   actorName: string,
@@ -485,6 +516,26 @@ export async function resetData(
       userName: actorName,
       action: 'SERVICE_TOGGLED',
       detail: 'Reset data kendaraan (vehicles) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  } else if (type === 'room_booking') {
+    await db.delete(roomBooking);
+    
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: 'Reset data peminjaman ruangan (room_bookings) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  } else if (type === 'room') {
+    await db.delete(room);
+    
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: 'Reset data ruangan (rooms) berhasil dilakukan oleh Superadmin.',
       ipAddress,
     });
   }

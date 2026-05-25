@@ -12,7 +12,8 @@ import { eq } from 'drizzle-orm';
  */
 
 interface ServiceStatusCache {
-  active: boolean;
+  kdoActive: boolean;
+  roomActive: boolean;
   updatedAt: string | null;
   checkedAt: number;
 }
@@ -24,37 +25,52 @@ const CACHE_TTL_MS = 10_000; // 10 seconds
  * Get service status — uses cache with 10s TTL.
  * Returns { active, updatedAt }.
  */
-export async function getServiceStatusCached(): Promise<{ active: boolean; updatedAt: string | null }> {
+export async function getServiceStatusCached(): Promise<{ kdoActive: boolean; roomActive: boolean; updatedAt: string | null }> {
   const now = Date.now();
 
   if (cachedStatus && (now - cachedStatus.checkedAt) < CACHE_TTL_MS) {
-    return { active: cachedStatus.active, updatedAt: cachedStatus.updatedAt };
+    return { kdoActive: cachedStatus.kdoActive, roomActive: cachedStatus.roomActive, updatedAt: cachedStatus.updatedAt };
   }
 
   try {
-    const [setting] = await db
+    const settings = await db
       .select()
-      .from(systemSettings)
-      .where(eq(systemSettings.key, 'service_active'));
+      .from(systemSettings);
 
-    const active = setting?.value !== 'false';
-    const updatedAt = setting?.updatedAt?.toISOString() || null;
+    const kdoSetting = settings.find(s => s.key === 'kdo_service_active');
+    const roomSetting = settings.find(s => s.key === 'room_service_active');
 
-    cachedStatus = { active, updatedAt, checkedAt: now };
-    return { active, updatedAt };
+    // Default to true if not found in db
+    const kdoActive = kdoSetting ? kdoSetting.value !== 'false' : true;
+    const roomActive = roomSetting ? roomSetting.value !== 'false' : true;
+    
+    // Get latest updated at
+    const latestUpdate = [kdoSetting?.updatedAt, roomSetting?.updatedAt]
+      .filter(Boolean)
+      .sort((a, b) => (b as Date).getTime() - (a as Date).getTime())[0];
+      
+    const updatedAt = latestUpdate ? (latestUpdate as Date).toISOString() : null;
+
+    cachedStatus = { kdoActive, roomActive, updatedAt, checkedAt: now };
+    return { kdoActive, roomActive, updatedAt };
   } catch (err) {
     console.error('[ServiceStatusCache] Error checking service status:', err);
     // Default to active on error to avoid accidentally blocking all users
-    return { active: true, updatedAt: null };
+    return { kdoActive: true, roomActive: true, updatedAt: null };
   }
 }
 
 /**
- * Check only active status (boolean) — lightweight version for maintenanceGuard.
+ * Check only active status for specific service — lightweight version for maintenanceGuard.
  */
-export async function isServiceActive(): Promise<boolean> {
+export async function isKdoServiceActive(): Promise<boolean> {
   const status = await getServiceStatusCached();
-  return status.active;
+  return status.kdoActive;
+}
+
+export async function isRoomServiceActive(): Promise<boolean> {
+  const status = await getServiceStatusCached();
+  return status.roomActive;
 }
 
 /**

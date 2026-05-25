@@ -13,6 +13,7 @@ import {
   UserRoundPlus, UserRoundX, RefreshCcw, ShieldCheck,
   Power, UserCog,
   CircleDot,
+  Building2,
 } from 'lucide-react';
 
 /**
@@ -149,6 +150,50 @@ export const ACTION_CONFIG = {
     iconClass: 'text-rose-600 dark:text-rose-400',
     bgClass: 'bg-rose-500/8 dark:bg-rose-500/15 border border-rose-500/15 dark:border-rose-400/20',
     badgeClass: 'text-rose-700 dark:text-rose-300 bg-rose-500/8 dark:bg-rose-500/15',
+  },
+
+  // ─── Room ─────────────────────────────────────
+  ROOM_CREATED: {
+    icon: Building2,
+    label: 'Ruangan Ditambah',
+    iconClass: 'text-teal-600 dark:text-teal-400',
+    bgClass: 'bg-teal-500/8 dark:bg-teal-500/15 border border-teal-500/15 dark:border-teal-400/20',
+    badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-500/8 dark:bg-teal-500/15',
+  },
+  ROOM_UPDATED: {
+    icon: Pencil,
+    label: 'Ruangan Diperbarui',
+    iconClass: 'text-teal-600 dark:text-teal-400',
+    bgClass: 'bg-teal-500/8 dark:bg-teal-500/15 border border-teal-500/15 dark:border-teal-400/20',
+    badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-500/8 dark:bg-teal-500/15',
+  },
+  ROOM_DELETED: {
+    icon: Trash2,
+    label: 'Ruangan Dihapus',
+    iconClass: 'text-rose-600 dark:text-rose-400',
+    bgClass: 'bg-rose-500/8 dark:bg-rose-500/15 border border-rose-500/15 dark:border-rose-400/20',
+    badgeClass: 'text-rose-700 dark:text-rose-300 bg-rose-500/8 dark:bg-rose-500/15',
+  },
+  ROOM_BOOKING_CREATED: {
+    icon: FilePlus2,
+    label: 'Booking Ruangan Dibuat',
+    iconClass: 'text-emerald-600 dark:text-emerald-400',
+    bgClass: 'bg-emerald-500/8 dark:bg-emerald-500/15 border border-emerald-500/15 dark:border-emerald-400/20',
+    badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/8 dark:bg-emerald-500/15',
+  },
+  ROOM_BOOKING_CANCELLED: {
+    icon: FileX2,
+    label: 'Booking Ruangan Dibatalkan',
+    iconClass: 'text-rose-600 dark:text-rose-400',
+    bgClass: 'bg-rose-500/8 dark:bg-rose-500/15 border border-rose-500/15 dark:border-rose-400/20',
+    badgeClass: 'text-rose-700 dark:text-rose-300 bg-rose-500/8 dark:bg-rose-500/15',
+  },
+  ROOM_BOOKING_REVIEW: {
+    icon: FileCheck2,
+    label: 'Review Ruangan',
+    iconClass: 'text-violet-600 dark:text-violet-400',
+    bgClass: 'bg-violet-500/8 dark:bg-violet-500/15 border border-violet-500/15 dark:border-violet-400/20',
+    badgeClass: 'text-violet-700 dark:text-violet-300 bg-violet-500/8 dark:bg-violet-500/15',
   },
 
   // ─── Superadmin — Account ─────────────────────

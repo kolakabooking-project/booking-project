@@ -7,7 +7,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'sonner';
 
@@ -405,6 +405,14 @@ export default function AdminSettingsPage() {
             Kembali Mode Superadmin
           </button>
         )}
+
+        <button
+          onClick={() => navigate('/select-service')}
+          className="md:hidden w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-blue/5 font-semibold transition-all hover:bg-djp-blue hover:text-white"
+        >
+          <ArrowLeft size={18} />
+          Ganti Layanan
+        </button>
 
         <button
           onClick={handleLogout}

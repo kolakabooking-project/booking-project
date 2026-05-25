@@ -32,6 +32,15 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes dash {
+  to { stroke-dashoffset: -100; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
 :root {
   --font-heading: 'Aptos Display', 'Segoe UI Variable Display', 'Trebuchet MS', sans-serif;
   --font-body: 'Aptos', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;

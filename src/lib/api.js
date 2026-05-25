@@ -201,6 +201,69 @@ export const reportApi = {
   },
 };
 
+// ─── Rooms ───
+
+export const roomApi = {
+  getAll: () => request('/rooms'),
+  getAvailable: (start, end) => request(`/rooms/available?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`),
+  getById: (id) => request(`/rooms/${id}`),
+  create: (data) => request('/rooms', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/rooms/${id}`, { method: 'DELETE' }),
+  uploadPhoto: (id, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return request(`/rooms/${id}/photo`, { method: 'POST', body: formData });
+  },
+};
+
+// ─── Room Bookings ───
+
+export const roomBookingApi = {
+  getAll: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.search) qs.set('search', params.search);
+    if (params?.startDate) qs.set('startDate', params.startDate);
+    if (params?.endDate) qs.set('endDate', params.endDate);
+    if (params?.roomId) qs.set('roomId', params.roomId);
+    const query = qs.toString();
+    return request(`/room-bookings${query ? `?${query}` : ''}`);
+  },
+  getMine: () => request('/room-bookings/mine'),
+  getNotifications: () => request('/room-bookings/notifications'),
+  getForDate: (date) => request(`/room-bookings/date/${date}`),
+  getById: (id) => request(`/room-bookings/${id}`),
+  create: (data) => request('/room-bookings', { method: 'POST', body: JSON.stringify(data) }),
+  createMandatory: (data) => request('/room-bookings/mandatory', { method: 'POST', body: JSON.stringify(data) }),
+  cancel: (id, alasan) => request(`/room-bookings/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ alasan }) }),
+  submitReview: (id, reviewNotes) =>
+    request(`/room-bookings/${id}/review`, { method: 'POST', body: JSON.stringify({ reviewNotes }) }),
+  markReviewRead: (id) =>
+    request(`/room-bookings/${id}/review/read`, { method: 'PATCH' }),
+};
+
+// ─── Room Reports ───
+
+export const roomReportApi = {
+  getSummary: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set('startDate', params.startDate);
+    if (params?.endDate) qs.set('endDate', params.endDate);
+    if (params?.roomId) qs.set('roomId', params.roomId);
+    const query = qs.toString();
+    return request(`/room-reports/summary${query ? `?${query}` : ''}`);
+  },
+  getExport: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set('startDate', params.startDate);
+    if (params?.endDate) qs.set('endDate', params.endDate);
+    if (params?.roomId) qs.set('roomId', params.roomId);
+    const query = qs.toString();
+    return request(`/room-reports/export${query ? `?${query}` : ''}`);
+  },
+};
+
 // ─── Chat ───
 
 export const chatApi = {
@@ -246,7 +309,7 @@ export const superadminApi = {
 
   // Service Control
   getServiceStatus: () => request('/superadmin/settings/service-status'),
-  toggleService: (active) => request('/superadmin/settings/service-status', { method: 'PATCH', body: JSON.stringify({ active }) }),
+  toggleService: (kdoActive, roomActive) => request('/superadmin/settings/service-status', { method: 'PATCH', body: JSON.stringify({ kdoActive, roomActive }) }),
 
   // Activity Logs
   getLogs: (params = {}) => {

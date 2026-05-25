@@ -223,15 +223,16 @@ router.get('/settings/service-status', async (_req: Request, res: Response) => {
 router.patch('/settings/service-status', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
-    const { active } = req.body;
+    const { kdoActive, roomActive } = req.body;
 
-    if (typeof active !== 'boolean') {
-      res.status(400).json({ error: 'Field "active" (boolean) wajib diisi.' });
+    if (kdoActive === undefined && roomActive === undefined) {
+      res.status(400).json({ error: 'Minimal satu parameter (kdoActive atau roomActive) wajib diisi.' });
       return;
     }
 
     const result = await superadminService.toggleService(
-      active,
+      kdoActive,
+      roomActive,
       actor.id,
       actor.name,
       getClientIp(req)
@@ -302,8 +303,8 @@ router.post('/reset', async (req: Request, res: Response) => {
     const actor = (req as any).user;
     const { type, password } = req.body;
 
-    if (!type || !['booking', 'driver', 'vehicle'].includes(type)) {
-      res.status(400).json({ error: 'Tipe reset tidak valid (booking, driver, vehicle).' });
+    if (!type || !['booking', 'driver', 'vehicle', 'room', 'room_booking'].includes(type)) {
+      res.status(400).json({ error: 'Tipe reset tidak valid (booking, driver, vehicle, room, room_booking).' });
       return;
     }
 
@@ -313,7 +314,7 @@ router.post('/reset', async (req: Request, res: Response) => {
     }
 
     const result = await superadminService.resetData(
-      type as 'booking' | 'driver' | 'vehicle',
+      type as 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking',
       password,
       actor.id,
       actor.name,

@@ -26,6 +26,12 @@ export const DRIVER_STATUS = {
   OFF: 'Libur',
 };
 
+export const ROOM_STATUS = {
+  AVAILABLE: 'Tersedia',
+  IN_USE: 'Sedang Dipakai',
+  MAINTENANCE: 'Dalam Perawatan',
+};
+
 export const VEHICLE_TYPES = {
   CAR: 'Mobil',
   MOTORCYCLE: 'Motor',
@@ -48,6 +54,9 @@ export const STATUS_COLORS = {
   [DRIVER_STATUS.AVAILABLE]: { bg: 'bg-success-light dark:bg-success/15', text: 'text-success', dot: 'bg-success' },
   [DRIVER_STATUS.ON_DUTY]: { bg: 'bg-info-light dark:bg-info/15', text: 'text-info', dot: 'bg-info' },
   [DRIVER_STATUS.OFF]: { bg: 'bg-gray-100 dark:bg-gray-700/30', text: 'text-black dark:text-white', dot: 'bg-black dark:bg-white' },
+  [ROOM_STATUS.AVAILABLE]: { bg: 'bg-success-light dark:bg-success/15', text: 'text-success', dot: 'bg-success' },
+  [ROOM_STATUS.IN_USE]: { bg: 'bg-info-light dark:bg-info/15', text: 'text-info', dot: 'bg-info' },
+  [ROOM_STATUS.MAINTENANCE]: { bg: 'bg-warning-light dark:bg-warning/15', text: 'text-warning', dot: 'bg-warning' },
 };
 
 export const NAV_USER = [
@@ -71,3 +80,14 @@ export const NAV_SUPERADMIN = [
   { path: '/superadmin/logs', label: 'Log Aktivitas', icon: 'ScrollText' },
 ];
 
+export const NAV_ROOM_USER = [
+  { path: '/user/room/dashboard', label: 'Beranda', icon: 'LayoutDashboard' },
+  { path: '/user/room/my-bookings', label: 'Riwayat Saya', icon: 'ClipboardList' },
+];
+
+export const NAV_ROOM_ADMIN = [
+  { path: '/admin/room/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
+  { path: '/admin/room/requests', label: 'Booking Aktif', icon: 'CalendarCheck' },
+  { path: '/admin/room/rooms', label: 'Manajemen Ruangan', icon: 'Building2' },
+  { path: '/admin/room/reports', label: 'Laporan & Ekspor', icon: 'FileSpreadsheet' },
+];

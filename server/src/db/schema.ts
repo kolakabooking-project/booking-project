@@ -207,6 +207,10 @@ export const activityLog = pgTable('activity_log', {
       'SERVICE_TOGGLED',
       // Profile
       'PROFILE_UPDATED',
+      // Room
+      'ROOM_CREATED', 'ROOM_UPDATED', 'ROOM_DELETED',
+      // Room Booking
+      'ROOM_BOOKING_CREATED', 'ROOM_BOOKING_CANCELLED', 'ROOM_BOOKING_REVIEW',
     ]
   }).notNull(),
   targetId: text('target_id'),
@@ -238,3 +242,68 @@ export const pushSubscription = pgTable('push_subscription', {
 }, (table) => [
   index('push_sub_user_idx').on(table.userId),
 ]);
+
+// ─────────────────────────────────────────────
+//  Room Booking Domain Tables
+// ─────────────────────────────────────────────
+
+export const room = pgTable('room', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  lokasi: text('lokasi').notNull(),
+  kapasitas: integer('kapasitas').notNull().default(10),
+  status: text('status', { enum: ['Tersedia', 'Dalam Perawatan'] })
+    .notNull()
+    .default('Tersedia'),
+  foto: text('foto'),
+  deletedAt: timestamp('deleted_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('room_deleted_idx').on(table.deletedAt),
+]);
+
+export const roomBooking = pgTable('room_booking', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  roomId: text('room_id')
+    .notNull()
+    .references(() => room.id, { onDelete: 'cascade' }),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+  keperluan: text('keperluan').notNull(),
+  jumlahPeserta: integer('jumlah_peserta').notNull().default(1),
+  status: text('status', {
+    enum: [
+      'Disetujui',
+      'Berlangsung',
+      'Selesai',
+      'Selesai dengan Catatan',
+      'Dibatalkan',
+    ],
+  })
+    .notNull()
+    .default('Disetujui'),
+  catatan: text('catatan'),
+  alasanPembatalan: text('alasan_pembatalan'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('room_booking_user_idx').on(table.userId),
+  index('room_booking_room_idx').on(table.roomId),
+  index('room_booking_status_idx').on(table.status),
+  index('room_booking_time_range_idx').on(table.startTime, table.endTime),
+]);
+
+export const roomBookingReview = pgTable('room_booking_review', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  bookingId: text('booking_id')
+    .notNull()
+    .unique()
+    .references(() => roomBooking.id, { onDelete: 'cascade' }),
+  reviewNotes: text('review_notes').notNull(),
+  isNew: boolean('is_new').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

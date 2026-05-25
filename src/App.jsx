@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { BookingProvider } from './contexts/BookingContext';
+import { RoomBookingProvider } from './contexts/RoomBookingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { Toaster } from 'sonner';
@@ -23,10 +24,13 @@ const queryClient = new QueryClient({
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import SuperadminLayout from './components/layout/SuperadminLayout';
+import UserRoomLayout from './components/layout/UserRoomLayout';
+import AdminRoomLayout from './components/layout/AdminRoomLayout';
 
 // ─── Lazy-loaded Pages ───
-// Auth (entry point)
+// Auth & Selector
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const ServiceSelectorPage = lazy(() => import('./pages/ServiceSelectorPage'));
 const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 
 // User pages
@@ -43,6 +47,16 @@ const DriversPage = lazy(() => import('./pages/admin/DriversPage'));
 const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
 const AdminChatPage = lazy(() => import('./pages/admin/AdminChatPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+
+// Room User pages
+const UserRoomDashboard = lazy(() => import('./pages/user/room/DashboardPage'));
+const UserMyRoomBookings = lazy(() => import('./pages/user/room/MyRoomBookingsPage'));
+
+// Room Admin pages
+const AdminRoomDashboard = lazy(() => import('./pages/admin/room/DashboardPage'));
+const AdminRoomRequests = lazy(() => import("./pages/admin/room/RequestBoardPage"));
+const AdminRoomManagement = lazy(() => import("./pages/admin/room/RoomManagementPage"));
+const AdminRoomReports = lazy(() => import("./pages/admin/room/ReportsPage"));
 
 // Superadmin pages (separate chunk group)
 const SuperadminDashboard = lazy(() => import('./pages/superadmin/DashboardPage'));
@@ -61,20 +75,16 @@ function ProtectedRoute({ children, role }) {
   }
 
   if (role && activeRole !== role) {
-    // Redirect to appropriate dashboard based on active role
     if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
-    if (activeRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/user/dashboard" replace />;
+    return <Navigate to="/select-service" replace />;
   }
   return children;
 }
 
 function PublicRoute({ children }) {
-  const { activeRole, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
-    if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
-    if (activeRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
-    return <Navigate to="/user/dashboard" replace />;
+    return <Navigate to="/select-service" replace />;
   }
   return children;
 }
@@ -84,6 +94,7 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/select-service" element={<ProtectedRoute><ServiceSelectorPage /></ProtectedRoute>} />
 
       {/* User Routes */}
       <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserLayout><UserDashboard /></UserLayout></ProtectedRoute>} />
@@ -99,6 +110,16 @@ function AppRoutes() {
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/chat" element={<ProtectedRoute role="admin"><AdminLayout><AdminChatPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminLayout><AdminSettingsPage /></AdminLayout></ProtectedRoute>} />
+
+      {/* Room User Routes */}
+      <Route path="/user/room/dashboard" element={<ProtectedRoute role="user"><UserRoomLayout><UserRoomDashboard /></UserRoomLayout></ProtectedRoute>} />
+      <Route path="/user/room/my-bookings" element={<ProtectedRoute role="user"><UserRoomLayout><UserMyRoomBookings /></UserRoomLayout></ProtectedRoute>} />
+
+      {/* Room Admin Routes */}
+      <Route path="/admin/room/dashboard" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomDashboard /></AdminRoomLayout></ProtectedRoute>} />
+      <Route path="/admin/room/requests" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomRequests /></AdminRoomLayout></ProtectedRoute>} />
+      <Route path="/admin/room/rooms" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomManagement /></AdminRoomLayout></ProtectedRoute>} />
+      <Route path="/admin/room/reports" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomReports /></AdminRoomLayout></ProtectedRoute>} />
 
       {/* Superadmin Routes */}
       <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
@@ -142,9 +163,11 @@ export default function App() {
         <ThemeProvider>
           <AuthProvider>
             <BookingProvider>
-              <LoadingProvider>
-                <AppShell />
-              </LoadingProvider>
+              <RoomBookingProvider>
+                <LoadingProvider>
+                  <AppShell />
+                </LoadingProvider>
+              </RoomBookingProvider>
             </BookingProvider>
           </AuthProvider>
         </ThemeProvider>

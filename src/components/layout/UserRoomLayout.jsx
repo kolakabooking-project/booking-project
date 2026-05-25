@@ -1,23 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useBooking } from '../../contexts/BookingContext';
+import { useRoomBooking } from '../../contexts/RoomBookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { NAV_USER } from '../../utils/constants';
-import { LogOut, ChevronDown, LayoutDashboard, CalendarPlus, ClipboardList, Bell, Home, CalendarDays, MessageSquareText, CircleUser, Car, Plus, ArrowLeft } from 'lucide-react';
+import { NAV_ROOM_USER } from '../../utils/constants';
+import { LogOut, ChevronDown, LayoutDashboard, ClipboardList, Bell, Home, CalendarDays, MessageSquareText, CircleUser, Building2, Plus, ArrowLeft } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getInitials } from '../../utils/helpers';
 import ChatWidget from '../chat/ChatWidget';
-import BookingModalFlow from '../shared/BookingModalFlow';
+import RoomBookingModalFlow from '../shared/RoomBookingModalFlow';
 
-const iconMap = { LayoutDashboard, CalendarPlus, ClipboardList };
+const iconMap = { LayoutDashboard, ClipboardList };
 
-export default function UserLayout({ children }) {
+export default function UserRoomLayout({ children }) {
   const { user, logout, switchRole } = useAuth();
   const { showLoading, hideLoading } = useLoading();
-  const { getUserBookings } = useBooking();
+  const { getUserRoomBookings } = useRoomBooking();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function UserLayout({ children }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const myBookings = user ? getUserBookings(user.id) : [];
+  const myBookings = user ? getUserRoomBookings(user.id) : [];
   const notifBookings = myBookings.filter(b => b.status === 'Disetujui' || b.status === 'Ditolak').slice(0, 5);
 
   const handleLogout = async () => {
@@ -55,12 +55,12 @@ export default function UserLayout({ children }) {
 
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-    navigate('/admin/dashboard');
+    navigate('/admin/room/dashboard');
   };
 
   const handleNotifClick = (bookingId) => {
     setNotifOpen(false);
-    navigate('/user/my-bookings', { state: { openBookingId: bookingId } });
+    navigate('/user/room/my-bookings', { state: { openBookingId: bookingId } });
   };
 
   return (
@@ -70,22 +70,22 @@ export default function UserLayout({ children }) {
         <div className="app-shell relative">
           <div className="flex min-h-[4rem] flex-wrap items-center justify-between gap-3 py-2 md:py-3">
             <div className="flex items-center gap-3">
-              <Link to="/user/dashboard" aria-label="Kembali ke home" className="inline-flex items-center rounded-lg focus:outline-none focus:ring-2 focus:ring-djp-blue/30">
+              <Link to="/user/room/dashboard" aria-label="Kembali ke home" className="inline-flex items-center rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                 <ThemeLogo className="h-8 md:h-10" />
               </Link>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2 rounded-full border p-1.5" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
-              {NAV_USER.map((item) => (
+              {NAV_ROOM_USER.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
                     `relative inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-heading font-semibold transition-all duration-200 ${
                       isActive
-                        ? 'bg-[color:var(--color-surface-elevated)] text-[color:var(--color-brand)] shadow-sm'
-                        : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-brand)]'
+                        ? 'bg-[color:var(--color-surface-elevated)] text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-[color:var(--color-text-muted)] hover:text-blue-600 dark:hover:text-blue-400'
                     }`
                   }
                 >
@@ -96,7 +96,7 @@ export default function UserLayout({ children }) {
                         return Icon ? <Icon size={16} /> : null;
                       })()}
                       {item.label}
-                      {isActive && <span className="absolute inset-x-5 -bottom-1 h-0.5 rounded-full bg-djp-yellow" />}
+                      {isActive && <span className="absolute inset-x-5 -bottom-1 h-0.5 rounded-full bg-blue-500" />}
                     </>
                   )}
                 </NavLink>
@@ -107,7 +107,7 @@ export default function UserLayout({ children }) {
             <div className="hidden md:flex items-center gap-3 relative">
               <button 
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative flex h-11 w-11 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-djp-blue"
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-blue-500"
                 style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
               >
                 <Bell size={18} />
@@ -119,11 +119,11 @@ export default function UserLayout({ children }) {
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-3 rounded-full border px-3 py-2 text-[color:var(--color-text-muted)] transition-colors hover:border-djp-blue/20"
+                  className="flex items-center gap-3 rounded-full border px-3 py-2 text-[color:var(--color-text-muted)] transition-colors hover:border-blue-500/20"
                   style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-djp-blue/10">
-                    <span className="text-sm font-heading font-bold text-djp-blue">{getInitials(user?.name)}</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/10">
+                    <span className="text-sm font-heading font-bold text-blue-600 dark:text-blue-400">{getInitials(user?.name)}</span>
                   </div>
                   <div className="text-left">
                     <p className="max-w-[100px] truncate text-sm font-heading font-bold text-[color:var(--color-heading)]">{user?.name}</p>
@@ -141,13 +141,13 @@ export default function UserLayout({ children }) {
                         className="block rounded-2xl px-4 py-3 transition-colors hover:bg-[color:var(--color-surface)] border border-transparent hover:border-[color:var(--color-border)]" 
                         style={{ background: 'var(--color-surface-muted)' }}
                       >
-                        <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)] group-hover:text-djp-blue transition-colors">{user?.name}</p>
+                        <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)] group-hover:text-blue-500 transition-colors">{user?.name}</p>
                         <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan}</p>
                       </Link>
                       {user?.role === 'admin' && (
                         <button
                           onClick={handleSwitchToAdmin}
-                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-djp-blue bg-djp-yellow hover:bg-yellow-400 transition-colors"
+                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors dark:bg-blue-900/30 dark:hover:bg-blue-800/40"
                         >
                           <CircleUser size={16} />
                           Mode Admin
@@ -156,7 +156,7 @@ export default function UserLayout({ children }) {
                       <Link
                         to="/select-service"
                         onClick={() => setProfileOpen(false)}
-                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-djp-blue bg-djp-blue/10 hover:bg-djp-blue/20 transition-colors"
+                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors dark:bg-blue-900/30 dark:hover:bg-blue-800/40"
                       >
                         <ArrowLeft size={16} />
                         Ganti Layanan
@@ -178,7 +178,7 @@ export default function UserLayout({ children }) {
             <div className="flex items-center gap-2 md:hidden">
               <button 
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-djp-blue"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full border text-[color:var(--color-text-soft)] transition-colors hover:text-blue-500"
                 style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
               >
                 <Bell size={18} />
@@ -243,13 +243,13 @@ export default function UserLayout({ children }) {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
         <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
           {/* 1. Beranda */}
-          <NavLink to="/user/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/room/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <Home size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Beranda</span>
           </NavLink>
           
           {/* 2. Agenda */}
-          <NavLink to="/user/my-bookings" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/room/my-bookings" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <CalendarDays size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Agenda</span>
           </NavLink>
@@ -260,25 +260,25 @@ export default function UserLayout({ children }) {
           {/* 3. Central Prominent Button */}
           <button 
             onClick={() => setBookingModalOpen(true)}
-            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-blue-500 to-blue-700 text-white shadow-xl shadow-blue-500/40 border-[6px] transition-transform active:scale-95"
             style={{ borderColor: 'var(--color-bg-main)' }}
           >
             <div className="relative flex items-center justify-center">
-              <Car size={28} strokeWidth={2} className="text-white relative z-10" />
-              <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
+              <Building2 size={28} strokeWidth={2} className="text-white relative z-10" />
+              <div className="absolute -top-1 -right-2 bg-blue-200 text-blue-800 rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
                 <Plus size={12} strokeWidth={4} />
               </div>
             </div>
           </button>
 
           {/* 4. Chat */}
-          <NavLink to="/user/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <MessageSquareText size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Chat</span>
           </NavLink>
 
           {/* 5. Akun */}
-          <NavLink to="/user/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <CircleUser size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Akun</span>
           </NavLink>
@@ -296,7 +296,7 @@ export default function UserLayout({ children }) {
       </div>
 
       {/* Global Booking Modal for Mobile Center Button */}
-      <BookingModalFlow 
+      <RoomBookingModalFlow 
         isOpen={bookingModalOpen} 
         onClose={() => setBookingModalOpen(false)} 
         selectedDate={null} 

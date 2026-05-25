@@ -12,6 +12,9 @@ import vehicleRoutes from './routes/vehicle.routes.js';
 import driverRoutes from './routes/driver.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import reportRoutes from './routes/report.routes.js';
+import roomRoutes from './routes/room.routes.js';
+import roomBookingRoutes from './routes/room-booking.routes.js';
+import roomReportRoutes from './routes/room-report.routes.js';
 import chatRoutes from './routes/chat.js';
 import superadminRoutes from './routes/superadmin.routes.js';
 import pushRoutes from './routes/push.routes.js';
@@ -178,11 +181,12 @@ export function createApp() {
   // Uses shared cache to avoid redundant DB queries
   app.get('/api/service-status', async (_req, res) => {
     try {
-      const { isServiceActive } = await import('./lib/serviceStatusCache.js');
-      const active = await isServiceActive();
-      res.json({ data: { active } });
+      const { isKdoServiceActive, isRoomServiceActive } = await import('./lib/serviceStatusCache.js');
+      const kdoActive = await isKdoServiceActive();
+      const roomActive = await isRoomServiceActive();
+      res.json({ data: { kdoActive, roomActive } });
     } catch {
-      res.json({ data: { active: true } }); // Default to active on error
+      res.json({ data: { kdoActive: true, roomActive: true } }); // Default to active on error
     }
   });
 
@@ -194,6 +198,9 @@ export function createApp() {
   app.use('/api/drivers', apiLimiter, authGuard, maintenanceGuard, driverRoutes);
   app.use('/api/bookings', apiLimiter, maintenanceGuard, bookingRoutes);
   app.use('/api/reports', apiLimiter, authGuard, maintenanceGuard, reportRoutes);
+  app.use('/api/rooms', apiLimiter, authGuard, maintenanceGuard, roomRoutes);
+  app.use('/api/room-bookings', apiLimiter, maintenanceGuard, roomBookingRoutes);
+  app.use('/api/room-reports', apiLimiter, authGuard, maintenanceGuard, roomReportRoutes);
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
 
