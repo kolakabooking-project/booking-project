@@ -23,6 +23,7 @@ export default function SplashScreen({ sessionReady, onComplete }) {
     const video = videoRef.current;
     if (!video) return;
 
+    video.playbackRate = 2.0; // Speed up video 2x
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {
