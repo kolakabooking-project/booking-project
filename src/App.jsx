@@ -82,8 +82,11 @@ function ProtectedRoute({ children, role }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, activeRole } = useAuth();
   if (isAuthenticated) {
+    if (activeRole === 'superadmin') {
+      return <Navigate to="/superadmin/dashboard" replace />;
+    }
     return <Navigate to="/select-service" replace />;
   }
   return children;
