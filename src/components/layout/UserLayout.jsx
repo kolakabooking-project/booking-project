@@ -286,7 +286,7 @@ export default function UserLayout({ children }) {
       </div>
 
       {/* Floating Theme Toggle */}
-      <div className="fixed bottom-24 right-4 md:bottom-6 md:right-24 z-50">
+      <div className="hidden md:block fixed bottom-6 right-24 z-50">
         <ThemeToggle iconOnly={true} className="shadow-xl shadow-black/10 hover:-translate-y-1 transition-all duration-300 bg-[color:var(--color-surface-elevated)] border-[color:var(--color-border)]" />
       </div>
       

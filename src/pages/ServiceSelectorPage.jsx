@@ -37,7 +37,7 @@ export default function ServiceSelectorPage() {
   const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 pt-32 md:pt-20">
       {/* Top Navbar */}
       <div className="absolute top-0 w-full px-6 pb-6 pt-[max(env(safe-area-inset-top,1.5rem),1.5rem)] flex justify-between items-center z-20">
         <div className="flex items-center gap-3">
@@ -67,7 +67,7 @@ export default function ServiceSelectorPage() {
         </div>
       </div>
 
-      <div className="text-center mb-10 mt-16">
+      <div className="text-center mb-10 mt-4 md:mt-12">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Selamat Datang, {user?.name?.split(' ')[0]}</h2>
         <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
           Silakan pilih layanan yang ingin Anda gunakan hari ini
