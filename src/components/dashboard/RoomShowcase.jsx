@@ -129,9 +129,6 @@ export default function RoomShowcase() {
                 )}
               </div>
               <div className="vs-card-name font-bold text-gray-800 dark:text-gray-200">{r.name}</div>
-              <div className="vs-card-plate text-xs flex items-center justify-center gap-1 mt-1 text-gray-500">
-                <Users size={12} /> {r.capacity} Pax
-              </div>
               <div className={`vs-card-status vs-card-status--${statusCls} mt-2`}>
                 <span className="vs-card-status-dot" />
                 {getStatusLabel(r)}
@@ -166,9 +163,6 @@ export default function RoomShowcase() {
               <div className="flex-1">
                 <div className="font-heading font-extrabold text-gray-900 dark:text-white text-lg">
                   {selectedRoom.name}
-                </div>
-                <div className="flex items-center gap-3 text-xs font-semibold text-gray-500 mt-1">
-                  <span className="flex items-center gap-1"><Users size={12} /> {selectedRoom.capacity} Pax</span>
                 </div>
               </div>
               <div>

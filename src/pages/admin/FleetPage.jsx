@@ -116,19 +116,23 @@ export default function FleetPage() {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Kendaraan' : 'Tambah Kendaraan'} size="lg">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormInput label="Nomor Polisi" id="platNomor" required value={form.platNomor} onChange={(e) => setForm({ ...form, platNomor: e.target.value })} placeholder="DT 1234 AB" />
-          <FormInput label="Merek/Tipe" id="merek" required value={form.merek} onChange={(e) => setForm({ ...form, merek: e.target.value })} placeholder="Toyota Avanza" />
-          <FormInput label="Jenis" id="tipe" type="select" value={form.tipe} onChange={(e) => setForm({ ...form, tipe: e.target.value })}><option value="Mobil">Mobil</option><option value="Motor">Motor</option></FormInput>
-          <FormInput label="Tahun" id="tahun" type="number" value={form.tahun} onChange={(e) => setForm({ ...form, tahun: parseInt(e.target.value) })} />
-          <FormInput label="Kapasitas" id="kapasitas" type="number" value={form.kapasitas} onChange={(e) => setForm({ ...form, kapasitas: parseInt(e.target.value) })} />
-          <FormInput label="Warna" id="warna" value={form.warna} onChange={(e) => setForm({ ...form, warna: e.target.value })} placeholder="Hitam" />
-          <FormInput label="Odometer (KM)" id="odometer" type="number" value={form.odometer} onChange={(e) => setForm({ ...form, odometer: parseInt(e.target.value) })} />
+          <FormInput label="Nomor Polisi" id="platNomor" required value={form.platNomor || ''} onChange={(e) => setForm({ ...form, platNomor: e.target.value })} placeholder="Cth: B 1234 CD" />
+          <FormInput label="Merek / Model" id="merek" required value={form.merek || ''} onChange={(e) => setForm({ ...form, merek: e.target.value })} placeholder="Cth: Toyota Avanza" />
+          <FormInput label="Tipe Kendaraan" id="tipe" type="select" value={form.tipe || 'Mobil'} onChange={(e) => setForm({ ...form, tipe: e.target.value })}>
+            <option value="Mobil">Mobil</option>
+            <option value="Motor">Motor</option>
+            <option value="Minibus">Minibus</option>
+          </FormInput>
+          <FormInput label="Tahun Kendaraan" id="tahun" type="number" required value={form.tahun || ''} onChange={(e) => setForm({ ...form, tahun: e.target.value ? parseInt(e.target.value) : '' })} />
+          <FormInput label="Warna" id="warna" value={form.warna || ''} onChange={(e) => setForm({ ...form, warna: e.target.value })} placeholder="Cth: Hitam" />
+          <FormInput label="Kapasitas" id="kapasitas" type="number" value={form.kapasitas || ''} onChange={(e) => setForm({ ...form, kapasitas: e.target.value ? parseInt(e.target.value) : '' })} />
+          <FormInput label="Odometer (KM)" id="odometer" type="number" value={form.odometer || ''} onChange={(e) => setForm({ ...form, odometer: e.target.value ? parseInt(e.target.value) : '' })} />
+          <FormInput label="Jadwal Pajak" id="jadwalPajak" type="date" value={form.jadwalPajak || ''} onChange={(e) => setForm({ ...form, jadwalPajak: e.target.value })} />
+          <FormInput label="Jadwal Servis Berikutnya" id="jadwalServis" type="date" value={form.jadwalServis || ''} onChange={(e) => setForm({ ...form, jadwalServis: e.target.value })} />
           <FormInput label="Status" id="status" type="select" value={form.status === VEHICLE_STATUS.IN_USE ? VEHICLE_STATUS.AVAILABLE : form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
             <option value={VEHICLE_STATUS.AVAILABLE}>{VEHICLE_STATUS.AVAILABLE}</option>
             <option value={VEHICLE_STATUS.MAINTENANCE}>{VEHICLE_STATUS.MAINTENANCE}</option>
           </FormInput>
-          <FormInput label="Jadwal Pajak" id="jadwalPajak" type="date" value={form.jadwalPajak} onChange={(e) => setForm({ ...form, jadwalPajak: e.target.value })} />
-          <FormInput label="Jadwal Servis" id="jadwalServis" type="date" value={form.jadwalServis} onChange={(e) => setForm({ ...form, jadwalServis: e.target.value })} />
         </div>
         <div className="mt-4">
           <PhotoUploadCard 

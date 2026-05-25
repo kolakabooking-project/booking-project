@@ -7,6 +7,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import FormInput from '../ui/FormInput';
+import CounterInput from '../ui/CounterInput';
 import { Plus, ArrowLeft, Car, Info, Send, Search, CheckCircle } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
 import { toast } from 'sonner';
@@ -416,14 +417,12 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         placeholder="Misal: Kunjungan lapangan, meeting..."
       />
 
-      <FormInput
+      <CounterInput
         label="Jumlah Penumpang"
-        id="jumlahPenumpang"
-        type="number"
-        required
-        min="1"
-        value={form.jumlahPenumpang}
-        onChange={(e) => setForm({...form, jumlahPenumpang: e.target.value})}
+        value={parseInt(form.jumlahPenumpang) || 1}
+        onChange={(val) => setForm({...form, jumlahPenumpang: val})}
+        min={1}
+        max={100}
       />
 
       <FormInput

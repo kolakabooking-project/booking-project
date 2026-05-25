@@ -6,6 +6,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import FormInput from '../ui/FormInput';
+import CounterInput from '../ui/CounterInput';
 import { Plus, ArrowLeft, Building2, Info, Send, Search, CheckCircle, Users } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
 import { toast } from 'sonner';
@@ -277,7 +278,6 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
                     <p className="font-heading font-extrabold text-gray-900 dark:text-white text-sm">
                       {r.name}
                     </p>
-                    <p className="text-xs font-semibold text-gray-500 mt-0.5 flex items-center gap-1"><Users size={10} className="text-gray-400"/> Kapasitas: {r.capacity} Pax</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -318,14 +318,12 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
       />
 
       <div className="grid grid-cols-2 gap-5">
-        <FormInput
+        <CounterInput
           label="Jumlah Peserta"
-          id="jumlahPeserta"
-          type="number"
-          required
-          min="1"
-          value={form.jumlahPeserta}
-          onChange={(e) => setForm({...form, jumlahPeserta: e.target.value})}
+          value={parseInt(form.jumlahPeserta) || 1}
+          onChange={(val) => setForm({...form, jumlahPeserta: val})}
+          min={1}
+          max={200}
         />
         <FormInput
           label="Catatan (Opsional)"
@@ -380,24 +378,6 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
             
             <div className="text-center">
               <h3 className="text-2xl font-heading font-extrabold text-gray-900 dark:text-white">{roomDetailModal.name}</h3>
-              <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold mt-2">
-                <Users size={14} /> Kapasitas Maksimal: {roomDetailModal.capacity} Orang
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
-              <h4 className="text-xs uppercase tracking-widest font-bold text-gray-500 mb-3">Fasilitas Tersedia</h4>
-              <div className="flex flex-wrap gap-2">
-                {Array.isArray(roomDetailModal.facilities) && roomDetailModal.facilities.length > 0 ? (
-                  roomDetailModal.facilities.map((f, i) => (
-                    <span key={i} className="inline-block px-3 py-1.5 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-                      {f}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 italic">Tidak ada rincian fasilitas.</p>
-                )}
-              </div>
             </div>
             
             <div className="flex justify-end mt-8 pt-4 border-t border-gray-100">

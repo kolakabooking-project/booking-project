@@ -251,7 +251,6 @@ export const room = pgTable('room', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   lokasi: text('lokasi').notNull(),
-  kapasitas: integer('kapasitas').notNull().default(10),
   status: text('status', { enum: ['Tersedia', 'Dalam Perawatan'] })
     .notNull()
     .default('Tersedia'),
