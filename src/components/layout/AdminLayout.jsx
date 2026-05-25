@@ -81,14 +81,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
       </nav>
 
       <div className="space-y-2 border-t border-white/8 px-3 py-4">
-        <div className="mb-2">
-          <ThemeToggle 
-            className={`transition-all duration-300 ${
-              collapsed && !isMobile 
-                ? 'w-11 px-0 justify-center [&>span:last-child]:!hidden' 
-                : 'w-full justify-start'
-            } border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20`}
-          />
+        <div className="mb-2 hidden">
         </div>
         {(!collapsed || isMobile) && (
           <Link to="/admin/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
@@ -446,6 +439,10 @@ export default function AdminLayout({ children }) {
         dateBookings={[]} 
         isAdmin={true}
       />
+      {/* Floating Theme Toggle (Bottom Right) */}
+      <div className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-50">
+        <ThemeToggle iconOnly={true} className="shadow-xl shadow-black/10 hover:-translate-y-1 transition-all duration-300 bg-[color:var(--color-surface-elevated)] border-[color:var(--color-border)]" />
+      </div>
     </div>
   );
 }

@@ -80,14 +80,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
       </nav>
 
       <div className="space-y-2 border-t border-white/8 px-3 py-4">
-        <div className="mb-2">
-          <ThemeToggle 
-            className={`transition-all duration-300 ${
-              collapsed && !isMobile 
-                ? 'w-11 px-0 justify-center [&>span:last-child]:!hidden' 
-                : 'w-full justify-start'
-            } border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20`}
-          />
+        <div className="mb-2 hidden">
         </div>
         {(!collapsed || isMobile) && (
           <div className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm">
@@ -309,7 +302,7 @@ export default function AdminRoomLayout({ children }) {
           
           <NavLink to="/admin/room/requests" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <CalendarCheck size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Booking Aktif</span>
+            <span className="text-[10px] font-bold">Booking</span>
           </NavLink>
 
           <div className="w-16"></div>
@@ -332,9 +325,9 @@ export default function AdminRoomLayout({ children }) {
             <span className="text-[10px] font-bold">Laporan</span>
           </NavLink>
 
-          <NavLink to="/admin/room/rooms" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <Settings size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Ruangan</span>
+          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <Users size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Akun</span>
           </NavLink>
         </div>
       </div>
@@ -349,7 +342,7 @@ export default function AdminRoomLayout({ children }) {
             <div className="grid grid-cols-2 gap-4">
               <button onClick={() => { setActionModalOpen(false); setBookingModalOpen(true); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Building2 size={24} /></div>
-                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Peminjaman<br/>(Mandatory)</span>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Booking<br/>Ruangan</span>
               </button>
               <button onClick={() => { setActionModalOpen(false); navigate('/admin/room/rooms'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Settings size={24} /></div>
@@ -369,6 +362,10 @@ export default function AdminRoomLayout({ children }) {
         dateBookings={[]} 
         isAdmin={true}
       />
+      {/* Floating Theme Toggle (Bottom Right) */}
+      <div className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-50">
+        <ThemeToggle iconOnly={true} className="shadow-xl shadow-black/10 hover:-translate-y-1 transition-all duration-300 bg-[color:var(--color-surface-elevated)] border-[color:var(--color-border)]" />
+      </div>
     </div>
   );
 }

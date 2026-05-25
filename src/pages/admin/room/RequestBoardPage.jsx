@@ -225,20 +225,20 @@ export default function RequestBoardPage() {
           <div className="surface-card empty-state">Tidak ada data yang ditemukan.</div>
         ) : (
           currentData.map((b) => (
-            <div key={b.id} className="surface-card p-4 border border-gray-100 hover:border-blue-200" onClick={() => openModal(b)}>
+            <div key={b.id} className="surface-card p-4 border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-500/50" onClick={() => openModal(b)}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-heading font-bold text-gray-900 truncate">{b.userName}</p>
+                  <p className="font-heading font-bold text-gray-900 dark:text-white truncate">{b.userName}</p>
                   <p className="text-[10px] text-gray-500">#{b.id.slice(-6)}</p>
                 </div>
                 <Badge status={b.status} />
               </div>
-              <p className="text-xs text-gray-600 line-clamp-1 mb-2">{b.keperluan}</p>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                <div className="text-[11px] text-gray-500">
+              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-2">{b.keperluan}</p>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div className="text-[11px] text-gray-500 dark:text-gray-400">
                   {formatDateShort(b.startTime)} • {formatTime(b.startTime)}-{formatTime(b.endTime)}
                 </div>
-                <span className="text-[11px] font-bold text-blue-600 truncate ml-2 max-w-[120px]">{b.roomName}</span>
+                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 truncate ml-2 max-w-[120px]">{b.roomName}</span>
               </div>
             </div>
           ))

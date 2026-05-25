@@ -10,7 +10,7 @@ import { serviceApi } from '../lib/api';
 
 export default function ServiceSelectorPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, activeRole, logout } = useAuth();
   const [serviceStatus, setServiceStatus] = useState({ kdoActive: true, roomActive: true });
 
   useEffect(() => {
@@ -34,12 +34,12 @@ export default function ServiceSelectorPage() {
     }
   };
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
       {/* Top Navbar */}
-      <div className="absolute top-0 w-full p-6 flex justify-between items-center">
+      <div className="absolute top-0 w-full px-6 pb-6 pt-[max(env(safe-area-inset-top,1.5rem),1.5rem)] flex justify-between items-center z-20">
         <div className="flex items-center gap-3">
           <ThemeLogo className="h-8 md:h-10" />
         </div>
