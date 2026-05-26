@@ -20,12 +20,12 @@ const queryClient = new QueryClient({
   },
 });
 
-// Layouts (kept static — they wrap every page in their role group)
-import UserLayout from './components/layout/UserLayout';
-import AdminLayout from './components/layout/AdminLayout';
-import SuperadminLayout from './components/layout/SuperadminLayout';
-import UserRoomLayout from './components/layout/UserRoomLayout';
-import AdminRoomLayout from './components/layout/AdminRoomLayout';
+// Layouts
+const UserLayout = lazy(() => import('./components/layout/UserLayout'));
+const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
+const SuperadminLayout = lazy(() => import('./components/layout/SuperadminLayout'));
+const UserRoomLayout = lazy(() => import('./components/layout/UserRoomLayout'));
+const AdminRoomLayout = lazy(() => import('./components/layout/AdminRoomLayout'));
 
 // ─── Lazy-loaded Pages ───
 // Auth & Selector
@@ -117,12 +117,16 @@ function AppRoutes() {
       {/* Room User Routes */}
       <Route path="/user/room/dashboard" element={<ProtectedRoute role="user"><UserRoomLayout><UserRoomDashboard /></UserRoomLayout></ProtectedRoute>} />
       <Route path="/user/room/my-bookings" element={<ProtectedRoute role="user"><UserRoomLayout><UserMyRoomBookings /></UserRoomLayout></ProtectedRoute>} />
+      <Route path="/user/room/chat" element={<ProtectedRoute role="user"><UserRoomLayout><UserChatPage /></UserRoomLayout></ProtectedRoute>} />
+      <Route path="/user/room/account" element={<ProtectedRoute role="user"><UserRoomLayout><AccountPage /></UserRoomLayout></ProtectedRoute>} />
 
       {/* Room Admin Routes */}
       <Route path="/admin/room/dashboard" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomDashboard /></AdminRoomLayout></ProtectedRoute>} />
       <Route path="/admin/room/requests" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomRequests /></AdminRoomLayout></ProtectedRoute>} />
       <Route path="/admin/room/rooms" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomManagement /></AdminRoomLayout></ProtectedRoute>} />
       <Route path="/admin/room/reports" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomReports /></AdminRoomLayout></ProtectedRoute>} />
+      <Route path="/admin/room/settings" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminSettingsPage /></AdminRoomLayout></ProtectedRoute>} />
+      <Route path="/admin/room/chat" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminChatPage /></AdminRoomLayout></ProtectedRoute>} />
 
       {/* Superadmin Routes */}
       <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
@@ -138,12 +142,16 @@ function AppRoutes() {
   );
 }
 
+import ErrorBoundary from './components/ui/ErrorBoundary';
+
 function AppShell() {
   const { theme } = useTheme();
 
   return (
     <>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
       <PWAInstallPrompt />
       <Toaster
         position="top-center"

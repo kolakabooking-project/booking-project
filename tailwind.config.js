@@ -38,8 +38,8 @@ export default {
         },
       },
       fontFamily: {
-        heading: ['Aptos Display', 'Segoe UI Variable Display', 'Trebuchet MS', 'sans-serif'],
-        body: ['Aptos', 'Segoe UI Variable Text', 'Segoe UI', 'sans-serif'],
+        heading: ['Montserrat', 'Aptos Display', 'Segoe UI Variable Display', 'sans-serif'],
+        body: ['Segoe UI', 'Aptos', 'Segoe UI Variable Text', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out',

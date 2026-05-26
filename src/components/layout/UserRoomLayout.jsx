@@ -136,7 +136,7 @@ export default function UserRoomLayout({ children }) {
                   <>
                     <div className="absolute right-0 top-[3.75rem] z-20 w-64 rounded-3xl border p-2 shadow-2xl animate-scale-in" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
                       <Link 
-                        to="/user/account"
+                        to="/user/room/account"
                         onClick={() => setProfileOpen(false)}
                         className="block rounded-2xl px-4 py-3 transition-colors hover:bg-[color:var(--color-surface)] border border-transparent hover:border-[color:var(--color-border)]" 
                         style={{ background: 'var(--color-surface-muted)' }}
@@ -272,13 +272,13 @@ export default function UserRoomLayout({ children }) {
           </button>
 
           {/* 4. Chat */}
-          <NavLink to="/user/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/room/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <MessageSquareText size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Chat</span>
           </NavLink>
 
           {/* 5. Akun */}
-          <NavLink to="/user/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/room/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <CircleUser size={20} strokeWidth={2.5} />
             <span className="text-[10px] font-bold">Akun</span>
           </NavLink>

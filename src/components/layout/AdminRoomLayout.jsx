@@ -112,7 +112,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         <Link
           to="/select-service"
           title={collapsed ? 'Ganti Layanan' : undefined}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/80 bg-white/10 hover:bg-white/20 hover:text-white transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
         >
           <ArrowLeft size={20} className="flex-shrink-0" />
           {(!collapsed || isMobile) && <span>Ganti Layanan</span>}
@@ -300,9 +300,12 @@ export default function AdminRoomLayout({ children }) {
             <span className="text-[10px] font-bold">Beranda</span>
           </NavLink>
           
-          <NavLink to="/admin/room/requests" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <CalendarCheck size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Booking</span>
+          <NavLink to="/admin/room/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <div className="relative">
+              <MessageCircle size={20} strokeWidth={2.5} />
+              {hasUnreadChat && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+            </div>
+            <span className="text-[10px] font-bold">Chat</span>
           </NavLink>
 
           <div className="w-16"></div>
@@ -325,9 +328,9 @@ export default function AdminRoomLayout({ children }) {
             <span className="text-[10px] font-bold">Laporan</span>
           </NavLink>
 
-          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <Users size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Akun</span>
+          <NavLink to="/admin/room/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-blue-500' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <Settings size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold">Settings</span>
           </NavLink>
         </div>
       </div>
@@ -344,9 +347,9 @@ export default function AdminRoomLayout({ children }) {
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Building2 size={24} /></div>
                 <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Booking<br/>Ruangan</span>
               </button>
-              <button onClick={() => { setActionModalOpen(false); navigate('/admin/room/rooms'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Settings size={24} /></div>
-                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Manajemen<br/>Ruangan</span>
+              <button onClick={() => { setActionModalOpen(false); navigate('/admin/room/requests'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
+                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><CalendarCheck size={24} /></div>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Daftar<br/>Booking</span>
               </button>
             </div>
             <button onClick={() => setActionModalOpen(false)} className="mt-6 w-full py-3.5 rounded-2xl font-bold text-[color:var(--color-text-muted)] bg-[color:var(--color-surface-muted)] hover:bg-[color:var(--color-border)] transition-colors">Batal</button>

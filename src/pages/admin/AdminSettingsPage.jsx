@@ -2,12 +2,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { authApi } from '../../lib/api';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell, ArrowLeft } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell, ArrowLeft, Building2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'sonner';
 
@@ -57,6 +57,7 @@ export default function AdminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
   const { showLoading, hideLoading } = useLoading();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
 
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -258,31 +259,48 @@ export default function AdminSettingsPage() {
         <div className="md:hidden">
           <h3 className="px-2 text-xs font-bold uppercase tracking-widest text-[color:var(--color-text-soft)] mb-3">Manajemen (Mobile)</h3>
           <div className="rounded-3xl border overflow-hidden" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
-            <Link 
-              to="/admin/fleet"
-              className="w-full flex items-center justify-between p-4 border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
-              style={{ borderColor: 'var(--color-border)' }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
-                  <Car size={18} className="text-djp-blue" />
+            {location.pathname.includes('/room/') ? (
+              <Link 
+                to="/admin/room/rooms"
+                className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
+                    <Building2 size={18} className="text-djp-blue" />
+                  </div>
+                  <span className="font-semibold text-[color:var(--color-heading)] text-sm">Manajemen Ruangan</span>
                 </div>
-                <span className="font-semibold text-[color:var(--color-heading)] text-sm">Manajemen Kendaraan</span>
-              </div>
-              <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
-            </Link>
-            <Link 
-              to="/admin/drivers"
-              className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
-                  <Users size={18} className="text-djp-blue" />
-                </div>
-                <span className="font-semibold text-[color:var(--color-heading)] text-sm">Manajemen Pengemudi</span>
-              </div>
-              <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
-            </Link>
+                <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
+              </Link>
+            ) : (
+              <>
+                <Link 
+                  to="/admin/fleet"
+                  className="w-full flex items-center justify-between p-4 border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
+                      <Car size={18} className="text-djp-blue" />
+                    </div>
+                    <span className="font-semibold text-[color:var(--color-heading)] text-sm">Manajemen Kendaraan</span>
+                  </div>
+                  <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
+                </Link>
+                <Link 
+                  to="/admin/drivers"
+                  className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
+                      <Users size={18} className="text-djp-blue" />
+                    </div>
+                    <span className="font-semibold text-[color:var(--color-heading)] text-sm">Manajemen Pengemudi</span>
+                  </div>
+                  <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
 

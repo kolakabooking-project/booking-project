@@ -147,7 +147,7 @@ export default function UserLayout({ children }) {
                       {user?.role === 'admin' && (
                         <button
                           onClick={handleSwitchToAdmin}
-                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-djp-blue bg-djp-yellow hover:bg-yellow-400 transition-colors"
+                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-djp-yellow hover:bg-yellow-400 transition-colors"
                         >
                           <CircleUser size={16} />
                           Mode Admin

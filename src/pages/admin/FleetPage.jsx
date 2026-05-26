@@ -115,7 +115,7 @@ export default function FleetPage() {
       </DataTable>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Kendaraan' : 'Tambah Kendaraan'} size="lg">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-end">
           <FormInput label="Nomor Polisi" id="platNomor" required value={form.platNomor || ''} onChange={(e) => setForm({ ...form, platNomor: e.target.value })} placeholder="Cth: B 1234 CD" />
           <FormInput label="Merek / Model" id="merek" required value={form.merek || ''} onChange={(e) => setForm({ ...form, merek: e.target.value })} placeholder="Cth: Toyota Avanza" />
           <FormInput label="Tipe Kendaraan" id="tipe" type="select" value={form.tipe || 'Mobil'} onChange={(e) => setForm({ ...form, tipe: e.target.value })}>

@@ -264,7 +264,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         />
       )}
       {mode === 'form_single' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <FormInput
             label="Tanggal Peminjaman"
             id="startDate"
@@ -274,7 +274,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
             disabled={!!selectedDate && !isAdmin}
             onChange={(e) => { setForm({...form, startDate: e.target.value, endDate: e.target.value}); setAvailChecked(false); }}
           />
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 items-end">
             <FormInput
               label="Waktu Mulai"
               id="startTime"
@@ -315,7 +315,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <FormInput
             label="Tanggal Mulai"
             id="startDate"
@@ -453,7 +453,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
           mode === 'select_type' ? 'Buat Peminjaman Baru' :
           mode === 'form_single' ? 'Form Pinjam Sehari' : 'Form Lebih Dari Sehari'
         }
-        size="md"
+        size="lg"
       >
         {mode === 'list' && renderListMode()}
         {mode === 'select_type' && renderSelectTypeMode()}

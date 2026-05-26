@@ -94,7 +94,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
           <button
             onClick={handleSwitchToUser}
             title={collapsed ? 'Mode Pegawai' : undefined}
-            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-djp-blue bg-djp-yellow hover:bg-yellow-400 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-slate-900 bg-djp-yellow hover:bg-yellow-400 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
           >
             <Users size={20} className="flex-shrink-0" />
             {(!collapsed || isMobile) && <span>Mode Pegawai</span>}
@@ -113,7 +113,7 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         <Link
           to="/select-service"
           title={collapsed ? 'Ganti Layanan' : undefined}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-djp-blue bg-djp-blue/10 hover:bg-djp-blue/20 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/80 bg-white/10 hover:bg-white/20 hover:text-white transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
         >
           <ArrowLeft size={20} className="flex-shrink-0" />
           {(!collapsed || isMobile) && <span>Ganti Layanan</span>}

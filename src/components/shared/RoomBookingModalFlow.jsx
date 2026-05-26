@@ -196,7 +196,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         />
       )}
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-end">
         <FormInput
           label="Tanggal Booking"
           id="startDate"
@@ -206,7 +206,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
           disabled={!!selectedDate && !isAdmin}
           onChange={(e) => { setForm({...form, startDate: e.target.value}); setAvailChecked(false); }}
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 items-end">
           <FormInput
             label="Waktu Mulai"
             id="startTime"
@@ -317,7 +317,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         placeholder="Misal: Rapat Koordinasi Bulanan..."
       />
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-2 gap-5 items-end">
         <CounterInput
           label="Jumlah Peserta"
           value={parseInt(form.jumlahPeserta) || 1}
@@ -352,7 +352,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         title={
           mode === 'list' ? `Jadwal Ruangan: ${selectedDate ? formatDateShort(selectedDate) : ''}` : 'Booking Ruang Rapat'
         }
-        size="md"
+        size="lg"
       >
         <div className="p-1">
           {mode === 'list' && renderListMode()}
