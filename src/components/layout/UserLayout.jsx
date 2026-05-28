@@ -66,7 +66,7 @@ export default function UserLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg-main)] min-w-0 overflow-x-hidden pb-24 md:pb-0">
+    <div className="min-h-screen bg-[color:var(--color-bg-main)] min-w-0 overflow-x-hidden pb-32 md:pb-0">
       <SkipLink />
       {/* Top Navigation */}
       <nav role="navigation" aria-label="Navigasi utama" className="sticky top-0 z-40 border-b backdrop-blur-xl shadow-[var(--shadow-navbar)] pt-[max(env(safe-area-inset-top),0px)]" style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-shell)' }}>
@@ -243,7 +243,7 @@ export default function UserLayout({ children }) {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
           {/* 1. Beranda */}
           <NavLink to="/user/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
