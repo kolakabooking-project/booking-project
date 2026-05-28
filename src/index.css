@@ -501,3 +501,10 @@ input:focus, select:focus, textarea:focus {
   background: rgba(245, 158, 11, 0.15) !important;
   color: #f59e0b !important;
 }
+
+/* Safe Area Inset support for Mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

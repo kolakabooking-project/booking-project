@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -243,17 +244,21 @@ export default function UserLayout({ children }) {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
           {/* 1. Beranda */}
-          <NavLink to="/user/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <Home size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Beranda</span>
+          <NavLink to="/user/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <Home size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Beranda</span>
+            </motion.div>
           </NavLink>
           
           {/* 2. Agenda */}
-          <NavLink to="/user/my-bookings" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <CalendarDays size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Agenda</span>
+          <NavLink to="/user/my-bookings" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <CalendarDays size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Agenda</span>
+            </motion.div>
           </NavLink>
 
           {/* Spacer for center button */}
@@ -262,27 +267,33 @@ export default function UserLayout({ children }) {
           {/* 3. Central Prominent Button */}
           <button 
             onClick={() => setBookingModalOpen(true)}
-            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            className="absolute left-1/2 -top-6 -translate-x-1/2 rounded-full border-[6px]"
             style={{ borderColor: 'var(--color-bg-main)' }}
           >
-            <div className="relative flex items-center justify-center">
-              <Car size={28} strokeWidth={2} className="text-white relative z-10" />
-              <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
-                <Plus size={12} strokeWidth={4} />
+            <motion.div whileTap={{ scale: 0.9 }} className="flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40">
+              <div className="relative flex items-center justify-center">
+                <Car size={28} strokeWidth={2} className="text-white relative z-10" />
+                <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
+                  <Plus size={12} strokeWidth={4} />
+                </div>
               </div>
-            </div>
+            </motion.div>
           </button>
 
           {/* 4. Chat */}
-          <NavLink to="/user/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <MessageSquareText size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Chat</span>
+          <NavLink to="/user/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <MessageSquareText size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Chat</span>
+            </motion.div>
           </NavLink>
 
           {/* 5. Akun */}
-          <NavLink to="/user/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <CircleUser size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Akun</span>
+          <NavLink to="/user/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <CircleUser size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Akun</span>
+            </motion.div>
           </NavLink>
         </div>
       </div>

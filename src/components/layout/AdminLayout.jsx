@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAbly } from '../../contexts/AblyProvider';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
@@ -341,43 +342,53 @@ export default function AdminLayout({ children }) {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
-          <NavLink to="/admin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <Home size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Beranda</span>
+        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
+          <NavLink to="/admin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <Home size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Beranda</span>
+            </motion.div>
           </NavLink>
           
-          <NavLink to="/admin/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <div className="relative">
-              <MessageCircle size={20} strokeWidth={2.5} />
-              {hasUnreadChat && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-            </div>
-            <span className="text-[10px] font-bold">Chat</span>
+          <NavLink to="/admin/chat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <div className="relative">
+                <MessageCircle size={20} strokeWidth={2.5} />
+                {hasUnreadChat && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+              </div>
+              <span className="text-[10px] font-bold">Chat</span>
+            </motion.div>
           </NavLink>
 
           <div className="w-16"></div>
 
           <button 
             onClick={() => setActionModalOpen(true)}
-            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            className="absolute left-1/2 -top-6 -translate-x-1/2 rounded-full border-[6px]"
             style={{ borderColor: 'var(--color-bg-main)' }}
           >
-            <div className="relative flex items-center justify-center">
-               <Car size={28} strokeWidth={2} className="text-white relative z-10" />
-               <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
-                 <Plus size={12} strokeWidth={4} />
-               </div>
-            </div>
+            <motion.div whileTap={{ scale: 0.9 }} className="flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40">
+              <div className="relative flex items-center justify-center">
+                 <Car size={28} strokeWidth={2} className="text-white relative z-10" />
+                 <div className="absolute -top-1 -right-2 bg-djp-yellow text-djp-blue-dark rounded-full shadow-sm z-20" style={{ padding: '2px' }}>
+                   <Plus size={12} strokeWidth={4} />
+                 </div>
+              </div>
+            </motion.div>
           </button>
 
-          <NavLink to="/admin/reports" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <FileSpreadsheet size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Laporan</span>
+          <NavLink to="/admin/reports" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <FileSpreadsheet size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Laporan</span>
+            </motion.div>
           </NavLink>
 
-          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <Settings size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Settings</span>
+          <NavLink to="/admin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <Settings size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Settings</span>
+            </motion.div>
           </NavLink>
         </div>
       </div>

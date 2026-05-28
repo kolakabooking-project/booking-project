@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_SUPERADMIN } from '../../utils/constants';
@@ -172,33 +173,43 @@ export default function SuperadminLayout({ children }) {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)] border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
-          <NavLink to="/superadmin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
-            <Shield size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Beranda</span>
+        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
+          <NavLink to="/superadmin/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <Shield size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Beranda</span>
+            </motion.div>
           </NavLink>
-          <NavLink to="/superadmin/accounts" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
-            <UserCog size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Akun</span>
+          <NavLink to="/superadmin/accounts" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <UserCog size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Akun</span>
+            </motion.div>
           </NavLink>
           <div className="w-16"></div>
 
           <NavLink 
             to="/superadmin/service"
-            className="absolute left-1/2 -top-6 -translate-x-1/2 flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40 border-[6px] transition-transform active:scale-95"
+            className="absolute left-1/2 -top-6 -translate-x-1/2 rounded-full border-[6px]"
             style={{ borderColor: 'var(--color-bg-main)' }}
           >
-            <div className="relative flex items-center justify-center">
-               <Power size={28} strokeWidth={2} className="text-white relative z-10" />
-            </div>
+            <motion.div whileTap={{ scale: 0.9 }} className="flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-b from-djp-blue to-blue-600 text-white shadow-xl shadow-djp-blue/40">
+              <div className="relative flex items-center justify-center">
+                 <Power size={28} strokeWidth={2} className="text-white relative z-10" />
+              </div>
+            </motion.div>
           </NavLink>
-          <NavLink to="/superadmin/logs" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
-            <ScrollText size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Log</span>
+          <NavLink to="/superadmin/logs" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <ScrollText size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Log</span>
+            </motion.div>
           </NavLink>
-          <NavLink to="/superadmin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full gap-1 transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
-            <Settings size={20} strokeWidth={2.5} />
-            <span className="text-[10px] font-bold">Setting</span>
+          <NavLink to="/superadmin/settings" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-red-500' : 'text-[color:var(--color-text-soft)]'}`}>
+            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
+              <Settings size={20} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Setting</span>
+            </motion.div>
           </NavLink>
         </div>
       </div>
