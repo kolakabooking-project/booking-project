@@ -15,26 +15,33 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // Handle initial focus
+  useEffect(() => {
+    if (isOpen && overlayRef.current) {
+      const focusableElements = overlayRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      if (firstElement) {
+        setTimeout(() => firstElement.focus(), 50);
+      }
+    }
+  }, [isOpen]);
+
+  // Handle focus trap and escape key
   useEffect(() => {
     if (!isOpen) return;
 
-    // Focus trap
-    const modalElement = overlayRef.current;
-    if (!modalElement) return;
-
-    const focusableElements = modalElement.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-    
-    // Focus first element on open if it exists
-    if (firstElement) {
-      // Delay slightly to ensure transition doesn't interfere
-      setTimeout(() => firstElement.focus(), 50);
-    }
-
     const handleKeyDown = (e) => {
+      const modalElement = overlayRef.current;
+      if (!modalElement) return;
+
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
       if (e.key === 'Escape') {
         onClose();
         return;
