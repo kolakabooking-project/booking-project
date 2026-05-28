@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatApi } from '../../lib/api';
-import { Realtime } from 'ably';
+import { useAbly } from '../../contexts/AblyProvider';
 
 export default function ChatWidget() {
   const { user, activeRole, isAuthenticated } = useAuth();
@@ -15,7 +15,7 @@ export default function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
-  const ablyRef = useRef(null);
+  const { subscribe } = useAbly();
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -55,68 +55,46 @@ export default function ChatWidget() {
     loadHistory();
   }, [isAuthenticated, user, activeRole]);
 
-  // Initialize Ably
+  // Initialize Ably (via shared AblyProvider)
   useEffect(() => {
     if (!isAuthenticated || activeRole !== 'user') return;
 
-    if (!ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
+    const unsub1 = subscribe(`chat:user_${user.id}`, 'new_message', (msg) => {
+      const newMsg = msg.data;
+      setMessages(prev => {
+        // Prevent duplicates by checking DB id OR tempId
+        const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
+        if (existingIdx !== -1) {
+          // If we found it by tempId, replace it with the real message from Ably
+          if (prev[existingIdx].id === newMsg.tempId) {
+             const newArr = [...prev];
+             newArr[existingIdx] = newMsg;
+             return newArr;
           }
+          return prev;
         }
+        return [...prev, newMsg];
       });
-
-      // Subscribe to user's specific channel
-      const channel = realtime.channels.get(`chat:user_${user.id}`);
       
-      channel.subscribe('new_message', (msg) => {
-        const newMsg = msg.data;
-        setMessages(prev => {
-          // Prevent duplicates by checking DB id OR tempId
-          const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
-          if (existingIdx !== -1) {
-            // If we found it by tempId, replace it with the real message from Ably
-            if (prev[existingIdx].id === newMsg.tempId) {
-               const newArr = [...prev];
-               newArr[existingIdx] = newMsg;
-               return newArr;
-            }
-            return prev;
-          }
-          return [...prev, newMsg];
-        });
-        
-        // If not sent by me, and chat is closed or minimized, increment unread
-        if (newMsg.senderId !== user.id) {
-          if (!isOpen || isMinimized) {
-            setUnreadCount(prev => prev + 1);
-          } else {
-            // Automatically mark as read if chat is open
-            chatApi.markAsRead({ userId: user.id, role: activeRole, currentUserId: user.id });
-          }
+      // If not sent by me, and chat is closed or minimized, increment unread
+      if (newMsg.senderId !== user.id) {
+        if (!isOpen || isMinimized) {
+          setUnreadCount(prev => prev + 1);
+        } else {
+          // Automatically mark as read if chat is open
+          chatApi.markAsRead({ userId: user.id, role: activeRole, currentUserId: user.id });
         }
-      });
+      }
+    });
 
-      channel.subscribe('clear_chat', () => {
-        setMessages([]);
-        setUnreadCount(0);
-      });
-
-      ablyRef.current = realtime;
-    }
+    const unsub2 = subscribe(`chat:user_${user.id}`, 'clear_chat', () => {
+      setMessages([]);
+      setUnreadCount(0);
+    });
 
     return () => {
-      if (ablyRef.current) {
-        ablyRef.current.close();
-        ablyRef.current = null;
-      }
+      unsub1();
+      unsub2();
     };
   }, [isAuthenticated, user, activeRole, isOpen, isMinimized]);
 

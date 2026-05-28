@@ -9,6 +9,7 @@ import FormInput from '../ui/FormInput';
 import CounterInput from '../ui/CounterInput';
 import { Plus, ArrowLeft, Building2, Info, Send, Search, CheckCircle, Users } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
+import { BOOKING_STATUS } from '../../utils/constants';
 import { toast } from 'sonner';
 
 export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, dateBookings = [], isAdmin = false }) {
@@ -39,7 +40,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
     const dateObj = new Date(`${form.startDate}T12:00:00`); 
     
     return getRoomBookingsForDate(dateObj).filter(b => 
-      b.status === 'Berlangsung' || b.status === 'Disetujui'
+      b.status === BOOKING_STATUS.ONGOING || b.status === BOOKING_STATUS.APPROVED
     ).sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
   }, [form.startDate, getRoomBookingsForDate]);
 
@@ -148,20 +149,20 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
             {dateBookings.length} aktivitas di ruangan pada tanggal ini:
           </p>
           {dateBookings.map((b) => (
-            <div key={b.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
+            <div key={b.id} className="rounded-2xl p-4 border" style={{ background: 'var(--color-surface-muted)', borderColor: 'var(--color-border)' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-heading font-bold text-gray-900 dark:text-white truncate pr-2">{b.userName}</span>
+                <span className="text-sm font-heading font-bold text-[color:var(--color-heading)] truncate pr-2">{b.userName}</span>
                 <Badge status={b.status} />
               </div>
               <div className="flex items-center justify-between mt-1">
-                <p className="text-xs font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
+                <p className="text-xs font-mono font-bold text-blue-600 px-2 py-0.5 rounded-md" style={{ background: 'color-mix(in srgb, var(--color-brand) 10%, transparent)' }}>
                   {formatTime(b.startTime)} - {formatTime(b.endTime)}
                 </p>
                 {b.roomName && (
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1"><Building2 size={12}/> {b.roomName}</p>
+                  <p className="text-xs font-bold text-[color:var(--color-text-muted)] flex items-center gap-1"><Building2 size={12}/> {b.roomName}</p>
                 )}
               </div>
-              <p className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-400">{b.keperluan}</p>
+              <p className="mt-2 text-xs font-medium text-[color:var(--color-text-soft)]">{b.keperluan}</p>
             </div>
           ))}
         </div>

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Realtime } from 'ably';
+import { createContext, useContext, useCallback, useEffect, useMemo } from 'react';
+import { useAbly } from './AblyProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bookingApi, vehicleApi, driverApi } from '../lib/api';
 import { useAuth } from './AuthContext';
@@ -10,6 +10,7 @@ const BookingContext = createContext(null);
 export function BookingProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const { subscribe } = useAbly();
 
   // ─── TanStack Queries (Server Cache) ───
 
@@ -61,65 +62,42 @@ export function BookingProvider({ children }) {
     await queryClient.invalidateQueries({ queryKey: ['drivers'] });
   }, [queryClient]);
 
-  // ─── Real-Time Ably Subscription ───
-  const ablyRef = useRef(null);
+  // ─── Real-Time Ably Subscription (via shared AblyProvider) ───
 
   useEffect(() => {
-    if (isAuthenticated && !ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', {
-              credentials: 'include', // Send better-auth session cookies
-            });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
-          }
-        }
-      });
+    if (!isAuthenticated) return;
 
-      const channel = realtime.channels.get('bookings');
-      channel.subscribe('update', (message) => {
-        console.log('[ABLY] Realtime Update received:', message.data);
-        const { type, booking } = message.data;
-        
-        if (!booking) {
-          refreshBookings();
-          return;
-        }
+    const unsubscribe = subscribe('bookings', 'update', (message) => {
+      console.log('[ABLY] Realtime Update received:', message.data);
+      const { type, booking } = message.data;
+      
+      if (!booking) {
+        refreshBookings();
+        return;
+      }
 
-        // Intelligently mutate the server cache directly for zero-delay optimistic UI updates
-        if (type === 'BOOKING_CREATED') {
-          queryClient.setQueryData(['bookings'], (old) => {
-            const current = old || [];
-            if (current.some(b => b.id === booking.id)) return current;
-            return [booking, ...current];
-          });
-        } else if (['BOOKING_APPROVED', 'BOOKING_REJECTED', 'BOOKING_CANCELLED', 'REVIEW_SUBMITTED'].includes(type)) {
-          queryClient.setQueryData(['bookings'], (old) => {
-            const current = old || [];
-            return current.map(b => b.id === booking.id ? booking : b);
-          });
-          // Invalidate vehicles and drivers in case status/availability changed
-          queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-          queryClient.invalidateQueries({ queryKey: ['drivers'] });
-        } else {
-          refreshBookings();
-        }
-      });
+      // Intelligently mutate the server cache directly for zero-delay optimistic UI updates
+      if (type === 'BOOKING_CREATED') {
+        queryClient.setQueryData(['bookings'], (old) => {
+          const current = old || [];
+          if (current.some(b => b.id === booking.id)) return current;
+          return [booking, ...current];
+        });
+      } else if (['BOOKING_APPROVED', 'BOOKING_REJECTED', 'BOOKING_CANCELLED', 'REVIEW_SUBMITTED'].includes(type)) {
+        queryClient.setQueryData(['bookings'], (old) => {
+          const current = old || [];
+          return current.map(b => b.id === booking.id ? booking : b);
+        });
+        // Invalidate vehicles and drivers in case status/availability changed
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      } else {
+        refreshBookings();
+      }
+    });
 
-      ablyRef.current = realtime;
-    }
-
-    // Cleanup Ably subscription when auth state ends
-    if (!isAuthenticated && ablyRef.current) {
-      ablyRef.current.close();
-      ablyRef.current = null;
-    }
-  }, [isAuthenticated, queryClient, refreshBookings, refreshVehicles]);
+    return unsubscribe;
+  }, [isAuthenticated, subscribe, queryClient, refreshBookings]);
 
   // ─── Booking Actions ───
   // Pattern: await the mutation + minimum loading time, then trigger background refresh.

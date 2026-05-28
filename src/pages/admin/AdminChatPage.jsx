@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Send, Search, User as UserIcon, Trash2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatApi } from '../../lib/api';
-import { Realtime } from 'ably';
+import { useAbly } from '../../contexts/AblyProvider';
 import { getInitials } from '../../utils/helpers';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
@@ -19,7 +19,6 @@ export default function AdminChatPage() {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const ablyRef = useRef(null);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -70,63 +69,40 @@ export default function AdminChatPage() {
     loadMessages();
   }, [selectedUser, user, activeRole]);
 
-  // Ably Realtime setup for Admin
+  // Ably Realtime setup for Admin (via shared AblyProvider)
+  const { subscribe } = useAbly();
+
   useEffect(() => {
     if (!isAuthenticated || activeRole !== 'admin') return;
 
-    if (!ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
-          }
-        }
-      });
-
-      // Admin subscribes to the global 'chat:admin' channel
-      const channel = realtime.channels.get('chat:admin');
+    const unsubscribe = subscribe('chat:admin', 'new_message', (msg) => {
+      const newMsg = msg.data;
       
-      channel.subscribe('new_message', (msg) => {
-        const newMsg = msg.data;
-        
-        setMessages(prev => {
-          const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
-          if (existingIdx !== -1) {
-            if (prev[existingIdx].id === newMsg.tempId) {
-               const newArr = [...prev];
-               newArr[existingIdx] = newMsg;
-               return newArr;
-            }
-            return prev;
-          }
-          
-          if (selectedUser && (newMsg.senderId === selectedUser.id || newMsg.receiverId === selectedUser.id)) {
-            if (newMsg.senderId === selectedUser.id) {
-              chatApi.markAsRead({ userId: selectedUser.id, role: activeRole, currentUserId: user.id });
-            }
-            return [...prev, newMsg];
+      setMessages(prev => {
+        const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
+        if (existingIdx !== -1) {
+          if (prev[existingIdx].id === newMsg.tempId) {
+             const newArr = [...prev];
+             newArr[existingIdx] = newMsg;
+             return newArr;
           }
           return prev;
-        });
-
-        // We could also update the users list here to show unread badges or sort by latest
+        }
+        
+        if (selectedUser && (newMsg.senderId === selectedUser.id || newMsg.receiverId === selectedUser.id)) {
+          if (newMsg.senderId === selectedUser.id) {
+            chatApi.markAsRead({ userId: selectedUser.id, role: activeRole, currentUserId: user.id });
+          }
+          return [...prev, newMsg];
+        }
+        return prev;
       });
 
-      ablyRef.current = realtime;
-    }
+      // We could also update the users list here to show unread badges or sort by latest
+    });
 
-    return () => {
-      if (ablyRef.current) {
-        ablyRef.current.close();
-        ablyRef.current = null;
-      }
-    };
-  }, [isAuthenticated, user, selectedUser, activeRole]);
+    return unsubscribe;
+  }, [isAuthenticated, user, selectedUser, activeRole, subscribe]);
 
   const handleSend = async (e) => {
     e?.preventDefault();

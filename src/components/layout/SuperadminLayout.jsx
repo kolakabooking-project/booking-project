@@ -9,6 +9,7 @@ import {
   Menu, LogOut, ChevronLeft, Home, ChevronRight,
   Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard,
 } from 'lucide-react';
+import SkipLink from '../ui/SkipLink';
 
 const iconMap = { Shield, UsersCog: UserCog, Power, ScrollText };
 
@@ -129,6 +130,7 @@ export default function SuperadminLayout({ children }) {
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-[color:var(--color-bg-main)]">
+      <SkipLink />
       {/* Desktop Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'}`}
@@ -163,7 +165,7 @@ export default function SuperadminLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
           {children}
         </main>
       </div>

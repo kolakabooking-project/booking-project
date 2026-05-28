@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Realtime } from 'ably';
+import { useAbly } from '../../contexts/AblyProvider';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -14,6 +14,7 @@ import {
   Settings, Plus, Shield, ArrowLeft,
 } from 'lucide-react';
 import BookingModalFlow from '../shared/BookingModalFlow';
+import SkipLink from '../ui/SkipLink';
 
 const iconMap = { LayoutDashboard, ClipboardCheck, Car, Users, FileSpreadsheet, MessageCircle };
 
@@ -164,49 +165,20 @@ export default function AdminLayout({ children }) {
     }
   }, [location.pathname]);
 
-  const ablyRef = useRef(null);
+  const { subscribe } = useAbly();
 
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) return;
 
-    if (!ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
-          }
-        }
-      });
-
-      const channel = realtime.channels.get('chat:admin');
-      channel.subscribe('new_message', (msg) => {
-        const newMsg = msg.data;
-        if (newMsg.senderId !== user.id && window.location.pathname !== '/admin/chat') {
-          setHasUnreadChat(true);
-        }
-      });
-
-      ablyRef.current = realtime;
-    }
-
-    return () => {
-      if (ablyRef.current) {
-        // Wait a bit before closing to avoid strict mode promise rejection on pending auth
-        const currentAbly = ablyRef.current;
-        setTimeout(() => {
-           if (currentAbly.connection.state !== 'closed') {
-             currentAbly.close();
-           }
-        }, 1000);
-        ablyRef.current = null;
+    const unsubscribe = subscribe('chat:admin', 'new_message', (msg) => {
+      const newMsg = msg.data;
+      if (newMsg.senderId !== user.id && window.location.pathname !== '/admin/chat') {
+        setHasUnreadChat(true);
       }
-    };
-  }, [user]);
+    });
+
+    return unsubscribe;
+  }, [user, subscribe]);
 
   const pending = getPendingBookings();
   const reviewNotifs = getReviewNotifications();
@@ -247,6 +219,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-[color:var(--color-bg-main)]">
+      <SkipLink />
       <aside
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col bg-[linear-gradient(180deg,#182553_0%,#101b3d_100%)] shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'
           }`}
@@ -361,7 +334,7 @@ export default function AdminLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
           {children}
         </main>
       </div>

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Realtime } from 'ably';
+import { createContext, useContext, useCallback, useEffect, useMemo } from 'react';
+import { useAbly } from './AblyProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { roomApi, roomBookingApi } from '../lib/api';
 import { useAuth } from './AuthContext';
@@ -10,6 +10,7 @@ const RoomBookingContext = createContext(null);
 export function RoomBookingProvider({ children }) {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const { subscribe } = useAbly();
 
   // ─── TanStack Queries (Server Cache) ───
 
@@ -46,59 +47,39 @@ export function RoomBookingProvider({ children }) {
     await queryClient.invalidateQueries({ queryKey: ['roomBookings'] });
   }, [queryClient]);
 
-  // ─── Real-Time Ably Subscription ───
-  const ablyRef = useRef(null);
+  // ─── Real-Time Ably Subscription (via shared AblyProvider) ───
 
   useEffect(() => {
-    if (isAuthenticated && !ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
-          }
-        }
-      });
+    if (!isAuthenticated) return;
 
-      const channel = realtime.channels.get('room-bookings');
-      channel.subscribe('update', (message) => {
-        const { type, booking } = message.data;
-        
-        if (!booking) {
-          refreshRoomBookings();
-          return;
-        }
+    const unsubscribe = subscribe('room-bookings', 'update', (message) => {
+      const { type, booking } = message.data;
+      
+      if (!booking) {
+        refreshRoomBookings();
+        return;
+      }
 
-        if (type === 'ROOM_BOOKING_CREATED') {
-          queryClient.setQueryData(['roomBookings'], (old) => {
-            const current = old || [];
-            if (current.some(b => b.id === booking.id)) return current;
-            return [booking, ...current];
-          });
-          refreshRooms(); // status update for room
-        } else if (['ROOM_BOOKING_CANCELLED', 'ROOM_REVIEW_SUBMITTED'].includes(type)) {
-          queryClient.setQueryData(['roomBookings'], (old) => {
-            const current = old || [];
-            return current.map(b => b.id === booking.id ? booking : b);
-          });
-          refreshRooms();
-        } else {
-          refreshRoomBookings();
-        }
-      });
+      if (type === 'ROOM_BOOKING_CREATED') {
+        queryClient.setQueryData(['roomBookings'], (old) => {
+          const current = old || [];
+          if (current.some(b => b.id === booking.id)) return current;
+          return [booking, ...current];
+        });
+        refreshRooms(); // status update for room
+      } else if (['ROOM_BOOKING_CANCELLED', 'ROOM_REVIEW_SUBMITTED'].includes(type)) {
+        queryClient.setQueryData(['roomBookings'], (old) => {
+          const current = old || [];
+          return current.map(b => b.id === booking.id ? booking : b);
+        });
+        refreshRooms();
+      } else {
+        refreshRoomBookings();
+      }
+    });
 
-      ablyRef.current = realtime;
-    }
-
-    if (!isAuthenticated && ablyRef.current) {
-      ablyRef.current.close();
-      ablyRef.current = null;
-    }
-  }, [isAuthenticated, queryClient, refreshRoomBookings, refreshRooms]);
+    return unsubscribe;
+  }, [isAuthenticated, subscribe, queryClient, refreshRoomBookings, refreshRooms]);
 
   // ─── Room Booking Actions ───
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatApi } from '../../lib/api';
-import { Realtime } from 'ably';
+import { useAbly } from '../../contexts/AblyProvider';
 import { Send, MessageCircle } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 
@@ -13,7 +13,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
-  const ablyRef = useRef(null);
+  const { subscribe } = useAbly();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,61 +46,40 @@ export default function ChatPage() {
     loadHistory();
   }, [isAuthenticated, user]);
 
-  // Initialize Ably
+  // Initialize Ably (via shared AblyProvider)
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'user') return;
 
-    if (!ablyRef.current) {
-      const realtime = new Realtime({
-        authCallback: async (tokenParams, callback) => {
-          try {
-            const response = await fetch('/api/ably/auth', { credentials: 'include' });
-            if (!response.ok) throw new Error('Ably auth failed');
-            const tokenRequest = await response.json();
-            callback(null, tokenRequest);
-          } catch (err) {
-            callback(err, null);
+    const unsub1 = subscribe(`chat:user_${user.id}`, 'new_message', (msg) => {
+      const newMsg = msg.data;
+      setMessages(prev => {
+        const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
+        if (existingIdx !== -1) {
+          if (prev[existingIdx].id === newMsg.tempId) {
+             const newArr = [...prev];
+             newArr[existingIdx] = newMsg;
+             return newArr;
           }
+          return prev;
         }
+        return [...prev, newMsg];
       });
-
-      const channel = realtime.channels.get(`chat:user_${user.id}`);
       
-      channel.subscribe('new_message', (msg) => {
-        const newMsg = msg.data;
-        setMessages(prev => {
-          const existingIdx = prev.findIndex(m => m.id === newMsg.id || m.id === newMsg.tempId);
-          if (existingIdx !== -1) {
-            if (prev[existingIdx].id === newMsg.tempId) {
-               const newArr = [...prev];
-               newArr[existingIdx] = newMsg;
-               return newArr;
-            }
-            return prev;
-          }
-          return [...prev, newMsg];
-        });
-        
-        // Automatically mark as read
-        if (newMsg.senderId !== user.id) {
-          chatApi.markAsRead({ userId: user.id, role: user.role, currentUserId: user.id });
-        }
-      });
+      // Automatically mark as read
+      if (newMsg.senderId !== user.id) {
+        chatApi.markAsRead({ userId: user.id, role: user.role, currentUserId: user.id });
+      }
+    });
 
-      channel.subscribe('clear_chat', () => {
-        setMessages([]);
-      });
-
-      ablyRef.current = realtime;
-    }
+    const unsub2 = subscribe(`chat:user_${user.id}`, 'clear_chat', () => {
+      setMessages([]);
+    });
 
     return () => {
-      if (ablyRef.current) {
-        ablyRef.current.close();
-        ablyRef.current = null;
-      }
+      unsub1();
+      unsub2();
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, subscribe]);
 
   const handleSend = async (e) => {
     e?.preventDefault();

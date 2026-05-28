@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AblyProvider } from './contexts/AblyProvider';
 import { BookingProvider } from './contexts/BookingContext';
 import { RoomBookingProvider } from './contexts/RoomBookingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -173,13 +174,15 @@ export default function App() {
       <BrowserRouter>
         <ThemeProvider>
           <AuthProvider>
-            <BookingProvider>
-              <RoomBookingProvider>
-                <LoadingProvider>
-                  <AppShell />
-                </LoadingProvider>
-              </RoomBookingProvider>
-            </BookingProvider>
+            <AblyProvider>
+              <BookingProvider>
+                <RoomBookingProvider>
+                  <LoadingProvider>
+                    <AppShell />
+                  </LoadingProvider>
+                </RoomBookingProvider>
+              </BookingProvider>
+            </AblyProvider>
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>

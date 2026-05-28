@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Realtime } from 'ably';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRoomBooking } from '../../contexts/RoomBookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -14,6 +13,7 @@ import {
   Settings, Plus, Shield, ArrowLeft, Users
 } from 'lucide-react';
 import RoomBookingModalFlow from '../shared/RoomBookingModalFlow';
+import SkipLink from '../ui/SkipLink';
 
 const iconMap = { LayoutDashboard, CalendarCheck, Building2, FileSpreadsheet, MessageCircle };
 
@@ -191,6 +191,7 @@ export default function AdminRoomLayout({ children }) {
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-[color:var(--color-bg-main)]">
+      <SkipLink />
       <aside
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col bg-[linear-gradient(180deg,#182553_0%,#101b3d_100%)] shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'
           }`}
@@ -287,7 +288,7 @@ export default function AdminRoomLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 animate-fade-in pb-24 lg:pb-8">
           {children}
         </main>
       </div>

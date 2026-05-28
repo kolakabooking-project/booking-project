@@ -1,57 +1,16 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { authApi } from '../../lib/api';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import PasswordField from '../../components/ui/PasswordField';
 import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell, ArrowLeft, Building2 } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Check, X as XIcon, CircleUser, Car, Users, Shield, Bell, ArrowLeft, Building2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { toast } from 'sonner';
-
-// ─── Password strength rules ───
-const PASSWORD_RULES = [
-  { id: 'length', label: 'Minimal 8 karakter', test: (v) => v.length >= 8 },
-  { id: 'upper', label: 'Mengandung huruf besar (A-Z)', test: (v) => /[A-Z]/.test(v) },
-  { id: 'lower', label: 'Mengandung huruf kecil (a-z)', test: (v) => /[a-z]/.test(v) },
-  { id: 'number', label: 'Mengandung angka (0-9)', test: (v) => /[0-9]/.test(v) },
-];
-
-function PasswordField({ label, id, value, onChange, required = true }) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)]">
-        {label}
-        {required && <span className="text-danger ml-0.5">*</span>}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          name={id}
-          type={visible ? 'text' : 'password'}
-          required={required}
-          autoComplete={id === 'oldPwd' ? 'current-password' : 'new-password'}
-          value={value}
-          onChange={onChange}
-          className="form-control font-body pr-12"
-        />
-        <button
-          type="button"
-          tabIndex={-1}
-          onClick={() => setVisible((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[color:var(--color-text-soft)] hover:text-[color:var(--color-heading)] transition-colors"
-          aria-label={visible ? 'Sembunyikan password' : 'Tampilkan password'}
-        >
-          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-      </div>
-    </div>
-  );
-}
+import usePasswordChange from '../../hooks/usePasswordChange';
+import usePushNotification from '../../hooks/usePushNotification';
 
 export default function AdminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
@@ -62,109 +21,29 @@ export default function AdminSettingsPage() {
 
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [pwdForm, setPwdForm] = useState({ old: '', new: '', confirm: '' });
-  const [loading, setLoading] = useState(false);
 
-  // ─── Push Notification settings ───
-  const [pushSupported, setPushSupported] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushLoading, setPushLoading] = useState(false);
+  // ─── Shared hooks ───
+  const {
+    pwdForm,
+    setPwdForm,
+    loading,
+    passwordStrength,
+    passwordsMatch,
+    canSubmit,
+    resetForm,
+    handlePasswordSubmit,
+  } = usePasswordChange({
+    showLoading,
+    hideLoading,
+    onSuccess: () => setPasswordOpen(false),
+  });
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setPushSupported(true);
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.pushManager.getSubscription().then((sub) => {
-          setPushEnabled(!!sub);
-        });
-      });
-    }
-  }, []);
-
-  const handlePushToggle = async () => {
-    if (!pushSupported || pushLoading) return;
-    setPushLoading(true);
-
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      
-      if (pushEnabled) {
-        // Unsubscribe
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await sub.unsubscribe();
-          // Notify backend — credentials: 'include' wajib agar cookie sesi terkirim
-          await fetch('/api/push/unsubscribe', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          });
-        }
-        setPushEnabled(false);
-        toast.success('Notifikasi sistem dinonaktifkan.');
-      } else {
-        // Subscribe
-        // 1. Request permission
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          toast.error('Izin notifikasi ditolak. Harap aktifkan izin notifikasi di setelan browser Anda.');
-          setPushLoading(false);
-          return;
-        }
-
-        // 2. Fetch VAPID public key from server
-        const keyRes = await fetch('/api/push/vapid-public-key', {
-          credentials: 'include',
-        });
-        if (!keyRes.ok) throw new Error('Gagal mengambil VAPID key dari server');
-        const { publicKey } = await keyRes.json();
-
-        // 3. Subscribe to push manager
-        const subscribeOptions = {
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        };
-        const newSub = await reg.pushManager.subscribe(subscribeOptions);
-
-        // 4. Send subscription to backend
-        const subData = JSON.parse(JSON.stringify(newSub));
-        const registerRes = await fetch('/api/push/subscribe', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ subscription: subData }),
-        });
-
-        if (!registerRes.ok) throw new Error('Gagal mengirim data subscription ke server');
-
-        setPushEnabled(true);
-        toast.success('Notifikasi sistem berhasil diaktifkan!');
-      }
-    } catch (err) {
-      console.error('[PushToggle] Error toggling push notifications:', err);
-      toast.error(err.message || 'Gagal mengubah pengaturan notifikasi.');
-    } finally {
-      setPushLoading(false);
-    }
-  };
-
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushEnabled,
+    isLoading: pushLoading,
+    toggleSubscription: handlePushToggle,
+  } = usePushNotification();
 
   const handleLogout = async () => {
     showLoading('Melakukan logout...');
@@ -184,56 +63,6 @@ export default function AdminSettingsPage() {
   const handleSwitchToSuperadmin = () => {
     switchRole('superadmin');
     navigate('/superadmin/dashboard');
-  };
-
-  // ─── Password validation ───
-  const passwordStrength = PASSWORD_RULES.map((rule) => ({
-    ...rule,
-    passed: rule.test(pwdForm.new),
-  }));
-  const allRulesPassed = passwordStrength.every((r) => r.passed);
-  const passwordsMatch = pwdForm.new.length > 0 && pwdForm.new === pwdForm.confirm;
-  const canSubmit = pwdForm.old.length > 0 && allRulesPassed && passwordsMatch;
-
-  const resetForm = useCallback(() => {
-    setPwdForm({ old: '', new: '', confirm: '' });
-  }, []);
-
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-
-    // Client-side guards
-    if (!allRulesPassed) {
-      toast.error('Password baru belum memenuhi semua persyaratan keamanan');
-      return;
-    }
-    if (pwdForm.new !== pwdForm.confirm) {
-      toast.error('Password baru dan konfirmasi tidak cocok');
-      return;
-    }
-    if (pwdForm.old === pwdForm.new) {
-      toast.error('Password baru tidak boleh sama dengan password lama');
-      return;
-    }
-
-    setLoading(true);
-    showLoading('Memperbarui password Anda...');
-    try {
-      await authApi.changePassword(pwdForm.old, pwdForm.new);
-      toast.success('Password berhasil diperbarui');
-      setPasswordOpen(false);
-      resetForm();
-    } catch (err) {
-      const msg = err.message || 'Gagal mengubah password';
-      if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('wrong') || msg.toLowerCase().includes('invalid')) {
-        toast.error('Password lama salah. Silakan coba lagi.');
-      } else {
-        toast.error(msg);
-      }
-    } finally {
-      setLoading(false);
-      hideLoading();
-    }
   };
 
   return (

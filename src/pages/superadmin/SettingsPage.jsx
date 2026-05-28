@@ -1,38 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { authApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Eye, EyeOff, Check, X as XIcon, LayoutDashboard } from 'lucide-react';
+import PasswordField from '../../components/ui/PasswordField';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Check, X as XIcon, LayoutDashboard } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { toast } from 'sonner';
-
-const PASSWORD_RULES = [
-  { id: 'length', label: 'Minimal 8 karakter', test: (v) => v.length >= 8 },
-  { id: 'upper', label: 'Mengandung huruf besar (A-Z)', test: (v) => /[A-Z]/.test(v) },
-  { id: 'lower', label: 'Mengandung huruf kecil (a-z)', test: (v) => /[a-z]/.test(v) },
-  { id: 'number', label: 'Mengandung angka (0-9)', test: (v) => /[0-9]/.test(v) },
-];
-
-function PasswordField({ label, id, value, onChange, required = true }) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)]">
-        {label}{required && <span className="text-danger ml-0.5">*</span>}
-      </label>
-      <div className="relative">
-        <input id={id} name={id} type={visible ? 'text' : 'password'} required={required} autoComplete={id === 'oldPwd' ? 'current-password' : 'new-password'} value={value} onChange={onChange} className="form-control font-body pr-12" />
-        <button type="button" tabIndex={-1} onClick={() => setVisible((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[color:var(--color-text-soft)] hover:text-[color:var(--color-heading)] transition-colors">
-          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-      </div>
-    </div>
-  );
-}
+import usePasswordChange from '../../hooks/usePasswordChange';
 
 export default function SuperadminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
@@ -41,8 +17,22 @@ export default function SuperadminSettingsPage() {
   const { isDark, toggleTheme } = useTheme();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [pwdForm, setPwdForm] = useState({ old: '', new: '', confirm: '' });
-  const [loading, setLoading] = useState(false);
+
+  // ─── Shared hooks ───
+  const {
+    pwdForm,
+    setPwdForm,
+    loading,
+    passwordStrength,
+    passwordsMatch,
+    canSubmit,
+    resetForm,
+    handlePasswordSubmit,
+  } = usePasswordChange({
+    showLoading,
+    hideLoading,
+    onSuccess: () => setPasswordOpen(false),
+  });
 
   const handleLogout = async () => {
     showLoading('Melakukan logout...');
@@ -54,29 +44,6 @@ export default function SuperadminSettingsPage() {
     }
   };
   const handleSwitchToAdmin = () => { switchRole('admin'); navigate('/admin/dashboard'); };
-
-  const passwordStrength = PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(pwdForm.new) }));
-  const allRulesPassed = passwordStrength.every((r) => r.passed);
-  const passwordsMatch = pwdForm.new.length > 0 && pwdForm.new === pwdForm.confirm;
-  const canSubmit = pwdForm.old.length > 0 && allRulesPassed && passwordsMatch;
-  const resetForm = useCallback(() => setPwdForm({ old: '', new: '', confirm: '' }), []);
-
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    if (!allRulesPassed) { toast.error('Password baru belum memenuhi semua persyaratan'); return; }
-    if (pwdForm.new !== pwdForm.confirm) { toast.error('Password tidak cocok'); return; }
-    if (pwdForm.old === pwdForm.new) { toast.error('Password baru tidak boleh sama dengan password lama'); return; }
-    setLoading(true);
-    try {
-      await authApi.changePassword(pwdForm.old, pwdForm.new);
-      toast.success('Password berhasil diperbarui');
-      setPasswordOpen(false);
-      resetForm();
-    } catch (err) {
-      const msg = err.message || 'Gagal mengubah password';
-      toast.error(msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('wrong') ? 'Password lama salah' : msg);
-    } finally { setLoading(false); }
-  };
 
   return (
     <div className="pb-10">
