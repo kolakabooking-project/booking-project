@@ -1,64 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { superadminApi } from '../../lib/api';
-import { useLoading } from '../../contexts/LoadingContext';
 import PageHeader from '../../components/ui/PageHeader';
-import { Power, Shield, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { Power, Shield, AlertTriangle, Clock } from 'lucide-react';
+import useServiceControl from '../../hooks/useServiceControl';
 
 export default function ServiceControlPage() {
-  const { showLoading, hideLoading } = useLoading();
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(false);
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await superadminApi.getServiceStatus();
-      setStatus(res.data);
-    } catch {
-      toast.error('Gagal memuat status layanan');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchStatus(); }, [fetchStatus]);
-
-  const handleToggleKdo = async () => {
-    if (!status) return;
-    const newActive = !status.kdoActive;
-    
-    setToggling(true);
-    showLoading(newActive ? 'Mengaktifkan layanan Booking KDO...' : 'Menonaktifkan layanan Booking KDO...');
-    try {
-      const res = await superadminApi.toggleService(newActive, undefined);
-      setStatus({ ...status, kdoActive: res.data.kdoActive, updatedAt: res.data.updatedAt });
-      toast.success(newActive ? 'Layanan Booking KDO diaktifkan' : 'Layanan Booking KDO dinonaktifkan');
-    } catch (err) {
-      toast.error(err.message || 'Gagal mengubah status layanan KDO');
-    } finally {
-      setToggling(false);
-      hideLoading();
-    }
-  };
-
-  const handleToggleRoom = async () => {
-    if (!status) return;
-    const newActive = !status.roomActive;
-    
-    setToggling(true);
-    showLoading(newActive ? 'Mengaktifkan layanan Booking Ruangan...' : 'Menonaktifkan layanan Booking Ruangan...');
-    try {
-      const res = await superadminApi.toggleService(undefined, newActive);
-      setStatus({ ...status, roomActive: res.data.roomActive, updatedAt: res.data.updatedAt });
-      toast.success(newActive ? 'Layanan Booking Ruangan diaktifkan' : 'Layanan Booking Ruangan dinonaktifkan');
-    } catch (err) {
-      toast.error(err.message || 'Gagal mengubah status layanan Ruangan');
-    } finally {
-      setToggling(false);
-      hideLoading();
-    }
-  };
+  const { state, actions } = useServiceControl();
+  const { status, loading, toggling, confirmTarget } = state;
+  const { handleToggleConfirm, executeToggle, cancelToggle } = actions;
 
   if (loading) {
     return (
@@ -97,7 +45,7 @@ export default function ServiceControlPage() {
 
           <div className="p-6 space-y-6">
             <button
-              onClick={handleToggleKdo}
+              onClick={() => handleToggleConfirm('kdo')}
               disabled={toggling}
               className={`w-full p-5 rounded-2xl font-heading font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-60 ${
                 isKdoActive
@@ -105,7 +53,7 @@ export default function ServiceControlPage() {
                   : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/20 hover:bg-emerald-500/20'
               }`}
             >
-              {toggling ? (
+              {toggling && confirmTarget === 'kdo' ? (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Power size={22} />
@@ -149,7 +97,7 @@ export default function ServiceControlPage() {
 
           <div className="p-6 space-y-6">
             <button
-              onClick={handleToggleRoom}
+              onClick={() => handleToggleConfirm('room')}
               disabled={toggling}
               className={`w-full p-5 rounded-2xl font-heading font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-60 ${
                 isRoomActive
@@ -157,7 +105,7 @@ export default function ServiceControlPage() {
                   : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/20 hover:bg-emerald-500/20'
               }`}
             >
-              {toggling ? (
+              {toggling && confirmTarget === 'room' ? (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Power size={22} />
@@ -203,6 +151,24 @@ export default function ServiceControlPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmTarget}
+        onClose={cancelToggle}
+        onConfirm={executeToggle}
+        title={`Konfirmasi ${confirmTarget === 'kdo' ? 'Booking KDO' : 'Booking Ruangan'}`}
+        message={
+          confirmTarget === 'kdo'
+            ? `Apakah Anda yakin ingin ${isKdoActive ? 'menonaktifkan' : 'mengaktifkan'} layanan Booking KDO?`
+            : `Apakah Anda yakin ingin ${isRoomActive ? 'menonaktifkan' : 'mengaktifkan'} layanan Booking Ruangan?`
+        }
+        confirmText="Ya, Lanjutkan"
+        variant={
+          (confirmTarget === 'kdo' && isKdoActive) || (confirmTarget === 'room' && isRoomActive)
+            ? 'danger'
+            : 'primary'
+        }
+      />
     </div>
   );
 }

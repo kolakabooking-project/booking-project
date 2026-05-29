@@ -1,6 +1,3 @@
-import { useState } from 'react';
-import { useBooking } from '../../contexts/BookingContext';
-import { useLoading } from '../../contexts/LoadingContext';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/ui/FormInput';
@@ -11,50 +8,13 @@ import DataTable from '../../components/ui/DataTable';
 import PageHeader from '../../components/ui/PageHeader';
 import { VEHICLE_STATUS } from '../../utils/constants';
 import { formatDateShort } from '../../utils/helpers';
-import { toast } from 'sonner';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-
-const INITIAL = { platNomor: '', merek: '', tipe: 'Mobil', tahun: new Date().getFullYear(), kapasitas: 7, status: VEHICLE_STATUS.AVAILABLE, odometer: 0, jadwalPajak: '', jadwalServis: '', warna: '', foto: '' };
+import useFleetManagement from '../../hooks/useFleetManagement';
 
 export default function FleetPage() {
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useBooking();
-  const { showLoading, hideLoading } = useLoading();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(INITIAL);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-
-  const openAdd = () => { setEditing(null); setForm(INITIAL); setModalOpen(true); };
-  const openEdit = (v) => { setEditing(v.id); setForm({ ...v }); setModalOpen(true); };
-
-  const handleSave = async () => {
-    if (!form.platNomor || !form.merek) { toast.error('Plat nomor dan merek wajib diisi'); return; }
-    showLoading(editing ? 'Memperbarui data kendaraan...' : 'Menambahkan kendaraan baru...');
-    try {
-      if (editing) { await updateVehicle(editing, form); toast.success('Data kendaraan diperbarui'); }
-      else { await addVehicle(form); toast.success('Kendaraan baru ditambahkan'); }
-      setModalOpen(false);
-    } catch (err) { 
-      toast.error(err.message || 'Gagal menyimpan data'); 
-    } finally {
-      hideLoading();
-    }
-  };
-
-  const handleDelete = async () => {
-    if (deleteTarget) {
-      showLoading('Menghapus data kendaraan...');
-      try { 
-        await deleteVehicle(deleteTarget); 
-        toast.success('Kendaraan dihapus'); 
-      } catch (err) { 
-        toast.error(err.message || 'Gagal menghapus'); 
-      } finally {
-        hideLoading();
-      }
-      setDeleteTarget(null);
-    }
-  };
+  const { state, actions } = useFleetManagement();
+  const { vehicles, modalOpen, editing, form, deleteTarget } = state;
+  const { setModalOpen, setDeleteTarget, openAdd, openEdit, handleFormChange, handleSave, handleDelete } = actions;
 
   const columns = [
     { key: 'plat', label: 'Plat Nomor' },
@@ -116,20 +76,20 @@ export default function FleetPage() {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Kendaraan' : 'Tambah Kendaraan'} size="lg">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-end">
-          <FormInput label="Nomor Polisi" id="platNomor" required value={form.platNomor || ''} onChange={(e) => setForm({ ...form, platNomor: e.target.value })} placeholder="Cth: B 1234 CD" />
-          <FormInput label="Merek / Model" id="merek" required value={form.merek || ''} onChange={(e) => setForm({ ...form, merek: e.target.value })} placeholder="Cth: Toyota Avanza" />
-          <FormInput label="Tipe Kendaraan" id="tipe" type="select" value={form.tipe || 'Mobil'} onChange={(e) => setForm({ ...form, tipe: e.target.value })}>
+          <FormInput label="Nomor Polisi" id="platNomor" required value={form.platNomor || ''} onChange={(e) => handleFormChange('platNomor', e.target.value)} placeholder="Cth: B 1234 CD" />
+          <FormInput label="Merek / Model" id="merek" required value={form.merek || ''} onChange={(e) => handleFormChange('merek', e.target.value)} placeholder="Cth: Toyota Avanza" />
+          <FormInput label="Tipe Kendaraan" id="tipe" type="select" value={form.tipe || 'Mobil'} onChange={(e) => handleFormChange('tipe', e.target.value)}>
             <option value="Mobil">Mobil</option>
             <option value="Motor">Motor</option>
             <option value="Minibus">Minibus</option>
           </FormInput>
-          <FormInput label="Tahun Kendaraan" id="tahun" type="number" required value={form.tahun || ''} onChange={(e) => setForm({ ...form, tahun: e.target.value ? parseInt(e.target.value) : '' })} />
-          <FormInput label="Warna" id="warna" value={form.warna || ''} onChange={(e) => setForm({ ...form, warna: e.target.value })} placeholder="Cth: Hitam" />
-          <FormInput label="Kapasitas" id="kapasitas" type="number" value={form.kapasitas || ''} onChange={(e) => setForm({ ...form, kapasitas: e.target.value ? parseInt(e.target.value) : '' })} />
-          <FormInput label="Odometer (KM)" id="odometer" type="number" value={form.odometer || ''} onChange={(e) => setForm({ ...form, odometer: e.target.value ? parseInt(e.target.value) : '' })} />
-          <FormInput label="Jadwal Pajak" id="jadwalPajak" type="date" value={form.jadwalPajak || ''} onChange={(e) => setForm({ ...form, jadwalPajak: e.target.value })} />
-          <FormInput label="Jadwal Servis Berikutnya" id="jadwalServis" type="date" value={form.jadwalServis || ''} onChange={(e) => setForm({ ...form, jadwalServis: e.target.value })} />
-          <FormInput label="Status" id="status" type="select" value={form.status === VEHICLE_STATUS.IN_USE ? VEHICLE_STATUS.AVAILABLE : form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+          <FormInput label="Tahun Kendaraan" id="tahun" type="number" required value={form.tahun || ''} onChange={(e) => handleFormChange('tahun', e.target.value ? parseInt(e.target.value) : '')} />
+          <FormInput label="Warna" id="warna" value={form.warna || ''} onChange={(e) => handleFormChange('warna', e.target.value)} placeholder="Cth: Hitam" />
+          <FormInput label="Kapasitas" id="kapasitas" type="number" value={form.kapasitas || ''} onChange={(e) => handleFormChange('kapasitas', e.target.value ? parseInt(e.target.value) : '')} />
+          <FormInput label="Odometer (KM)" id="odometer" type="number" value={form.odometer || ''} onChange={(e) => handleFormChange('odometer', e.target.value ? parseInt(e.target.value) : '')} />
+          <FormInput label="Jadwal Pajak" id="jadwalPajak" type="date" value={form.jadwalPajak || ''} onChange={(e) => handleFormChange('jadwalPajak', e.target.value)} />
+          <FormInput label="Jadwal Servis Berikutnya" id="jadwalServis" type="date" value={form.jadwalServis || ''} onChange={(e) => handleFormChange('jadwalServis', e.target.value)} />
+          <FormInput label="Status" id="status" type="select" value={form.status === VEHICLE_STATUS.IN_USE ? VEHICLE_STATUS.AVAILABLE : form.status} onChange={(e) => handleFormChange('status', e.target.value)}>
             <option value={VEHICLE_STATUS.AVAILABLE}>{VEHICLE_STATUS.AVAILABLE}</option>
             <option value={VEHICLE_STATUS.MAINTENANCE}>{VEHICLE_STATUS.MAINTENANCE}</option>
           </FormInput>
@@ -138,7 +98,7 @@ export default function FleetPage() {
           <PhotoUploadCard 
             label="Foto Kendaraan (Opsional)" 
             value={form.foto || ''} 
-            onChange={(base64) => setForm({ ...form, foto: base64 })} 
+            onChange={(base64) => handleFormChange('foto', base64)} 
             maxSizeMB={1}
           />
         </div>

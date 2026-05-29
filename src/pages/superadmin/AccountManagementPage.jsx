@@ -1,12 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { superadminApi } from '../../lib/api';
-import { useLoading } from '../../contexts/LoadingContext';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
+import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users } from 'lucide-react';
+import useAccountManagement from '../../hooks/useAccountManagement';
 
 const ROLE_BADGES = {
   user: { label: 'User', className: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' },
@@ -15,142 +12,22 @@ const ROLE_BADGES = {
 };
 
 export default function AccountManagementPage() {
-  const { showLoading, hideLoading } = useLoading();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterRole, setFilterRole] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [resetTarget, setResetTarget] = useState(null);
-  const [roleTarget, setRoleTarget] = useState(null);
-  const [createForm, setCreateForm] = useState({ nip: '', name: '', jabatan: '', role: 'user' });
-  const [submitting, setSubmitting] = useState(false);
+  const { state, actions } = useAccountManagement();
+  const {
+    users, loading, search, filterRole,
+    createOpen, deleteTarget, resetTarget, roleTarget,
+    createForm, submitting,
+    currentPage, totalUsers, totalPages,
+  } = state;
+  const {
+    setSearch, setFilterRole, setCreateOpen,
+    setDeleteTarget, setResetTarget, setRoleTarget,
+    setCreateForm, handleCreate, handleDelete,
+    handleReset, handleRoleChange, handlePageChange
+  } = actions;
 
-  // Server-side pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
-
-  // Debounce search to avoid excessive API calls
-  const searchTimeoutRef = useRef(null);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  useEffect(() => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(search);
-      setCurrentPage(1); // Reset to page 1 on search change
-    }, 350);
-    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
-  }, [search]);
-
-  // Reset page when role filter changes
-  useEffect(() => { setCurrentPage(1); }, [filterRole]);
-
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await superadminApi.getUsers({
-        search: debouncedSearch || undefined,
-        role: filterRole || undefined,
-        page: currentPage,
-        limit: itemsPerPage,
-      });
-      const data = res.data;
-      // Server returns { users, pagination } when params provided
-      if (data?.users) {
-        setUsers(data.users);
-        setTotalUsers(data.pagination?.total || 0);
-        setTotalPages(data.pagination?.totalPages || 1);
-      } else if (Array.isArray(data)) {
-        // Backward compatible: array response (no pagination)
-        setUsers(data);
-        setTotalUsers(data.length);
-        setTotalPages(Math.ceil(data.length / itemsPerPage));
-      }
-    } catch (err) {
-      toast.error('Gagal memuat daftar akun');
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedSearch, filterRole, currentPage]);
-
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  // currentItems = users from server (already paginated)
   const currentItems = users;
-
-  // Create user
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!createForm.nip || !createForm.name) {
-      toast.error('NIP dan Nama wajib diisi');
-      return;
-    }
-    setSubmitting(true);
-    showLoading('Membuat akun baru...');
-    try {
-      await superadminApi.createUser(createForm);
-      toast.success(`Akun ${createForm.name} berhasil dibuat`);
-      setCreateOpen(false);
-      setCreateForm({ nip: '', name: '', jabatan: '', role: 'user' });
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message || 'Gagal membuat akun');
-    } finally {
-      setSubmitting(false);
-      hideLoading();
-    }
-  };
-
-  // Delete user
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    showLoading('Menghapus akun...');
-    try {
-      await superadminApi.deleteUser(deleteTarget.id);
-      toast.success(`Akun ${deleteTarget.name} berhasil dihapus`);
-      setDeleteTarget(null);
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message || 'Gagal menghapus akun');
-    } finally {
-      hideLoading();
-    }
-  };
-
-  // Reset password
-  const handleReset = async () => {
-    if (!resetTarget) return;
-    showLoading('Mereset password akun...');
-    try {
-      await superadminApi.resetPassword(resetTarget.id);
-      toast.success(`Password ${resetTarget.name} berhasil direset ke default`);
-      setResetTarget(null);
-    } catch (err) {
-      toast.error(err.message || 'Gagal mereset password');
-    } finally {
-      hideLoading();
-    }
-  };
-
-  // Change role
-  const handleRoleChange = async (newRole) => {
-    if (!roleTarget) return;
-    showLoading(`Mengubah role menjadi ${newRole}...`);
-    try {
-      await superadminApi.changeRole(roleTarget.id, newRole);
-      toast.success(`Role ${roleTarget.name} diubah menjadi ${newRole}`);
-      setRoleTarget(null);
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message || 'Gagal mengubah role');
-    } finally {
-      hideLoading();
-    }
-  };
 
   return (
     <div className="pb-10">
@@ -304,7 +181,7 @@ export default function AccountManagementPage() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="rounded-2xl p-3 text-xs" style={{ background: 'var(--color-surface-muted)' }}>
             <p className="text-[color:var(--color-text-soft)]">
-              Password default: <span className="font-mono font-bold text-[color:var(--color-heading)]">Kolaka2026!</span>
+              Password default akan di-generate otomatis oleh sistem.
             </p>
           </div>
           <div>

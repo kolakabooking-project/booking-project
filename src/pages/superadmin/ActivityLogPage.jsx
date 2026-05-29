@@ -1,91 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
-import { superadminApi } from '../../lib/api';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
-import { Search, Download, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import { getActionMeta, ACTION_FILTER_OPTIONS, ACTION_CONFIG } from '../../utils/actionConfig';
+import { Search, Download, Calendar } from 'lucide-react';
+import { getActionMeta, ACTION_FILTER_OPTIONS } from '../../utils/actionConfig';
+import useActivityLog from '../../hooks/useActivityLog';
 
 export default function ActivityLogPage() {
-  const [logs, setLogs] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-
-  // Filters
-  const [action, setAction] = useState('');
-  const [search, setSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [page, setPage] = useState(1);
-
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await superadminApi.getLogs({ action, search, startDate, endDate, page, limit: 10 });
-      setLogs(res.data?.logs || []);
-      setPagination(res.data?.pagination || { page: 1, total: 0, totalPages: 1 });
-    } catch {
-      toast.error('Gagal memuat log aktivitas');
-    } finally {
-      setLoading(false);
-    }
-  }, [action, search, startDate, endDate, page]);
-
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [action, search, startDate, endDate]);
-
-  // Export to Excel (CSV)
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const res = await superadminApi.exportLogs(startDate, endDate);
-      const data = res.data || [];
-
-      if (data.length === 0) {
-        toast.error('Tidak ada data untuk diekspor');
-        return;
-      }
-
-      // Build CSV
-      const headers = ['Tanggal', 'Waktu', 'User', 'Aksi', 'Target', 'Detail', 'IP'];
-      const rows = data.map((log) => [
-        new Date(log.createdAt).toLocaleDateString('id-ID'),
-        new Date(log.createdAt).toLocaleTimeString('id-ID'),
-        log.userName,
-        getActionMeta(log.action).label,
-        log.targetName || '-',
-        (log.detail || '-').replace(/,/g, ';'),
-        log.ipAddress || '-',
-      ]);
-
-      const csv = [headers.join(','), ...rows.map((r) => r.map(c => `"${c}"`).join(','))].join('\n');
-      const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
-      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const dateStr = new Date().toISOString().split('T')[0];
-      a.download = `log_aktivitas_${dateStr}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`${data.length} log berhasil diekspor`);
-    } catch (err) {
-      toast.error('Gagal mengekspor log');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // Group logs by date
-  const groupedLogs = logs.reduce((groups, log) => {
-    const date = new Date(log.createdAt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (!groups[date]) groups[date] = [];
-    groups[date].push(log);
-    return groups;
-  }, {});
+  const { state, actions } = useActivityLog();
+  const {
+    logs, loading, exporting,
+    action, search, startDate, endDate,
+    page, total, totalPages,
+    groupedLogs
+  } = state;
+  const {
+    setAction, setSearch, setStartDate, setEndDate,
+    handlePageChange, handleExport
+  } = actions;
 
   return (
     <div className="pb-10">
@@ -204,17 +134,17 @@ export default function ActivityLogPage() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <p className="text-xs text-[color:var(--color-text-soft)]">
-            Menampilkan halaman {page} dari {pagination.totalPages} (Total {pagination.total} log)
+            Menampilkan halaman {page} dari {totalPages} (Total {total} log)
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               disabled={page <= 1}
-              onClick={() => setPage(Math.max(1, page - 1))}
+              onClick={() => handlePageChange(Math.max(1, page - 1))}
               className="text-xs py-1.5 px-3"
             >
               Sebelumnya
@@ -222,8 +152,8 @@ export default function ActivityLogPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
+              disabled={page >= totalPages}
+              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
               className="text-xs py-1.5 px-3"
             >
               Selanjutnya

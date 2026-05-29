@@ -3,14 +3,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
-import Modal from '../../components/ui/Modal';
-import Button from '../../components/ui/Button';
-import PasswordField from '../../components/ui/PasswordField';
-import { getInitials } from '../../utils/helpers';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, Lock, Check, X as XIcon, CircleUser, Bell, ArrowLeft } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, CircleUser, Bell, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import usePushNotification from '../../hooks/usePushNotification';
+import ProfileCard from '../../components/settings/ProfileCard';
+import PasswordChangeModal from '../../components/settings/PasswordChangeModal';
+import AboutAppModal from '../../components/settings/AboutAppModal';
 
 export default function AccountPage() {
   const { user, logout, switchRole } = useAuth();
@@ -22,16 +21,7 @@ export default function AccountPage() {
   const [infoOpen, setInfoOpen] = useState(false);
 
   // ─── Shared hooks ───
-  const {
-    pwdForm,
-    setPwdForm,
-    loading,
-    passwordStrength,
-    passwordsMatch,
-    canSubmit,
-    resetForm,
-    handlePasswordSubmit,
-  } = usePasswordChange({
+  const passwordProps = usePasswordChange({
     showLoading,
     hideLoading,
     onSuccess: () => setPasswordOpen(false),
@@ -63,19 +53,12 @@ export default function AccountPage() {
     <div className="pb-10">
       <PageHeader title="Akun Saya" subtitle="Kelola profil dan preferensi Anda." />
 
-      {/* Profile Card */}
-      <div className="mt-4 rounded-[2rem] p-6 shadow-sm flex items-center gap-5 border" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
-        <div className="w-16 h-16 rounded-full bg-djp-blue/10 flex items-center justify-center flex-shrink-0">
-          <span className="text-2xl font-heading font-bold text-djp-blue">{getInitials(user?.name)}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-heading font-bold text-[color:var(--color-heading)] truncate">{user?.name}</h2>
-          <p className="text-sm text-[color:var(--color-text-soft)] truncate">{user?.jabatan || 'Seksi Umum'}</p>
-          <div className="mt-2 inline-block px-2.5 py-1 rounded-md bg-djp-blue/10 text-djp-blue text-[10px] font-bold uppercase tracking-widest">
-            {user?.role === 'admin' ? 'Administrator' : 'Pengguna'}
-          </div>
-        </div>
-      </div>
+      <ProfileCard 
+        user={user} 
+        variant="default" 
+        fallbackJabatan="Seksi Umum" 
+        badgeText={user?.role === 'admin' ? 'Administrator' : 'Pengguna'} 
+      />
 
       {/* Settings List */}
       <div className="mt-8 space-y-6">
@@ -147,7 +130,7 @@ export default function AccountPage() {
             )}
 
             <button 
-              onClick={() => { setPasswordOpen(true); resetForm(); }}
+              onClick={() => { setPasswordOpen(true); passwordProps.resetForm(); }}
               className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
             >
               <div className="flex items-center gap-3">
@@ -206,113 +189,19 @@ export default function AccountPage() {
         </button>
       </div>
 
-      {/* ── Password Change Modal ── */}
-      <Modal isOpen={passwordOpen} onClose={() => { setPasswordOpen(false); resetForm(); }} title="Ubah Password" size="sm">
-        <form onSubmit={handlePasswordSubmit} className="space-y-5">
-          <div className="flex justify-center mb-4 mt-2">
-            <div className="w-16 h-16 rounded-full bg-djp-blue/10 flex items-center justify-center">
-              <Lock size={24} className="text-djp-blue" />
-            </div>
-          </div>
+      <PasswordChangeModal 
+        isOpen={passwordOpen} 
+        onClose={() => { setPasswordOpen(false); passwordProps.resetForm(); }} 
+        accentColor="djp-blue"
+        {...passwordProps}
+      />
 
-          <PasswordField
-            label="Password Lama"
-            id="oldPwd"
-            value={pwdForm.old}
-            onChange={(e) => setPwdForm({ ...pwdForm, old: e.target.value })}
-          />
-          <PasswordField
-            label="Password Baru"
-            id="newPwd"
-            value={pwdForm.new}
-            onChange={(e) => setPwdForm({ ...pwdForm, new: e.target.value })}
-          />
-
-          {/* Strength indicator */}
-          {pwdForm.new.length > 0 && (
-            <div className="rounded-2xl p-3 space-y-1.5" style={{ background: 'var(--color-surface-muted)' }}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-text-soft)] mb-2">Persyaratan Keamanan</p>
-              {passwordStrength.map((rule) => (
-                <div key={rule.id} className="flex items-center gap-2 text-xs">
-                  {rule.passed ? (
-                    <Check size={14} className="text-success flex-shrink-0" />
-                  ) : (
-                    <XIcon size={14} className="text-danger flex-shrink-0" />
-                  )}
-                  <span className={rule.passed ? 'text-success' : 'text-[color:var(--color-text-soft)]'}>
-                    {rule.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <PasswordField
-            label="Konfirmasi Password Baru"
-            id="confirmPwd"
-            value={pwdForm.confirm}
-            onChange={(e) => setPwdForm({ ...pwdForm, confirm: e.target.value })}
-          />
-
-          {/* Match indicator */}
-          {pwdForm.confirm.length > 0 && (
-            <div className={`flex items-center gap-2 text-xs px-1 ${passwordsMatch ? 'text-success' : 'text-danger'}`}>
-              {passwordsMatch ? <Check size={14} /> : <XIcon size={14} />}
-              {passwordsMatch ? 'Password cocok' : 'Password tidak cocok'}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-            <Button type="button" variant="ghost" onClick={() => { setPasswordOpen(false); resetForm(); }}>Batal</Button>
-            <Button type="submit" loading={loading} disabled={!canSubmit}>Simpan Perubahan</Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* ── Info Modal ── */}
-      <Modal isOpen={infoOpen} onClose={() => setInfoOpen(false)} title="Tentang Aplikasi" size="sm">
-        <div className="space-y-4 text-center pb-4">
-          <div className="mx-auto w-20 h-20 rounded-[1.5rem] flex items-center justify-center mb-6">
-            <img src="/logoweb.png" alt="Bookolaka" className="w-full h-full object-contain" loading="lazy" />
-          </div>
-          <h3 className="text-xl font-heading font-bold text-[color:var(--color-heading)]">Bookolaka</h3>
-          <p className="text-sm text-[color:var(--color-text-soft)] leading-relaxed px-4">
-            Sistem Informasi Manajemen Kendaraan Dinas Operasional (KDO) di lingkungan KPP Pratama Kolaka. 
-          </p>
-
-          <div className="mt-4 space-y-3 text-left">
-            <div className="p-4 rounded-2xl" style={{ background: 'var(--color-surface-muted)' }}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-text-soft)] mb-2">Alur Proses Bisnis</p>
-              <ol className="space-y-2 text-[13px] text-[color:var(--color-heading)]">
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-djp-blue text-white text-[10px] font-bold flex items-center justify-center">1</span>
-                  <span>User mengajukan permohonan peminjaman kendaraan dinas.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-djp-blue text-white text-[10px] font-bold flex items-center justify-center">2</span>
-                  <span>Admin meninjau dan menyetujui/menolak permohonan.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-djp-blue text-white text-[10px] font-bold flex items-center justify-center">3</span>
-                  <span>Kendaraan digunakan dan perjalanan dimulai.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-djp-blue text-white text-[10px] font-bold flex items-center justify-center">4</span>
-                  <span>User mengembalikan kendaraan dan mengisi laporan akhir perjalanan.</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-djp-blue text-white text-[10px] font-bold flex items-center justify-center">5</span>
-                  <span>Data terdokumentasi untuk pelaporan dan audit.</span>
-                </li>
-              </ol>
-            </div>
-          </div>
-
-          <div className="pt-4">
-            <p className="text-xs text-[color:var(--color-text-soft)]">Versi 1.0.0 &copy; 2026 KPP Pratama Kolaka</p>
-          </div>
-        </div>
-      </Modal>
+      <AboutAppModal 
+        isOpen={infoOpen} 
+        onClose={() => setInfoOpen(false)} 
+        showProcessSteps={true}
+        accentColor="djp-blue"
+      />
     </div>
   );
 }

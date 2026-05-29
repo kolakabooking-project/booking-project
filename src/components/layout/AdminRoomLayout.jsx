@@ -84,11 +84,11 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         <div className="mb-2 hidden">
         </div>
         {(!collapsed || isMobile) && (
-          <div className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm">
+          <Link to="/admin/room/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
             <p className="truncate text-sm font-heading font-bold text-white">{user?.name || 'Administrator'}</p>
-            <p className="mt-1 truncate text-xs font-semibold text-blue-400">Admin Ruangan</p>
+            <p className="mt-1 truncate text-xs font-semibold text-blue-400">{user?.role === 'superadmin' ? 'Superadmin (Admin Mode)' : user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
             <p className="mt-1 truncate text-[10px] uppercase tracking-widest text-white/45">{user?.jabatan || 'Subbagian Umum'}</p>
-          </div>
+          </Link>
         )}
         {user?.role === 'admin' && (
           <button
@@ -232,7 +232,7 @@ export default function AdminRoomLayout({ children }) {
               <div className="flex items-center gap-1.5 text-sm">
                 <Home size={14} className="text-[color:var(--color-text-soft)]" />
                 <ChevronRight size={12} className="text-[color:var(--color-text-soft)]" />
-                <span className="font-heading font-semibold text-[color:var(--color-text-muted)]">Admin Ruangan</span>
+                <span className="font-heading font-semibold text-[color:var(--color-text-muted)]">Admin</span>
                 <ChevronRight size={12} className="text-[color:var(--color-text-soft)]" />
                 <span className="font-heading font-semibold text-[color:var(--color-brand)]">{currentLabel}</span>
               </div>
