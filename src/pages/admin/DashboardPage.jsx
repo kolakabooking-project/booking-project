@@ -52,6 +52,8 @@ export default function AdminDashboardPage() {
             setIsBookingModalOpen(true);
           }}
           allowPastClick={true} 
+          getBookingsForDate={getBookingsForDate}
+          totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}
         />
         <Card className="p-6">
           <span className="page-kicker">Insight Hari Ini</span>

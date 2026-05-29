@@ -64,7 +64,11 @@ export default function DashboardPage() {
 
         {/* On Mobile: above vehicle showcase. On Desktop: below vehicle showcase */}
         <div className="order-1 2xl:order-2 w-full">
-          <Calendar onDateClick={handleDateClick} />
+          <Calendar 
+            onDateClick={handleDateClick} 
+            getBookingsForDate={getBookingsForDate}
+            totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}
+          />
         </div>
       </div>
 
