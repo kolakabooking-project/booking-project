@@ -82,7 +82,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
       aria-modal="true"
       aria-labelledby={titleId}
       onClick={(e) => e.target === overlayRef.current && onClose()}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
     >
       <div className={`flex flex-col w-full max-h-[92vh] sm:max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl border shadow-[var(--shadow-card-hover)] ${sizeClasses[size]} sm:m-4 animate-scale-in`} style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
         <div className="flex-shrink-0 flex items-center justify-between border-b px-4 py-3 sm:px-6 sm:py-4" style={{ borderColor: 'var(--color-border)' }}>

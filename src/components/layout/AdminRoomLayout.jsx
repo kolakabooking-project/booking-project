@@ -359,7 +359,7 @@ export default function AdminRoomLayout({ children }) {
 
       {/* Action Modal */}
       {actionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center sm:items-center sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-fade-in" onClick={() => setActionModalOpen(false)} />
           <div className="relative w-full rounded-t-3xl bg-[color:var(--color-surface)] sm:w-96 sm:rounded-3xl p-6 pb-safe shadow-2xl animate-slide-up sm:animate-scale-in">
             <div className="w-12 h-1.5 bg-[color:var(--color-border)] rounded-full mx-auto mb-6 sm:hidden" />
