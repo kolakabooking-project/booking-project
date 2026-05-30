@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AblyProvider } from './contexts/AblyProvider';
 import { BookingProvider } from './contexts/BookingContext';
@@ -95,63 +94,51 @@ function PublicRoute({ children }) {
 }
 
 function AppRoutes() {
-  const location = useLocation();
   return (
     <Suspense fallback={<PageLoader />}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="h-full w-full"
-        >
-          <Routes location={location}>
-            <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-            <Route path="/select-service" element={<ProtectedRoute><ServiceSelectorPage /></ProtectedRoute>} />
+      <Routes>
+        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+        <Route path="/select-service" element={<ProtectedRoute><ServiceSelectorPage /></ProtectedRoute>} />
 
-            {/* User Routes */}
-            <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserLayout><UserDashboard /></UserLayout></ProtectedRoute>} />
-            <Route path="/user/my-bookings" element={<ProtectedRoute role="user"><UserLayout><MyBookingsPage /></UserLayout></ProtectedRoute>} />
-            <Route path="/user/chat" element={<ProtectedRoute role="user"><UserLayout><UserChatPage /></UserLayout></ProtectedRoute>} />
-            <Route path="/user/account" element={<ProtectedRoute role="user"><UserLayout><AccountPage /></UserLayout></ProtectedRoute>} />
+        {/* User Routes */}
+        <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserLayout><UserDashboard /></UserLayout></ProtectedRoute>} />
+        <Route path="/user/my-bookings" element={<ProtectedRoute role="user"><UserLayout><MyBookingsPage /></UserLayout></ProtectedRoute>} />
+        <Route path="/user/chat" element={<ProtectedRoute role="user"><UserLayout><UserChatPage /></UserLayout></ProtectedRoute>} />
+        <Route path="/user/account" element={<ProtectedRoute role="user"><UserLayout><AccountPage /></UserLayout></ProtectedRoute>} />
 
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminLayout><AdminDashboard /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/requests" element={<ProtectedRoute role="admin"><AdminLayout><RequestBoardPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/fleet" element={<ProtectedRoute role="admin"><AdminLayout><FleetPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/drivers" element={<ProtectedRoute role="admin"><AdminLayout><DriversPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/chat" element={<ProtectedRoute role="admin"><AdminLayout><AdminChatPage /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminLayout><AdminSettingsPage /></AdminLayout></ProtectedRoute>} />
+        {/* Admin Routes */}
+        <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminLayout><AdminDashboard /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/requests" element={<ProtectedRoute role="admin"><AdminLayout><RequestBoardPage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/fleet" element={<ProtectedRoute role="admin"><AdminLayout><FleetPage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/drivers" element={<ProtectedRoute role="admin"><AdminLayout><DriversPage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/chat" element={<ProtectedRoute role="admin"><AdminLayout><AdminChatPage /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute role="admin"><AdminLayout><AdminSettingsPage /></AdminLayout></ProtectedRoute>} />
 
-            {/* Room User Routes */}
-            <Route path="/user/room/dashboard" element={<ProtectedRoute role="user"><UserRoomLayout><UserRoomDashboard /></UserRoomLayout></ProtectedRoute>} />
-            <Route path="/user/room/my-bookings" element={<ProtectedRoute role="user"><UserRoomLayout><UserMyRoomBookings /></UserRoomLayout></ProtectedRoute>} />
-            <Route path="/user/room/chat" element={<ProtectedRoute role="user"><UserRoomLayout><UserChatPage /></UserRoomLayout></ProtectedRoute>} />
-            <Route path="/user/room/account" element={<ProtectedRoute role="user"><UserRoomLayout><AccountPage /></UserRoomLayout></ProtectedRoute>} />
+        {/* Room User Routes */}
+        <Route path="/user/room/dashboard" element={<ProtectedRoute role="user"><UserRoomLayout><UserRoomDashboard /></UserRoomLayout></ProtectedRoute>} />
+        <Route path="/user/room/my-bookings" element={<ProtectedRoute role="user"><UserRoomLayout><UserMyRoomBookings /></UserRoomLayout></ProtectedRoute>} />
+        <Route path="/user/room/chat" element={<ProtectedRoute role="user"><UserRoomLayout><UserChatPage /></UserRoomLayout></ProtectedRoute>} />
+        <Route path="/user/room/account" element={<ProtectedRoute role="user"><UserRoomLayout><AccountPage /></UserRoomLayout></ProtectedRoute>} />
 
-            {/* Room Admin Routes */}
-            <Route path="/admin/room/dashboard" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomDashboard /></AdminRoomLayout></ProtectedRoute>} />
-            <Route path="/admin/room/requests" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomRequests /></AdminRoomLayout></ProtectedRoute>} />
-            <Route path="/admin/room/rooms" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomManagement /></AdminRoomLayout></ProtectedRoute>} />
-            <Route path="/admin/room/reports" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomReports /></AdminRoomLayout></ProtectedRoute>} />
-            <Route path="/admin/room/settings" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminSettingsPage /></AdminRoomLayout></ProtectedRoute>} />
-            <Route path="/admin/room/chat" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminChatPage /></AdminRoomLayout></ProtectedRoute>} />
+        {/* Room Admin Routes */}
+        <Route path="/admin/room/dashboard" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomDashboard /></AdminRoomLayout></ProtectedRoute>} />
+        <Route path="/admin/room/requests" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomRequests /></AdminRoomLayout></ProtectedRoute>} />
+        <Route path="/admin/room/rooms" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomManagement /></AdminRoomLayout></ProtectedRoute>} />
+        <Route path="/admin/room/reports" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomReports /></AdminRoomLayout></ProtectedRoute>} />
+        <Route path="/admin/room/settings" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminSettingsPage /></AdminRoomLayout></ProtectedRoute>} />
+        <Route path="/admin/room/chat" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminChatPage /></AdminRoomLayout></ProtectedRoute>} />
 
-            {/* Superadmin Routes */}
-            <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
-            <Route path="/superadmin/accounts" element={<ProtectedRoute role="superadmin"><SuperadminLayout><AccountManagementPage /></SuperadminLayout></ProtectedRoute>} />
-            <Route path="/superadmin/service" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ServiceControlPage /></SuperadminLayout></ProtectedRoute>} />
-            <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
-            <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
+        {/* Superadmin Routes */}
+        <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/accounts" element={<ProtectedRoute role="superadmin"><SuperadminLayout><AccountManagementPage /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/service" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ServiceControlPage /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </motion.div>
-      </AnimatePresence>
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </Suspense>
   );
 }
