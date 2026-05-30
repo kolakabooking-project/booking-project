@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
       <Card className="p-6">
         <div className="mb-6 flex items-center justify-between border-b pb-4 dark:border-gray-700">
           <div>
-            <h3 className="text-xl font-heading font-bold text-gray-800 dark:text-white">Jadwal Penggunaan Hari Ini</h3>
+            <h3 className="text-xl font-heading font-bold text-gray-800 dark:text-white">Jadwal Hari Ini</h3>
             <p className="text-sm text-gray-500 mt-1">Daftar ruangan yang telah disetujui untuk digunakan pada hari ini.</p>
           </div>
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600">
@@ -43,7 +43,7 @@ export default function AdminDashboardPage() {
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4 text-gray-400">
               <Clock size={32} />
             </div>
-            <p className="text-gray-500 font-medium">Tidak ada jadwal penggunaan ruangan hari ini.</p>
+            <p className="text-gray-500 font-medium">Tidak ada jadwal penggunaan hari ini.</p>
             <p className="text-sm text-gray-400 mt-1">Semua ruangan tersedia untuk dibooking.</p>
           </div>
         ) : (
