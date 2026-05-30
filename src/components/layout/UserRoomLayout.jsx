@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRoomBooking } from '../../contexts/RoomBookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -21,6 +21,7 @@ export default function UserRoomLayout({ children }) {
   const { showLoading, hideLoading } = useLoading();
   const { getUserRoomBookings } = useRoomBooking();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
@@ -238,12 +239,22 @@ export default function UserRoomLayout({ children }) {
         </div>
       </nav>
 
-      <main id="main-content" tabIndex={-1} className="app-shell overflow-x-hidden py-6 md:py-8 animate-fade-in relative z-10">
-        {children}
+      <main id="main-content" tabIndex={-1} className="app-shell overflow-x-hidden py-6 md:py-8 relative z-10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[9999]">
         <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
           {/* 1. Beranda */}
           <NavLink to="/user/room/dashboard" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-djp-blue' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
