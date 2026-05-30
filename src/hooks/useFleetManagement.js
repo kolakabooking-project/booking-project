@@ -26,6 +26,7 @@ export default function useFleetManagement() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = useCallback(() => { 
     setEditing(null); 
@@ -50,6 +51,7 @@ export default function useFleetManagement() {
       return; 
     }
     
+    setIsSaving(true);
     showLoading(editing ? 'Memperbarui data kendaraan...' : 'Menambahkan kendaraan baru...');
     try {
       if (editing) { 
@@ -64,6 +66,7 @@ export default function useFleetManagement() {
       toast.error(err.message || 'Gagal menyimpan data kendaraan'); 
     } finally {
       hideLoading();
+      setIsSaving(false);
     }
   };
 
@@ -88,7 +91,8 @@ export default function useFleetManagement() {
       modalOpen,
       editing,
       form,
-      deleteTarget
+      deleteTarget,
+      isSaving
     },
     actions: {
       setModalOpen,

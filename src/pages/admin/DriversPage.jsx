@@ -21,12 +21,14 @@ export default function DriversPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => { setEditing(null); setForm(INITIAL); setModalOpen(true); };
   const openEdit = (d) => { setEditing(d.id); setForm({ ...d }); setModalOpen(true); };
 
   const handleSave = async () => {
     if (!form.name) { toast.error('Nama wajib diisi'); return; }
+    setIsSaving(true);
     showLoading(editing ? 'Memperbarui data pengemudi...' : 'Menambahkan pengemudi baru...');
     try {
       if (editing) { await updateDriver(editing, form); toast.success('Data pengemudi diperbarui'); }
@@ -36,6 +38,7 @@ export default function DriversPage() {
       toast.error(err.message || 'Gagal menyimpan data'); 
     } finally {
       hideLoading();
+      setIsSaving(false);
     }
   };
 
@@ -114,7 +117,7 @@ export default function DriversPage() {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="ghost" onClick={() => setModalOpen(false)}>Batal</Button>
-          <Button onClick={handleSave}>{editing ? 'Simpan' : 'Tambah'}</Button>
+          <Button onClick={handleSave} loading={isSaving}>{editing ? 'Simpan' : 'Tambah'}</Button>
         </div>
       </Modal>
 

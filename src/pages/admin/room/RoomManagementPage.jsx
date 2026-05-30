@@ -22,12 +22,14 @@ export default function RoomManagementPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(INITIAL);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => { setEditing(null); setForm(INITIAL); setModalOpen(true); };
   const openEdit = (r) => { setEditing(r.id); setForm({ ...r }); setModalOpen(true); };
 
   const handleSave = async () => {
     if (!form.name || !form.lokasi) { toast.error('Nama dan lokasi ruangan wajib diisi'); return; }
+    setIsSaving(true);
     showLoading(editing ? 'Memperbarui data ruangan...' : 'Menambahkan ruangan baru...');
     try {
       const payload = { ...form };
@@ -38,6 +40,7 @@ export default function RoomManagementPage() {
       toast.error(err.message || 'Gagal menyimpan data'); 
     } finally {
       hideLoading();
+      setIsSaving(false);
     }
   };
 
@@ -127,7 +130,7 @@ export default function RoomManagementPage() {
         </div>
         <div className="flex justify-end gap-3 mt-8 pt-5 border-t border-gray-100">
           <Button variant="ghost" onClick={() => setModalOpen(false)}>Batal</Button>
-          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20">{editing ? 'Simpan Perubahan' : 'Tambah Ruangan'}</Button>
+          <Button onClick={handleSave} loading={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20">{editing ? 'Simpan Perubahan' : 'Tambah Ruangan'}</Button>
         </div>
       </Modal>
 

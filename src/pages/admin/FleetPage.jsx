@@ -13,7 +13,7 @@ import useFleetManagement from '../../hooks/useFleetManagement';
 
 export default function FleetPage() {
   const { state, actions } = useFleetManagement();
-  const { vehicles, modalOpen, editing, form, deleteTarget } = state;
+  const { vehicles, modalOpen, editing, form, deleteTarget, isSaving } = state;
   const { setModalOpen, setDeleteTarget, openAdd, openEdit, handleFormChange, handleSave, handleDelete } = actions;
 
   const columns = [
@@ -104,7 +104,7 @@ export default function FleetPage() {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="ghost" onClick={() => setModalOpen(false)}>Batal</Button>
-          <Button onClick={handleSave}>{editing ? 'Simpan Perubahan' : 'Tambah Kendaraan'}</Button>
+          <Button onClick={handleSave} loading={isSaving}>{editing ? 'Simpan Perubahan' : 'Tambah Kendaraan'}</Button>
         </div>
       </Modal>
 
