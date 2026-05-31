@@ -15,8 +15,6 @@ export default function useActivityLog() {
   const debouncedSearch = useDebouncedValue(search, 350);
 
   const fetchLogsFn = useCallback(async (page, filters, signal) => {
-    // getLogs API does not take a signal in its definition right now, but we pass it anyway.
-    // If api.js is updated, it can use the signal.
     const res = await superadminApi.getLogs({
       action: filters.action || undefined,
       search: filters.search || undefined,
@@ -25,7 +23,9 @@ export default function useActivityLog() {
       page,
       limit: 10,
     });
-    return res;
+    // API returns { data: { logs: [...], pagination: {...} } }
+    // Unwrap the envelope so useServerPagination receives { logs, pagination } directly
+    return res.data || res;
   }, []);
 
   const filters = useMemo(() => ({
@@ -106,6 +106,7 @@ export default function useActivityLog() {
 
   // Group logs by date
   const groupedLogs = useMemo(() => {
+    if (!Array.isArray(logs)) return {};
     return logs.reduce((groups, log) => {
       const date = new Date(log.createdAt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       if (!groups[date]) groups[date] = [];
