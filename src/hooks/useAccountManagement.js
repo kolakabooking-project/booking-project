@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { superadminApi } from '../lib/api';
 import { useLoading } from '../contexts/LoadingContext';
@@ -27,8 +27,15 @@ export default function useAccountManagement() {
       page,
       limit: 10,
     });
-    return res;
+    // API returns { data: { users: [...], pagination: {...} } }
+    // Unwrap the envelope so useServerPagination receives { users, pagination } directly
+    return res.data || res;
   }, []);
+
+  const filters = useMemo(() => ({
+    search: debouncedSearch,
+    role: filterRole
+  }), [debouncedSearch, filterRole]);
 
   const {
     data: users,
@@ -42,8 +49,8 @@ export default function useAccountManagement() {
   } = useServerPagination(fetchUsersFn, filters);
 
   useEffect(() => {
-    applyFilters({ search: debouncedSearch, role: filterRole });
-  }, [debouncedSearch, filterRole, applyFilters]);
+    applyFilters(filters);
+  }, [filters, applyFilters]);
 
   // Apply filters when debounced search or role changes
   // useServerPagination's applyFilters will automatically reset to page 1

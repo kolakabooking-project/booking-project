@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ThemeLogo from '../components/ui/ThemeLogo';
 import DynamicCarIcon from '../components/icons/DynamicCarIcon';
 import DynamicRoomIcon from '../components/icons/DynamicRoomIcon';
+import DynamicTrackingIcon from '../components/icons/DynamicTrackingIcon';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { serviceApi } from '../lib/api';
@@ -74,7 +75,7 @@ export default function ServiceSelectorPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl px-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl px-4">
         {/* KDO Card */}
         <button
           onClick={() => {
@@ -122,6 +123,29 @@ export default function ServiceSelectorPage() {
             Pesan ruang rapat atau fasilitas lainnya untuk kegiatan meeting, sosialisasi, atau acara khusus.
           </p>
           <div className="relative z-10 mt-8 text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+            Masuk ke Layanan
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </div>
+        </button>
+
+        {/* Tracking SPD Card */}
+        <button
+          onClick={() => {
+            navigate(isAdmin ? '/admin/tracking/monitoring-spd' : '/user/tracking/dashboard');
+          }}
+          className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <DynamicTrackingIcon className="w-full h-full" />
+          </div>
+          <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Tracking SPD</h3>
+          <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm md:text-base leading-relaxed">
+            Pantau status Surat Perjalanan Dinas, agenda surat tugas, dan rekap perjalanan dinas secara real-time.
+          </p>
+          <div className="relative z-10 mt-8 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
             Masuk ke Layanan
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

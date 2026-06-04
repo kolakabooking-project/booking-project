@@ -11,10 +11,13 @@ const API_BASE = '/api';
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
 
+  const activeRole = localStorage.getItem('booking_active_role');
+  
   const config = {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(activeRole && { 'x-active-role': activeRole }),
       ...options.headers,
     },
     ...options,
@@ -332,4 +335,38 @@ export const superadminApi = {
   },
   cleanupLogs: () => request('/superadmin/logs/cleanup', { method: 'POST' }),
   resetData: (type, password) => request('/superadmin/reset', { method: 'POST', body: JSON.stringify({ type, password }) }),
+};
+
+// ─── Tracking SPD & Perjadin ───
+
+export const sheetsApi = {
+  getAgendaST: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.wilayah) qs.set('wilayah', params.wilayah);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/sheets/agenda-st${query ? `?${query}` : ''}`);
+  },
+  getRekapSPD: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.wilayah) qs.set('wilayah', params.wilayah);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/sheets/rekap-spd${query ? `?${query}` : ''}`);
+  },
+  getSPDSummary: () => request('/sheets/spd-summary'),
+  getJadwalJumat: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/sheets/jadwal-jumat${query ? `?${query}` : ''}`);
+  },
+  getTrackingDashboard: () => request('/sheets/dashboard'),
+  refreshCache: () => request('/sheets/cache/refresh', { method: 'POST' }),
 };

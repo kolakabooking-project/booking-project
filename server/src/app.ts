@@ -18,6 +18,7 @@ import roomReportRoutes from './routes/room-report.routes.js';
 import chatRoutes from './routes/chat.js';
 import superadminRoutes from './routes/superadmin.routes.js';
 import pushRoutes from './routes/push.routes.js';
+import sheetsRoutes from './routes/sheets.routes.js';
 
 // Middleware
 import { authGuard } from './middleware/authGuard.js';
@@ -52,7 +53,7 @@ export function createApp() {
               scriptSrc: ["'self'"],
               styleSrc: ["'self'", "'unsafe-inline'"],
               imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-              connectSrc: ["'self'", 'https://*.ably.io', 'wss://*.ably.io', 'https://*.ably-realtime.com', 'wss://*.ably-realtime.com'],
+              connectSrc: ["'self'", 'https://*.ably.io', 'wss://*.ably.io', 'https://*.ably-realtime.com', 'wss://*.ably-realtime.com', 'https://sheets.googleapis.com'],
               fontSrc: ["'self'", 'https://fonts.gstatic.com'],
               objectSrc: ["'none'"],
               frameSrc: ["'none'"],
@@ -116,6 +117,18 @@ export function createApp() {
     legacyHeaders: false,
     message: {
       error: 'Terlalu banyak permintaan. Coba lagi dalam 15 menit.',
+    },
+    ...(isProd && { keyGenerator: (req) => req.ip || 'unknown' }),
+  });
+
+  // Sheets limiter — protect Google Sheets API quota (300 req/min)
+  const sheetsLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: isProd ? 30 : 100,   // 30 req/min in prod (Google quota: 300/min)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Terlalu banyak permintaan data SPD. Coba lagi dalam 1 menit.',
     },
     ...(isProd && { keyGenerator: (req) => req.ip || 'unknown' }),
   });
@@ -203,6 +216,7 @@ export function createApp() {
   app.use('/api/room-reports', apiLimiter, authGuard, maintenanceGuard, roomReportRoutes);
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
+  app.use('/api/sheets', sheetsLimiter, authGuard, maintenanceGuard, sheetsRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {

@@ -15,6 +15,14 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().min(1, 'VAPID_PUBLIC_KEY is required'),
   VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY is required'),
   VAPID_SUBJECT: z.string().default('mailto:admin@kpp-kolaka.internal'),
+  // Google Sheets API (optional — tracking feature)
+  GOOGLE_SHEETS_ID: z.string().optional(),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
+  GOOGLE_PRIVATE_KEY: z.string().optional(),
+  SHEETS_CACHE_TTL: z.coerce.number().default(300),
+  // Upstash Redis (persistent cache across serverless invocations)
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -27,6 +27,8 @@ const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
 const SuperadminLayout = lazy(() => import('./components/layout/SuperadminLayout'));
 const UserRoomLayout = lazy(() => import('./components/layout/UserRoomLayout'));
 const AdminRoomLayout = lazy(() => import('./components/layout/AdminRoomLayout'));
+const AdminTrackingLayout = lazy(() => import('./components/layout/AdminTrackingLayout'));
+const UserTrackingLayout = lazy(() => import('./components/layout/UserTrackingLayout'));
 
 // ─── Lazy-loaded Pages ───
 // Auth & Selector
@@ -58,6 +60,16 @@ const AdminRoomDashboard = lazy(() => import('./pages/admin/room/DashboardPage')
 const AdminRoomRequests = lazy(() => import("./pages/admin/room/RequestBoardPage"));
 const AdminRoomManagement = lazy(() => import("./pages/admin/room/RoomManagementPage"));
 const AdminRoomReports = lazy(() => import("./pages/admin/room/ReportsPage"));
+
+// Tracking Admin pages
+const AdminMonitoringSPDPage = lazy(() => import('./pages/admin/tracking/MonitoringSPDPage'));
+const AdminPerjadinPage = lazy(() => import('./pages/admin/tracking/PerjadinPage'));
+const AdminLaporanPage = lazy(() => import('./pages/admin/tracking/LaporanPage'));
+const SharedJadwalJumatPage = lazy(() => import('./pages/shared/tracking/JadwalJumatPage'));
+
+// Tracking User pages
+const UserTrackingDashboard = lazy(() => import('./pages/user/tracking/DashboardPage'));
+const UserSPDSayaPage = lazy(() => import('./pages/user/tracking/SPDSayaPage'));
 
 // Superadmin pages (separate chunk group)
 const SuperadminDashboard = lazy(() => import('./pages/superadmin/DashboardPage'));
@@ -128,6 +140,19 @@ function AppRoutes() {
         <Route path="/admin/room/reports" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminRoomReports /></AdminRoomLayout></ProtectedRoute>} />
         <Route path="/admin/room/settings" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminSettingsPage /></AdminRoomLayout></ProtectedRoute>} />
         <Route path="/admin/room/chat" element={<ProtectedRoute role="admin"><AdminRoomLayout><AdminChatPage /></AdminRoomLayout></ProtectedRoute>} />
+
+        {/* Tracking Admin Routes */}
+        <Route path="/admin/tracking/monitoring-spd" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminMonitoringSPDPage /></AdminTrackingLayout></ProtectedRoute>} />
+        <Route path="/admin/tracking/perjadin" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminPerjadinPage /></AdminTrackingLayout></ProtectedRoute>} />
+        <Route path="/admin/tracking/laporan" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminLaporanPage /></AdminTrackingLayout></ProtectedRoute>} />
+        <Route path="/admin/tracking/jadwal-jumat" element={<ProtectedRoute role="admin"><AdminTrackingLayout><SharedJadwalJumatPage /></AdminTrackingLayout></ProtectedRoute>} />
+        <Route path="/admin/tracking/settings" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminSettingsPage /></AdminTrackingLayout></ProtectedRoute>} />
+
+        {/* Tracking User Routes */}
+        <Route path="/user/tracking/dashboard" element={<ProtectedRoute role="user"><UserTrackingLayout><UserTrackingDashboard /></UserTrackingLayout></ProtectedRoute>} />
+        <Route path="/user/tracking/spd-saya" element={<ProtectedRoute role="user"><UserTrackingLayout><UserSPDSayaPage /></UserTrackingLayout></ProtectedRoute>} />
+        <Route path="/user/tracking/jadwal-jumat" element={<ProtectedRoute role="user"><UserTrackingLayout><SharedJadwalJumatPage /></UserTrackingLayout></ProtectedRoute>} />
+        <Route path="/user/tracking/account" element={<ProtectedRoute role="user"><UserTrackingLayout><AccountPage /></UserTrackingLayout></ProtectedRoute>} />
 
         {/* Superadmin Routes */}
         <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />

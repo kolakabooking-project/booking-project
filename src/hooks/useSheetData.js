@@ -1,0 +1,83 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { sheetsApi } from '../lib/api';
+import { useState, useEffect } from 'react';
+
+// ─── Debounce Hook ───
+function useDebounce(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ─── Agenda Surat Tugas ───
+export function useAgendaST(params = {}) {
+  const debouncedSearch = useDebounce(params.search);
+  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  return useQuery({
+    queryKey: ['agenda-st', activeRole, { ...params, search: debouncedSearch }],
+    queryFn: () => sheetsApi.getAgendaST({ ...params, search: debouncedSearch }),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+// ─── Rekap SPD ───
+export function useRekapSPD(params = {}) {
+  const debouncedSearch = useDebounce(params.search);
+  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  return useQuery({
+    queryKey: ['rekap-spd', activeRole, { ...params, search: debouncedSearch }],
+    queryFn: () => sheetsApi.getRekapSPD({ ...params, search: debouncedSearch }),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+// ─── SPD Summary ───
+export function useSPDSummary() {
+  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  return useQuery({
+    queryKey: ['spd-summary', activeRole],
+    queryFn: () => sheetsApi.getSPDSummary(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Consolidated Tracking Dashboard (single call) ───
+export function useTrackingDashboard() {
+  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  return useQuery({
+    queryKey: ['tracking-dashboard', activeRole],
+    queryFn: () => sheetsApi.getTrackingDashboard(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Jadwal Jumat (WFO/WFH) ───
+export function useJadwalJumat(params = {}) {
+  const debouncedSearch = useDebounce(params.search);
+  return useQuery({
+    queryKey: ['jadwal-jumat', { ...params, search: debouncedSearch }],
+    queryFn: () => sheetsApi.getJadwalJumat({ ...params, search: debouncedSearch }),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+// ─── Refresh Cache ───
+export function useRefreshCache() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => sheetsApi.refreshCache(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agenda-st'] });
+      queryClient.invalidateQueries({ queryKey: ['rekap-spd'] });
+      queryClient.invalidateQueries({ queryKey: ['spd-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['jadwal-jumat'] });
+      queryClient.invalidateQueries({ queryKey: ['tracking-dashboard'] });
+    },
+  });
+}

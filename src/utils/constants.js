@@ -91,3 +91,17 @@ export const NAV_ROOM_ADMIN = [
   { path: '/admin/room/rooms', label: 'Manajemen Ruangan', icon: 'Building2' },
   { path: '/admin/room/reports', label: 'Laporan & Ekspor', icon: 'FileSpreadsheet' },
 ];
+
+export const NAV_TRACKING_ADMIN = [
+  { path: '/admin/tracking/monitoring-spd', label: 'Monitoring SPD', icon: 'BarChart3' },
+  { path: '/admin/tracking/perjadin', label: 'Perjadin', icon: 'FileText' },
+  { path: '/admin/tracking/laporan', label: 'Laporan', icon: 'PieChart' },
+  { path: '/admin/tracking/jadwal-jumat', label: 'Jadwal Jumat', icon: 'CalendarDays' },
+];
+
+export const NAV_TRACKING_USER = [
+  { path: '/user/tracking/dashboard', label: 'Beranda', icon: 'LayoutDashboard' },
+  { path: '/user/tracking/spd-saya', label: 'SPD Saya', icon: 'FileText' },
+  { path: '/user/tracking/jadwal-jumat', label: 'Jadwal Jumat', icon: 'CalendarDays' },
+];
+
