@@ -381,6 +381,7 @@ export async function getServiceStatus() {
 export async function toggleService(
   kdoActive: boolean | undefined,
   roomActive: boolean | undefined,
+  spdActive: boolean | undefined,
   actorId: string,
   actorName: string,
   ipAddress?: string
@@ -437,12 +438,39 @@ export async function toggleService(
     }
   }
 
+  // Upsert the spd_service_active setting
+  if (spdActive !== undefined) {
+    const existingSpd = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, 'spd_service_active'));
+
+    if (existingSpd.length > 0) {
+      await db
+        .update(systemSettings)
+        .set({
+          value: String(spdActive),
+          updatedAt: new Date(),
+          updatedBy: actorId,
+        })
+        .where(eq(systemSettings.key, 'spd_service_active'));
+    } else {
+      await db.insert(systemSettings).values({
+        key: 'spd_service_active',
+        value: String(spdActive),
+        updatedAt: new Date(),
+        updatedBy: actorId,
+      });
+    }
+  }
+
   // Invalidate the cached service status (shared cache)
   invalidateServiceStatusCache();
   
   let detailMessage = [];
   if (kdoActive !== undefined) detailMessage.push(`Layanan Booking KDO ${kdoActive ? 'diaktifkan' : 'dinonaktifkan'}`);
   if (roomActive !== undefined) detailMessage.push(`Layanan Booking Ruangan ${roomActive ? 'diaktifkan' : 'dinonaktifkan'}`);
+  if (spdActive !== undefined) detailMessage.push(`Layanan Track SPD ${spdActive ? 'diaktifkan' : 'dinonaktifkan'}`);
 
   await logActivity({
     userId: actorId,

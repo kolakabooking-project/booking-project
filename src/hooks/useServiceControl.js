@@ -8,7 +8,7 @@ export default function useServiceControl() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState(null); // 'kdo' or 'room'
+  const [confirmTarget, setConfirmTarget] = useState(null); // 'kdo', 'room', or 'spd'
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -27,31 +27,48 @@ export default function useServiceControl() {
     setConfirmTarget(target);
   };
 
+  const SERVICE_LABELS = {
+    kdo: 'Booking KDO',
+    room: 'Booking Ruangan',
+    spd: 'Track SPD',
+  };
+
   const executeToggle = async () => {
     if (!status || !confirmTarget) return;
     
-    const isKdo = confirmTarget === 'kdo';
-    const newActive = isKdo ? !status.kdoActive : !status.roomActive;
+    const label = SERVICE_LABELS[confirmTarget] || confirmTarget;
+    let newActive;
+
+    if (confirmTarget === 'kdo') {
+      newActive = !status.kdoActive;
+    } else if (confirmTarget === 'room') {
+      newActive = !status.roomActive;
+    } else {
+      newActive = !status.spdActive;
+    }
     
     setToggling(true);
     setConfirmTarget(null);
-    showLoading(newActive ? `Mengaktifkan layanan Booking ${isKdo ? 'KDO' : 'Ruangan'}...` : `Menonaktifkan layanan Booking ${isKdo ? 'KDO' : 'Ruangan'}...`);
+    showLoading(newActive ? `Mengaktifkan layanan ${label}...` : `Menonaktifkan layanan ${label}...`);
     
     try {
       const res = await superadminApi.toggleService(
-        isKdo ? newActive : undefined,
-        !isKdo ? newActive : undefined
+        confirmTarget === 'kdo' ? newActive : undefined,
+        confirmTarget === 'room' ? newActive : undefined,
+        confirmTarget === 'spd' ? newActive : undefined
       );
       
       setStatus({ 
         ...status, 
-        ...(isKdo ? { kdoActive: res.data.kdoActive } : { roomActive: res.data.roomActive }),
+        ...(confirmTarget === 'kdo' ? { kdoActive: res.data.kdoActive } : {}),
+        ...(confirmTarget === 'room' ? { roomActive: res.data.roomActive } : {}),
+        ...(confirmTarget === 'spd' ? { spdActive: res.data.spdActive } : {}),
         updatedAt: res.data.updatedAt 
       });
       
-      toast.success(newActive ? `Layanan Booking ${isKdo ? 'KDO' : 'Ruangan'} diaktifkan` : `Layanan Booking ${isKdo ? 'KDO' : 'Ruangan'} dinonaktifkan`);
+      toast.success(newActive ? `Layanan ${label} diaktifkan` : `Layanan ${label} dinonaktifkan`);
     } catch (err) {
-      toast.error(err.message || `Gagal mengubah status layanan ${isKdo ? 'KDO' : 'Ruangan'}`);
+      toast.error(err.message || `Gagal mengubah status layanan ${label}`);
     } finally {
       setToggling(false);
       hideLoading();

@@ -194,12 +194,13 @@ export function createApp() {
   // Uses shared cache to avoid redundant DB queries
   app.get('/api/service-status', async (_req, res) => {
     try {
-      const { isKdoServiceActive, isRoomServiceActive } = await import('./lib/serviceStatusCache.js');
+      const { isKdoServiceActive, isRoomServiceActive, isSpdServiceActive } = await import('./lib/serviceStatusCache.js');
       const kdoActive = await isKdoServiceActive();
       const roomActive = await isRoomServiceActive();
-      res.json({ data: { kdoActive, roomActive } });
+      const spdActive = await isSpdServiceActive();
+      res.json({ data: { kdoActive, roomActive, spdActive } });
     } catch {
-      res.json({ data: { kdoActive: true, roomActive: true } }); // Default to active on error
+      res.json({ data: { kdoActive: true, roomActive: true, spdActive: true } }); // Default to active on error
     }
   });
 

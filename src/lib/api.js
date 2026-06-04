@@ -312,7 +312,7 @@ export const superadminApi = {
 
   // Service Control
   getServiceStatus: () => request('/superadmin/settings/service-status'),
-  toggleService: (kdoActive, roomActive) => request('/superadmin/settings/service-status', { method: 'PATCH', body: JSON.stringify({ kdoActive, roomActive }) }),
+  toggleService: (kdoActive, roomActive, spdActive) => request('/superadmin/settings/service-status', { method: 'PATCH', body: JSON.stringify({ kdoActive, roomActive, spdActive }) }),
 
   // Activity Logs
   getLogs: (params = {}) => {

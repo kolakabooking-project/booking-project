@@ -12,7 +12,7 @@ import { serviceApi } from '../lib/api';
 export default function ServiceSelectorPage() {
   const navigate = useNavigate();
   const { user, activeRole, logout } = useAuth();
-  const [serviceStatus, setServiceStatus] = useState({ kdoActive: true, roomActive: true });
+  const [serviceStatus, setServiceStatus] = useState({ kdoActive: true, roomActive: true, spdActive: true });
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -133,6 +133,10 @@ export default function ServiceSelectorPage() {
         {/* Tracking SPD Card */}
         <button
           onClick={() => {
+            if (!serviceStatus.spdActive && !isAdmin) {
+              toast.error('Layanan Track SPD sedang nonaktif dan dalam perbaikan.');
+              return;
+            }
             navigate(isAdmin ? '/admin/tracking/monitoring-spd' : '/user/tracking/dashboard');
           }}
           className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"

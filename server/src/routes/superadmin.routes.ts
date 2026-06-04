@@ -223,16 +223,17 @@ router.get('/settings/service-status', async (_req: Request, res: Response) => {
 router.patch('/settings/service-status', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
-    const { kdoActive, roomActive } = req.body;
+    const { kdoActive, roomActive, spdActive } = req.body;
 
-    if (kdoActive === undefined && roomActive === undefined) {
-      res.status(400).json({ error: 'Minimal satu parameter (kdoActive atau roomActive) wajib diisi.' });
+    if (kdoActive === undefined && roomActive === undefined && spdActive === undefined) {
+      res.status(400).json({ error: 'Minimal satu parameter (kdoActive, roomActive, atau spdActive) wajib diisi.' });
       return;
     }
 
     const result = await superadminService.toggleService(
       kdoActive,
       roomActive,
+      spdActive,
       actor.id,
       actor.name,
       getClientIp(req)

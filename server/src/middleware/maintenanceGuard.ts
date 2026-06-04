@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { isKdoServiceActive, isRoomServiceActive, invalidateServiceStatusCache } from '../lib/serviceStatusCache.js';
+import { isKdoServiceActive, isRoomServiceActive, isSpdServiceActive, invalidateServiceStatusCache } from '../lib/serviceStatusCache.js';
 
 /**
  * Maintenance mode guard.
@@ -23,10 +23,16 @@ export async function maintenanceGuard(req: Request, res: Response, next: NextFu
   }
 
   const isRoomRoute = req.originalUrl.includes('/api/room');
+  const isSpdRoute = req.originalUrl.includes('/api/sheets');
   
-  const active = isRoomRoute 
-    ? await isRoomServiceActive()
-    : await isKdoServiceActive();
+  let active: boolean;
+  if (isSpdRoute) {
+    active = await isSpdServiceActive();
+  } else if (isRoomRoute) {
+    active = await isRoomServiceActive();
+  } else {
+    active = await isKdoServiceActive();
+  }
 
   if (!active) {
     res.status(503).json({
@@ -38,3 +44,4 @@ export async function maintenanceGuard(req: Request, res: Response, next: NextFu
 
   next();
 }
+

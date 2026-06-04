@@ -217,8 +217,9 @@ export default function SuperadminDashboard() {
 
   const isKdoActive = serviceStatus?.kdoActive;
   const isRoomActive = serviceStatus?.roomActive;
-  const isFullyActive = isKdoActive && isRoomActive;
-  const isPartiallyActive = isKdoActive || isRoomActive;
+  const isSpdActive = serviceStatus?.spdActive;
+  const isFullyActive = isKdoActive && isRoomActive && isSpdActive;
+  const isPartiallyActive = isKdoActive || isRoomActive || isSpdActive;
 
   return (
     <div className="pb-10">
@@ -433,9 +434,9 @@ export default function SuperadminDashboard() {
                   </p>
                   <p className="text-xs text-[color:var(--color-text-soft)] mt-0.5">
                     {isFullyActive
-                      ? 'Semua layanan KDO dan Ruangan dapat diakses dengan normal.'
+                      ? 'Semua layanan KDO, Ruangan, dan Track SPD dapat diakses dengan normal.'
                       : isPartiallyActive 
-                      ? 'Salah satu layanan (KDO atau Ruangan) sedang maintenance.'
+                      ? 'Salah satu layanan (KDO, Ruangan, atau Track SPD) sedang maintenance.'
                       : 'Akses ditangguhkan untuk semua user non-superadmin.'}
                   </p>
                 </div>
