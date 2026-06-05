@@ -15,7 +15,7 @@ function useDebounce(value, delay = 300) {
 // ─── Agenda Surat Tugas ───
 export function useAgendaST(params = {}) {
   const debouncedSearch = useDebounce(params.search);
-  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  const activeRole = localStorage.getItem('booking_active_role') || 'admin';
   return useQuery({
     queryKey: ['agenda-st', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getAgendaST({ ...params, search: debouncedSearch }),
@@ -27,7 +27,7 @@ export function useAgendaST(params = {}) {
 // ─── Rekap SPD ───
 export function useRekapSPD(params = {}) {
   const debouncedSearch = useDebounce(params.search);
-  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  const activeRole = localStorage.getItem('booking_active_role') || 'admin';
   return useQuery({
     queryKey: ['rekap-spd', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getRekapSPD({ ...params, search: debouncedSearch }),
@@ -38,7 +38,7 @@ export function useRekapSPD(params = {}) {
 
 // ─── SPD Summary ───
 export function useSPDSummary() {
-  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  const activeRole = localStorage.getItem('booking_active_role') || 'admin';
   return useQuery({
     queryKey: ['spd-summary', activeRole],
     queryFn: () => sheetsApi.getSPDSummary(),
@@ -48,7 +48,7 @@ export function useSPDSummary() {
 
 // ─── Consolidated Tracking Dashboard (single call) ───
 export function useTrackingDashboard() {
-  const activeRole = localStorage.getItem('activeRole') || 'admin';
+  const activeRole = localStorage.getItem('booking_active_role') || 'admin';
   return useQuery({
     queryKey: ['tracking-dashboard', activeRole],
     queryFn: () => sheetsApi.getTrackingDashboard(),
