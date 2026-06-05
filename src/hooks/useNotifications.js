@@ -52,7 +52,7 @@ export default function useNotifications() {
       toast.info(payload.title || 'Notifikasi Baru', {
         id: message.id || new Date().getTime(),
         description: payload.body || '',
-        duration: 5000,
+        duration: 1000,
       });
 
       // Refetch notifications to update badge and list
