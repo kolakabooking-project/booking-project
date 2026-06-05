@@ -3,7 +3,7 @@ import { Send, Megaphone } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { pushApi } from '../../lib/api';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function BroadcastModal({ isOpen, onClose }) {
   const [form, setForm] = useState({ title: '', body: '', url: '' });
