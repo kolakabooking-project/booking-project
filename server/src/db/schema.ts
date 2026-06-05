@@ -226,6 +226,21 @@ export const activityLog = pgTable('activity_log', {
   index('activity_log_created_at_idx').on(table.createdAt),
 ]);
 
+export const notification = pgTable('notification', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  url: text('url'),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('notification_user_idx').on(table.userId),
+  index('notification_created_at_idx').on(table.createdAt),
+]);
+
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

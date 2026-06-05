@@ -7,6 +7,7 @@ import { NAV_TRACKING_USER } from '../../utils/constants';
 import { LogOut, ChevronDown, LayoutDashboard, FileText, Home, CircleUser, ArrowLeft, CalendarDays } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
+import NotificationBell from '../ui/NotificationBell';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getInitials } from '../../utils/helpers';
 import SkipLink from '../ui/SkipLink';
@@ -61,6 +62,11 @@ export default function UserTrackingLayout({ children }) {
               </Link>
             </div>
 
+            {/* Mobile Notifications (Visible only on small screens) */}
+            <div className="flex md:hidden items-center">
+              <NotificationBell />
+            </div>
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2 rounded-full border p-1.5" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
               {NAV_TRACKING_USER.map((item) => (
@@ -89,8 +95,9 @@ export default function UserTrackingLayout({ children }) {
               ))}
             </div>
 
-            {/* Desktop Profile */}
+            {/* Desktop Profile & Notifications */}
             <div className="hidden md:flex items-center gap-3 relative">
+              <NotificationBell />
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}

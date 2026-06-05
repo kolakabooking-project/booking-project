@@ -2,6 +2,7 @@ import { db } from '../config/db.js';
 import { jadwalWfo, user, activityLog } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { sendPushNotification } from './push.service.js';
+import { createNotification } from './notification.service.js';
 
 export async function getWfoSchedulesByDate(date: string) {
   // Return all users who are scheduled for WFO on the given date
@@ -59,19 +60,37 @@ export async function saveWfoSchedule(
     ipAddress,
   });
 
-  // 4. Send push notifications to newly added users
-  // Run this outside transaction to avoid blocking it
-  if (newlyAddedUserIds.length > 0) {
-    const notifyPromises = newlyAddedUserIds.map((userId) =>
-      sendPushNotification(userId, {
-        title: 'Jadwal WFO Diperbarui',
-        body: `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`,
-        url: '/shared/tracking/jadwal-jumat'
-      })
+  // 4. Send notifications
+  const newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
+
+  const notifyPromises: Promise<any>[] = [];
+
+  // Notify newly WFO
+  for (const userId of newlyAddedUserIds) {
+    const title = 'Jadwal WFO Diperbarui';
+    const body = `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`;
+    const url = '/shared/tracking/jadwal-jumat';
+    
+    notifyPromises.push(
+      createNotification({ userId, title, body, url }),
+      sendPushNotification(userId, { title, body, url })
     );
-    // Don't await on promises so the response is fast, or await it if we want to log failures
-    await Promise.allSettled(notifyPromises);
   }
+
+  // Notify newly WFH
+  for (const userId of newlyWfhUserIds) {
+    const title = 'Jadwal WFH Diperbarui';
+    const body = `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`;
+    const url = '/shared/tracking/jadwal-jumat';
+
+    notifyPromises.push(
+      createNotification({ userId, title, body, url }),
+      sendPushNotification(userId, { title, body, url })
+    );
+  }
+
+  // Don't await on promises so the response is fast, or await it if we want to log failures
+  await Promise.allSettled(notifyPromises);
 
   return { success: true, count: userIds.length, date };
 }

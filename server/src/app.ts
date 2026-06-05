@@ -20,6 +20,7 @@ import superadminRoutes from './routes/superadmin.routes.js';
 import pushRoutes from './routes/push.routes.js';
 import sheetsRoutes from './routes/sheets.routes.js';
 import wfoRoutes from './routes/wfo.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 // Middleware
 import { authGuard } from './middleware/authGuard.js';
@@ -220,6 +221,7 @@ export function createApp() {
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
   app.use('/api/sheets', sheetsLimiter, authGuard, maintenanceGuard, sheetsRoutes);
   app.use('/api/wfo', authGuard, wfoRoutes);
+  app.use('/api/notifications', authGuard, notificationRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {
