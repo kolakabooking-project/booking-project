@@ -1,100 +1,159 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Building2, Home, RefreshCw } from 'lucide-react';
-import { useJadwalJumat, useRefreshCache } from '../../../hooks/useSheetData';
+import { Search, Building2, Home, RefreshCw, Calendar, CalendarPlus } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useLoading } from '../../../contexts/LoadingContext';
-import { toast } from 'sonner';
+import { useWfoSchedule } from '../../../hooks/useWfo';
+import WfoScheduleModal from '../../../components/tracking/WfoScheduleModal';
+
+// Helper to get next friday date
+function getNextFriday() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const distanceToFriday = (5 + 7 - dayOfWeek) % 7;
+  const nextFriday = new Date(today);
+  nextFriday.setDate(today.getDate() + distanceToFriday);
+  return nextFriday.toISOString().split('T')[0];
+}
 
 export default function JadwalJumatPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Semua'); // 'Semua', 'WFO', 'WFH'
+  const [selectedDate, setSelectedDate] = useState(getNextFriday());
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: result, isLoading, isError } = useJadwalJumat({
-    search: searchTerm,
-    page: 1,
-    limit: 1000 // Get all for easy client-side tab filtering
-  });
+  const { data: result, isLoading, isError, refetch, isFetching } = useWfoSchedule(selectedDate);
 
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const refreshCache = useRefreshCache();
-  const { showLoading, hideLoading } = useLoading();
 
   const allData = result?.data || [];
 
   const handleRefresh = async () => {
-    try {
-      showLoading('Memperbarui data jadwal...');
-      await refreshCache.mutateAsync();
-      toast.success('Data jadwal berhasil di-refresh dari Google Sheets');
-    } catch {
-      toast.error('Gagal me-refresh data');
-    } finally {
-      hideLoading();
+    refetch();
+  };
+
+  const handleModalRefresh = (date) => {
+    if (date === selectedDate) {
+      refetch();
+    } else {
+      setSelectedDate(date);
     }
   };
 
-  // Filter based on active tab
+  // Generate date options for the dropdown (This week + 3 next weeks)
+  const dateOptions = useMemo(() => {
+    const fridays = [];
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const distanceToFriday = (5 + 7 - dayOfWeek) % 7;
+    let nextFriday = new Date(today);
+    nextFriday.setDate(today.getDate() + distanceToFriday);
+
+    for (let i = 0; i < 4; i++) {
+      const d = new Date(nextFriday);
+      d.setDate(nextFriday.getDate() + i * 7);
+      const dateString = d.toISOString().split('T')[0];
+      fridays.push({
+        value: dateString,
+        label: i === 0 ? `Jumat Minggu Ini (${dateString})` : `Jumat, ${dateString}`
+      });
+    }
+    return fridays;
+  }, []);
+
+  // Filter based on active tab and search term
   const filteredData = allData.filter((item) => {
-    if (activeTab === 'Semua') return true;
-    return item.tipe === activeTab;
+    const matchTab = activeTab === 'Semua' ? true : item.tipe === activeTab;
+    const matchSearch = item.namaPegawai.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                       (item.nip && item.nip.includes(searchTerm));
+    return matchTab && matchSearch;
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-[color:var(--color-heading)]">Jadwal Jumat</h1>
-        <p className="text-sm text-[color:var(--color-text-soft)] mt-1">
-          Daftar jadwal Work From Office (WFO) dan Work From Home (WFH) hari Jumat.
-        </p>
+    <div className="space-y-6 max-w-7xl mx-auto relative pb-20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-[color:var(--color-heading)]">Jadwal Jumat</h1>
+          <p className="text-sm text-[color:var(--color-text-soft)] mt-1">
+            Daftar jadwal Work From Office (WFO) dan Work From Home (WFH) hari Jumat.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
+          >
+            <CalendarPlus size={18} />
+            <span>Buat / Edit Jadwal</span>
+          </button>
+        )}
       </div>
 
       <div className="rounded-2xl border p-5" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-          <div className="flex bg-[color:var(--color-surface-muted)] p-1 rounded-xl w-full sm:w-auto">
-            {['Semua', 'WFO', 'WFH'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === tab 
-                    ? 'bg-emerald-600 text-white shadow-md' 
-                    : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-heading)]'
-                }`}
+          
+          <div className="flex gap-4 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+            <div className="flex bg-[color:var(--color-surface-muted)] p-1 rounded-xl shrink-0">
+              {['Semua', 'WFO', 'WFH'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === tab 
+                      ? 'bg-emerald-600 text-white shadow-md' 
+                      : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-heading)]'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative shrink-0 min-w-[200px]">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-soft)]" size={16} />
+              <select
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full rounded-xl border pl-9 pr-8 py-2 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  background: 'var(--color-bg-shell)',
+                  color: 'var(--color-text-main)'
+                }}
               >
-                {tab}
-              </button>
-            ))}
+                {dateOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-soft)]" size={16} />
-            <input
-              type="text"
-              placeholder="Cari nama, NIP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              style={{
-                borderColor: 'var(--color-border)',
-                background: 'var(--color-bg-shell)',
-                color: 'var(--color-text-main)'
-              }}
-            />
-          </div>
-          
-          {isAdmin && (
+          <div className="flex gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--color-text-soft)]" size={16} />
+              <input
+                type="text"
+                placeholder="Cari nama, NIP..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  background: 'var(--color-bg-shell)',
+                  color: 'var(--color-text-main)'
+                }}
+              />
+            </div>
+            
             <button
               onClick={handleRefresh}
-              disabled={refreshCache.isPending}
-              className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-heading font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50 w-full sm:w-auto mt-4 sm:mt-0"
+              disabled={isFetching}
+              className="flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-heading font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50 shrink-0"
               style={{ borderColor: 'var(--color-border)' }}
             >
-              <RefreshCw size={16} className={refreshCache.isPending ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">Refresh</span>
+              <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
             </button>
-          )}
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--color-border)' }}>
@@ -121,7 +180,6 @@ export default function JadwalJumatPage() {
                     <td className="px-6 py-4">
                       <div className="space-y-2">
                         <div className="h-4 w-40 rounded bg-[color:var(--color-surface-muted)]" />
-                        <div className="h-3 w-20 rounded bg-[color:var(--color-surface-muted)]" />
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -138,28 +196,27 @@ export default function JadwalJumatPage() {
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-8 text-center text-[color:var(--color-text-soft)]">
-                    Tidak ada jadwal ditemukan.
+                    Tidak ada jadwal ditemukan pada tanggal ini.
                   </td>
                 </tr>
               ) : (
                 filteredData.map((item, index) => (
                   <motion.tr 
-                    key={`${item.no}-${item.nip}`}
+                    key={`${item.id}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(index * 0.05, 0.5) }}
                     className="hover:bg-[color:var(--color-surface-muted)]/50 transition-colors"
                   >
                     <td className="px-6 py-4 font-medium text-[color:var(--color-text-soft)]">
-                      {item.no}
+                      {index + 1}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-heading font-semibold text-[color:var(--color-heading)]">{item.nama}</div>
-                      <div className="text-xs text-[color:var(--color-text-soft)] mt-0.5">{item.nip}</div>
+                      <div className="font-heading font-semibold text-[color:var(--color-heading)]">{item.namaPegawai}</div>
+                      <div className="text-xs text-[color:var(--color-text-soft)] mt-0.5">{item.nip || '-'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-[color:var(--color-text-main)]">{item.jabatan}</div>
-                      <div className="text-xs text-[color:var(--color-text-soft)] mt-0.5">{item.pangkatGolongan}</div>
+                      <div className="font-medium text-[color:var(--color-text-main)]">{item.jabatan || '-'}</div>
                     </td>
                     <td className="px-6 py-4 text-center">
                       {item.tipe === 'WFO' ? (
@@ -179,6 +236,12 @@ export default function JadwalJumatPage() {
           </table>
         </div>
       </div>
+
+      <WfoScheduleModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onRefresh={handleModalRefresh}
+      />
     </div>
   );
 }

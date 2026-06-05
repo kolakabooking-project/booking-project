@@ -19,6 +19,7 @@ import chatRoutes from './routes/chat.js';
 import superadminRoutes from './routes/superadmin.routes.js';
 import pushRoutes from './routes/push.routes.js';
 import sheetsRoutes from './routes/sheets.routes.js';
+import wfoRoutes from './routes/wfo.routes.js';
 
 // Middleware
 import { authGuard } from './middleware/authGuard.js';
@@ -218,6 +219,7 @@ export function createApp() {
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
   app.use('/api/sheets', sheetsLimiter, authGuard, maintenanceGuard, sheetsRoutes);
+  app.use('/api/wfo', authGuard, wfoRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {

@@ -211,7 +211,10 @@ export const activityLog = pgTable('activity_log', {
       'ROOM_CREATED', 'ROOM_UPDATED', 'ROOM_DELETED',
       // Room Booking
       'ROOM_BOOKING_CREATED', 'ROOM_BOOKING_CANCELLED', 'ROOM_BOOKING_REVIEW',
+      // WFO
+      'WFO_SCHEDULE_UPDATED'
     ]
+
   }).notNull(),
   targetId: text('target_id'),
   targetName: text('target_name'),
@@ -306,3 +309,19 @@ export const roomBookingReview = pgTable('room_booking_review', {
   isNew: boolean('is_new').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// ─────────────────────────────────────────────
+//  WFO Schedule Domain Table
+// ─────────────────────────────────────────────
+
+export const jadwalWfo = pgTable('jadwal_wfo', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  date: date('date').notNull(), // format YYYY-MM-DD
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('jadwal_wfo_date_idx').on(table.date),
+  index('jadwal_wfo_user_idx').on(table.userId),
+]);

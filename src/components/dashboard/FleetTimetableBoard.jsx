@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
-import { CalendarRange, ChevronLeft, ChevronRight, Clock, User, MapPin, Warehouse, Wrench, Info } from 'lucide-react';
+import { CalendarRange, ChevronLeft, ChevronRight, Clock, User, MapPin, Warehouse, Wrench, Info, ChevronDown } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../utils/helpers';
 import Modal from '../ui/Modal';
 import Badge from '../ui/Badge';
@@ -12,6 +12,7 @@ export default function FleetTimetableBoard() {
   const { vehicles, bookings } = useBooking();
   const [targetDate, setTargetDate] = useState(new Date());
   const [detailBooking, setDetailBooking] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Date Navigation Helpers
   const handlePrevDay = () => {
@@ -137,17 +138,38 @@ export default function FleetTimetableBoard() {
     return 'approved';
   };
 
+  const bodyVariants = {
+    expanded: { 
+      opacity: 1, 
+      height: 'auto',
+      transitionEnd: { overflow: 'visible' }
+    },
+    collapsed: { 
+      opacity: 0, 
+      height: 0,
+      overflow: 'hidden'
+    },
+  };
+
+  const rollDownTransition = { 
+    duration: 0.5, 
+    ease: [0.25, 1, 0.5, 1] 
+  };
+
   return (
-    <div className="ftb-card">
+    <div className={`ftb-card ${!isExpanded ? 'ftb-card--collapsed' : ''}`}>
       {/* HEADER SECTION */}
-      <div className="ftb-header">
+      <div className="ftb-header" style={{ cursor: 'pointer', paddingBottom: isExpanded ? undefined : '1.5rem' }} onClick={() => setIsExpanded(!isExpanded)}>
         <div className="ftb-title-area">
           <CalendarRange className="ftb-title-icon" size={24} />
           <h2 className="ftb-title">Gantt Chart Jadwal KDO</h2>
+          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.3 }} style={{ marginLeft: '12px', display: 'flex', alignItems: 'center' }}>
+            <ChevronDown size={18} className="text-[color:var(--color-text-soft)]" />
+          </motion.div>
         </div>
 
         {/* DATE CONTROLS */}
-        <div className="ftb-controls">
+        <div className="ftb-controls" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="sm" onClick={handlePrevDay}>
             <ChevronLeft size={16} />
           </Button>
@@ -163,8 +185,18 @@ export default function FleetTimetableBoard() {
         </div>
       </div>
 
-      {/* TIMETABLE TIMELINE BOARD */}
-      <div className="ftb-timeline-wrap">
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            variants={bodyVariants}
+            initial="collapsed"
+            animate="expanded"
+            exit="collapsed"
+            transition={rollDownTransition}
+            style={{ originY: 0 }}
+          >
+            {/* TIMETABLE TIMELINE BOARD */}
+            <div className="ftb-timeline-wrap">
         <div className="ftb-grid-container">
           {/* HEADER HOUR TICKS ROW */}
           <div className="ftb-row-header">
@@ -272,6 +304,9 @@ export default function FleetTimetableBoard() {
           <span>Perawatan Armada</span>
         </div>
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* DETAIL BOOKING DIALOG MODAL */}
       <Modal
