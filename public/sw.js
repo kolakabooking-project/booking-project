@@ -53,8 +53,19 @@ self.addEventListener('fetch', (e) => {
           });
           return networkResponse;
         })
-        .catch(() => {
-          return caches.match('/index.html');
+        .catch(async () => {
+          const cached = await caches.match('/index.html');
+          if (cached) {
+            return cached;
+          }
+          // Jika index.html tidak ada di cache, kembalikan halaman offline standar
+          return new Response(
+            '<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Offline</title></head><body style="font-family: sans-serif; text-align: center; padding: 2rem; color: #333;"><h2>Aplikasi Sedang Offline</h2><p>Pastikan koneksi internet Anda aktif. Sistem tidak dapat memuat data saat ini.</p><button onclick="window.location.reload()" style="padding: 10px 20px; background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer;">Coba Lagi</button></body></html>',
+            {
+              status: 503,
+              headers: { 'Content-Type': 'text/html' }
+            }
+          );
         })
     );
     return;
@@ -62,21 +73,43 @@ self.addEventListener('fetch', (e) => {
 
   // Stale-While-Revalidate for other assets (JS, CSS, images)
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      const fetchPromise = fetch(e.request).then((networkResponse) => {
-        // Only cache valid responses
+    caches.match(e.request).then(async (cachedResponse) => {
+      if (cachedResponse) {
+        // Di-background, ambil data terbaru untuk mengupdate cache
+        fetch(e.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const contentType = networkResponse.headers.get('content-type');
+            if (e.request.url.match(/\.(js|css)$/) && contentType && contentType.includes('text/html')) {
+              return; // Abaikan, ini file HTML fallback dari SPA
+            }
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(e.request, networkResponse);
+            });
+          }
+        }).catch(() => { /* Abaikan error background fetch */ });
+        return cachedResponse;
+      }
+
+      // Jika tidak ada di cache, kita harus fetch
+      try {
+        const networkResponse = await fetch(e.request);
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const contentType = networkResponse.headers.get('content-type');
+          if (e.request.url.match(/\.(js|css)$/) && contentType && contentType.includes('text/html')) {
+            // Jangan cache, dan lempar response 404 agar module loader (React) gagal & me-reload
+            return new Response('Not Found', { status: 404, statusText: 'Not Found' });
+          }
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(e.request, responseToCache);
           });
         }
         return networkResponse;
-      }).catch((err) => {
-        console.warn('[SW] Fetch failed, returning cache if available', err);
-      });
-
-      return cachedResponse || fetchPromise;
+      } catch (err) {
+        console.warn('[SW] Fetch failed for', e.request.url, err);
+        // Penting: kembalikan response error agar Promise tidak reject dengan undefined (yang bikin TypeError)
+        return new Response('Network Error', { status: 503, statusText: 'Service Unavailable' });
+      }
     })
   );
 });
