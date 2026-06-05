@@ -1,4 +1,4 @@
-import { Car, Building2, LogOut } from 'lucide-react';
+import { Car, Building2, LogOut, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeLogo from '../components/ui/ThemeLogo';
@@ -102,10 +102,13 @@ export default function ServiceSelectorPage() {
             Ajukan peminjaman kendaraan dinas operasional dengan atau tanpa pengemudi untuk keperluan kedinasan.
           </p>
           <div className="relative z-10 mt-8 text-primary font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'kdo' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            {checkingService === 'kdo' ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+            ) : (
+              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg></>
+            )}
           </div>
         </button>
 
@@ -124,10 +127,13 @@ export default function ServiceSelectorPage() {
             Pesan ruang rapat atau fasilitas lainnya untuk kegiatan meeting, sosialisasi, atau acara khusus.
           </p>
           <div className="relative z-10 mt-8 text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'room' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            {checkingService === 'room' ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+            ) : (
+              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg></>
+            )}
           </div>
         </button>
 
@@ -146,10 +152,13 @@ export default function ServiceSelectorPage() {
             Pantau status Surat Perjalanan Dinas, agenda surat tugas, dan rekap perjalanan dinas secara real-time.
           </p>
           <div className="relative z-10 mt-8 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'spd' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            {checkingService === 'spd' ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+            ) : (
+              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg></>
+            )}
           </div>
         </button>
       </div>

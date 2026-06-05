@@ -48,8 +48,9 @@ export default function useNotifications() {
     const unsubscribe = subscribe(`notifications:user_${user.id}`, 'new_notification', (message) => {
       const payload = message.data || {};
       
-      // Show toast
+      // Show toast with unique ID to prevent duplicates if multiple bells are rendered
       toast.info(payload.title || 'Notifikasi Baru', {
+        id: message.id || new Date().getTime(),
         description: payload.body || '',
         duration: 5000,
       });
