@@ -54,11 +54,8 @@ router.get('/dashboard', async (_req: Request, res: Response) => {
       superadminService.listRecentUsers(6),
     ]);
 
-    // Lazy cleanup: trigger asynchronous background log cleanup to prevent database ballooning
-    // without blocking the dashboard API response time (perfect for Vercel Free tier)
-    activityService.cleanupOldLogs().catch((err) => {
-      console.error('[Lazy Cleanup Error]', err);
-    });
+    // Log cleanup is now exclusively handled by Vercel cron job
+    // to minimize unnecessary database wake-ups on dashboard load.
 
     res.json({
       data: {

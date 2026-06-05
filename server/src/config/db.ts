@@ -1,9 +1,11 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { env } from './env.js';
 import * as schema from '../db/schema.js';
 
-// Connection pool — tuned for serverless (NeonDB) in production
+// Connection string
 const connectionString = env.DATABASE_URL;
 
 // Auto-detect NeonDB from connection string
@@ -15,18 +17,24 @@ const cleanConnectionString = connectionString
   .replace(/\?&/, '?')      // Fix dangling ?& after removal
   .replace(/\?$/, '');       // Fix trailing ? if it was the only param
 
-const queryClient = postgres(cleanConnectionString, {
-  // Serverless environments share connection pools across invocations
-  // NeonDB free tier supports ~100 concurrent connections
-  max: env.NODE_ENV === 'production' ? 5 : 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  // SSL required for NeonDB (always, regardless of NODE_ENV)
-  ssl: isNeonDB ? 'require' : (env.NODE_ENV === 'production' ? 'require' : undefined),
-  // Required for NeonDB pooler — disables prepared statements
-  // which aren't compatible with pgBouncer connection pooling
-  prepare: false,
-});
+let db: any;
+let queryClient: any;
 
-export const db = drizzle(queryClient, { schema });
-export { queryClient };
+if (isNeonDB) {
+  // Use Neon HTTP driver for Serverless (no persistent TCP connections)
+  // This allows the Vercel serverless function to exit immediately and Neon to suspend
+  queryClient = neon(cleanConnectionString);
+  db = drizzleNeon(queryClient, { schema });
+} else {
+  // Use postgres.js for local development
+  queryClient = postgres(cleanConnectionString, {
+    max: env.NODE_ENV === 'production' ? 5 : 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+    ssl: env.NODE_ENV === 'production' ? 'require' : undefined,
+    prepare: false,
+  });
+  db = drizzlePg(queryClient, { schema });
+}
+
+export { db, queryClient };

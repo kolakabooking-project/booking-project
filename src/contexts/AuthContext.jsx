@@ -8,7 +8,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
-  const [serviceActive, setServiceActive] = useState(true);
+  const [serviceStatuses, setServiceStatuses] = useState({ kdoActive: true, roomActive: true, spdActive: true });
   const [sessionChecked, setSessionChecked] = useState(false); // true once API call resolves
   const [splashDone, setSplashDone] = useState(false); // true once splash animation is fully finished
   const sessionCheckedRef = useRef(false); // ref mirror for use inside SplashScreen callbacks
@@ -21,11 +21,11 @@ export function AuthProvider({ children }) {
         // Check service status in parallel with session
         const [session, statusRes] = await Promise.all([
           authApi.getSession(),
-          serviceApi.getStatus().catch(() => ({ data: { active: true } })),
+          serviceApi.getStatus().catch(() => ({ data: { kdoActive: true, roomActive: true, spdActive: true } })),
         ]);
 
         if (!cancelled) {
-          setServiceActive(statusRes?.data?.active !== false);
+          setServiceStatuses(statusRes?.data || { kdoActive: true, roomActive: true, spdActive: true });
         }
 
         if (!cancelled && session?.user) {
@@ -75,22 +75,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Periodically check service status (every 2 minutes)
-  // Superadmin bypasses maintenance mode, so no need to poll for them
-  useEffect(() => {
-    // Skip polling for superadmin — they always have access regardless of service status
-    if (user?.role === 'superadmin') return;
+  // Removed interval polling here. 
+  // We now rely on Ably Realtime for service status updates.
 
-    const interval = setInterval(async () => {
-      try {
-        const res = await serviceApi.getStatus();
-        setServiceActive(res?.data?.active !== false);
-      } catch {
-        // Ignore errors
-      }
-    }, 120000); // 2 minutes instead of 30 seconds
-    return () => clearInterval(interval);
-  }, [user?.role]);
+  const updateServiceStatuses = useCallback((newStatuses) => {
+    setServiceStatuses(prev => ({ ...prev, ...newStatuses }));
+  }, []);
 
   const login = useCallback(async (nip, password) => {
     try {
@@ -120,7 +110,7 @@ export function AuthProvider({ children }) {
         // Re-check service status after login
         try {
           const statusRes = await serviceApi.getStatus();
-          setServiceActive(statusRes?.data?.active !== false);
+          if (statusRes?.data) setServiceStatuses(statusRes.data);
         } catch {}
 
         return { success: true, role };
@@ -171,7 +161,8 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       activeRole,
-      serviceActive,
+      serviceStatuses,
+      updateServiceStatuses,
       switchRole,
       login,
       logout,

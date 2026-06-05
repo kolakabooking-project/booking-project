@@ -23,15 +23,20 @@ interface CachedSession {
 const sessionCache = new Map<string, CachedSession>();
 const SESSION_CACHE_TTL_MS = 60_000; // 60 seconds
 
-// Cleanup stale entries every 5 minutes to prevent memory leaks
-setInterval(() => {
+let lastCleanup = Date.now();
+
+function lazyCleanup() {
   const now = Date.now();
-  for (const [key, value] of sessionCache) {
-    if (now >= value.expiresAt) {
-      sessionCache.delete(key);
+  // Cleanup at most once every 5 minutes
+  if (now - lastCleanup > 5 * 60_000) {
+    for (const [key, value] of sessionCache) {
+      if (now >= value.expiresAt) {
+        sessionCache.delete(key);
+      }
     }
+    lastCleanup = now;
   }
-}, 5 * 60_000);
+}
 
 /**
  * Extract the session token from request cookies.
@@ -95,6 +100,7 @@ export async function authGuard(req: Request, res: Response, next: NextFunction)
     }
 
     const token = extractSessionToken(req);
+    lazyCleanup();
 
     // Check cache first
     if (token) {

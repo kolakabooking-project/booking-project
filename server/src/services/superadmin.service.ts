@@ -6,6 +6,7 @@ import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '.
 import { logActivity } from './activity.service.js';
 import { getServiceStatusCached, invalidateServiceStatusCache } from '../lib/serviceStatusCache.js';
 import { invalidateUserSessions } from '../middleware/authGuard.js';
+import { broadcastBookingUpdate } from '../lib/ably.js';
 
 // ─── Constants ───
 
@@ -480,7 +481,10 @@ export async function toggleService(
     ipAddress,
   });
 
-  return getServiceStatusCached();
+  const finalStatuses = await getServiceStatusCached();
+  await broadcastBookingUpdate('SERVICE_STATUS_CHANGED', finalStatuses, 'system');
+
+  return finalStatuses;
 }
 
 /**
