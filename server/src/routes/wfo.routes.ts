@@ -21,11 +21,33 @@ router.get('/:date', async (req: Request, res: Response) => {
     const wfoRecords = await wfoService.getWfoSchedulesByDate(date as string);
     const wfoUserIds = new Set(wfoRecords.map((r: any) => r.userId));
 
+    // Check if this date has been configured before by looking at activity logs
+    // If it hasn't been configured, we default everyone to WFO
+    const { db } = await import('../config/db.js');
+    const { activityLog } = await import('../db/schema.js');
+    const { eq, and, ilike } = await import('drizzle-orm');
+    
+    const configLog = await db.select({ id: activityLog.id }).from(activityLog).where(
+      and(
+        eq(activityLog.action, 'WFO_SCHEDULE_UPDATED'),
+        ilike(activityLog.detail, `%${date}%`)
+      )
+    ).limit(1);
+    
+    const isConfigured = wfoRecords.length > 0 || configLog.length > 0;
+
     // Get all users to determine WFH (everyone not WFO is WFH), excluding superadmin
     const allUsers = (await listAllUsers()).filter((u: any) => u.role !== 'superadmin');
 
     const schedule = allUsers.map((user: any) => {
-      const isWfo = wfoUserIds.has(user.id);
+      let isWfo;
+      if (!isConfigured) {
+        // Default to WFO if not configured
+        isWfo = true;
+      } else {
+        isWfo = wfoUserIds.has(user.id);
+      }
+      
       return {
         id: user.id,
         namaPegawai: user.name,
