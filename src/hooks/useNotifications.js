@@ -17,7 +17,6 @@ export default function useNotifications() {
       const data = await res.json();
       return data.data;
     },
-    refetchInterval: 60000, // Auto refresh every minute
   });
 
   const markAsReadMutation = useMutation({
