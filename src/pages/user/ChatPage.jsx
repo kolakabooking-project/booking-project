@@ -6,7 +6,7 @@ import { Send, MessageCircle } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 
 export default function ChatPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, activeRole, isAuthenticated } = useAuth();
   
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -25,7 +25,7 @@ export default function ChatPage() {
 
   // Load history
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'user') return;
+    if (!isAuthenticated || activeRole !== 'user') return;
 
     const loadHistory = async () => {
       setIsLoading(true);
@@ -34,7 +34,7 @@ export default function ChatPage() {
         setMessages(history);
         
         // Mark as read immediately when page is opened
-        await chatApi.markAsRead({ userId: user.id, role: user.role, currentUserId: user.id });
+        await chatApi.markAsRead({ userId: user.id, role: activeRole, currentUserId: user.id });
         setMessages(prev => prev.map(m => m.senderId !== user.id ? { ...m, isRead: true } : m));
       } catch (error) {
         console.error('Failed to load chat history:', error);
@@ -44,11 +44,11 @@ export default function ChatPage() {
     };
     
     loadHistory();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, activeRole]);
 
   // Initialize Ably (via shared AblyProvider)
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'user') return;
+    if (!isAuthenticated || activeRole !== 'user') return;
 
     const unsub1 = subscribe(`chat:user_${user.id}`, 'new_message', (msg) => {
       const newMsg = msg.data;
@@ -67,7 +67,7 @@ export default function ChatPage() {
       
       // Automatically mark as read
       if (newMsg.senderId !== user.id) {
-        chatApi.markAsRead({ userId: user.id, role: user.role, currentUserId: user.id });
+        chatApi.markAsRead({ userId: user.id, role: activeRole, currentUserId: user.id });
       }
     });
 
@@ -79,7 +79,7 @@ export default function ChatPage() {
       unsub1();
       unsub2();
     };
-  }, [isAuthenticated, user, subscribe]);
+  }, [isAuthenticated, user, activeRole, subscribe]);
 
   const handleSend = async (e) => {
     e?.preventDefault();
@@ -103,7 +103,7 @@ export default function ChatPage() {
         senderId: user.id,
         receiverId: null,
         content: newMsg.content,
-        role: user.role,
+        role: activeRole,
         tempId: tempId
       });
       setMessages(prev => prev.map(m => m.id === tempId ? response : m));
@@ -113,7 +113,7 @@ export default function ChatPage() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'user') return null;
+  if (!isAuthenticated || activeRole !== 'user') return null;
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] -mt-4">

@@ -21,17 +21,18 @@ router.get('/users', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden', message: 'Hanya Admin yang dapat memuat daftar obrolan.' });
     }
 
-    const users = await db.execute(sql`
+    const result = await db.execute(sql`
       SELECT u.id, u.name, u.nip, u.image, MAX(c.created_at) as "lastMessageAt"
       FROM "user" u
       LEFT JOIN chat_message c ON c.sender_id = u.id OR c.receiver_id = u.id
-      WHERE u.role = 'user'
+      WHERE u.role = 'user' OR u.role = 'admin' OR u.role = 'superadmin'
       GROUP BY u.id
       ORDER BY "lastMessageAt" DESC NULLS LAST
     `);
     
-    // Send to client
-    res.json(users);
+    // Send to client, handling neon-http object response
+    const usersList = Array.isArray(result) ? result : result.rows || [];
+    res.json(usersList);
   } catch (error) {
     console.error('Failed to fetch users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
