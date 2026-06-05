@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useLoading } from '../../../contexts/LoadingContext';
 import { toast } from 'sonner';
 import ActiveSTWidget from '../../../components/dashboard/ActiveSTWidget';
+import Modal from '../../../components/ui/Modal';
 
 const WILAYAH_COLORS = {
   kolaka: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -46,6 +47,7 @@ export default function MonitoringSPDPage() {
   const [search, setSearch] = useState('');
   const [wilayah, setWilayah] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const limit = 15;
 
   const { data, isLoading, isFetching } = useRekapSPD({ search, wilayah, page, limit });
@@ -155,10 +157,11 @@ export default function MonitoringSPDPage() {
               records.map((r, i) => (
                 <motion.tr
                   key={`${r.nomorSpd}-${i}`}
+                  onClick={() => setSelectedRecord(r)}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
+                  className="border-b transition-colors hover:bg-[color:var(--color-surface-muted)] cursor-pointer"
                   style={{ borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)' }}
                 >
                   <td className="px-4 py-3.5 font-heading font-bold text-[color:var(--color-heading)]">{r.nomorSpd || '-'}</td>
@@ -198,10 +201,11 @@ export default function MonitoringSPDPage() {
           records.map((r, i) => (
             <motion.div
               key={`${r.nomorSpd}-${i}`}
+              onClick={() => setSelectedRecord(r)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border p-4"
+              className="rounded-2xl border p-4 cursor-pointer hover:shadow-md transition-shadow"
               style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -243,6 +247,69 @@ export default function MonitoringSPDPage() {
           </button>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        title="Detail Monitoring SPD"
+        size="md"
+      >
+        {selectedRecord && (
+          <div className="space-y-5 text-sm text-[color:var(--color-heading)]">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Nomor SPD</span>
+                <p className="font-heading font-bold text-lg">{selectedRecord.nomorSpd || '-'}</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Wilayah Tugas</span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${getWilayahColor(selectedRecord.wilayahTugas)}`}>
+                  <MapPin size={10} /> {selectedRecord.wilayahTugas}
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Nama Pegawai</span>
+              <p className="font-heading font-semibold text-base">{selectedRecord.namaPegawai}</p>
+            </div>
+            
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Nomor Surat Tugas</span>
+              <p className="font-mono text-sm bg-[color:var(--color-surface-muted)] px-3 py-2 rounded-xl inline-block border" style={{ borderColor: 'var(--color-border)' }}>
+                {selectedRecord.nomorST}
+              </p>
+            </div>
+            
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Perihal Kegiatan</span>
+              <div className="p-4 rounded-xl border bg-[color:var(--color-surface-muted)]" style={{ borderColor: 'var(--color-border)' }}>
+                <p className="leading-relaxed whitespace-pre-wrap text-[13px]">{selectedRecord.perihalTugas}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl border bg-[color:var(--color-surface)]" style={{ borderColor: 'var(--color-border)' }}>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Berangkat</span>
+                <p className="text-xs font-medium">{selectedRecord.tanggalMulai}</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Kembali</span>
+                <p className="text-xs font-medium">{selectedRecord.tanggalAkhir}</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Durasi</span>
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{selectedRecord.jumlahHariSpdNumeric} Hari</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Ditetapkan</span>
+                <p className="text-xs font-medium">{selectedRecord.tanggalDitetapkan}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Search, RefreshCw, MapPin, ChevronLeft, ChevronRight, FileText, Calenda
 import { motion } from 'framer-motion';
 import { useLoading } from '../../../contexts/LoadingContext';
 import { toast } from 'sonner';
+import Modal from '../../../components/ui/Modal';
 
 function SkeletonRow() {
   return (
@@ -48,6 +49,7 @@ export default function PerjadinPage() {
   const [wilayah, setWilayah] = useState('');
   const [sikkaFilter, setSikkaFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const limit = 15;
 
   const { data, isLoading, isFetching } = useAgendaST({ search, wilayah, page, limit });
@@ -167,10 +169,11 @@ export default function PerjadinPage() {
               records.map((r, i) => (
                 <motion.tr
                   key={`${r.nomorSpd}-${i}`}
+                  onClick={() => setSelectedRecord(r)}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
+                  className="border-b transition-colors hover:bg-[color:var(--color-surface-muted)] cursor-pointer"
                   style={{ borderColor: 'color-mix(in srgb, var(--color-border) 50%, transparent)' }}
                 >
                   <td className="px-3 py-3 font-heading font-bold text-[color:var(--color-heading)]">{r.nomorSpd || '-'}</td>
@@ -208,10 +211,11 @@ export default function PerjadinPage() {
           records.map((r, i) => (
             <motion.div
               key={`${r.nomorSpd}-${i}`}
+              onClick={() => setSelectedRecord(r)}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border p-4"
+              className="rounded-2xl border p-4 cursor-pointer hover:shadow-md transition-shadow"
               style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -254,6 +258,90 @@ export default function PerjadinPage() {
           </button>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        title="Detail Perjalanan Dinas (Perjadin)"
+        size="md"
+      >
+        {selectedRecord && (
+          <div className="space-y-5 text-sm text-[color:var(--color-heading)]">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Status SIKKA</span>
+                <SikkaBadge value={selectedRecord.inputSikka} />
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Tgl Buat</span>
+                <p className="text-sm font-medium">{selectedRecord.tanggalPembuatan}</p>
+              </div>
+            </div>
+            
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Nama Pegawai</span>
+              <p className="font-heading font-semibold text-base">{selectedRecord.namaPegawai}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Nomor ST</span>
+                <p className="font-mono text-sm bg-[color:var(--color-surface-muted)] px-3 py-2 rounded-xl border inline-block" style={{ borderColor: 'var(--color-border)' }}>
+                  {selectedRecord.nomorST}
+                </p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">No. SPD</span>
+                <p className="font-heading font-bold text-lg">{selectedRecord.nomorSpd || '-'}</p>
+              </div>
+            </div>
+            
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Perihal Kegiatan</span>
+              <div className="p-4 rounded-xl border bg-[color:var(--color-surface-muted)]" style={{ borderColor: 'var(--color-border)' }}>
+                <p className="leading-relaxed whitespace-pre-wrap text-[13px]">{selectedRecord.perihalKegiatan}</p>
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Rute Perjalanan</span>
+              <div className="flex items-center gap-3 p-3 rounded-xl border bg-[color:var(--color-surface)]" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="flex-1">
+                  <p className="text-xs text-[color:var(--color-text-soft)]">Berangkat Dari</p>
+                  <p className="font-semibold text-sm">{selectedRecord.berangkatDari}</p>
+                </div>
+                <div className="text-emerald-500">
+                  <ChevronRight size={20} />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="text-xs text-[color:var(--color-text-soft)]">Wilayah Tugas</p>
+                  <p className="font-semibold text-sm">{selectedRecord.wilayahTugas}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl border bg-[color:var(--color-surface)]" style={{ borderColor: 'var(--color-border)' }}>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Berangkat</span>
+                <p className="text-xs font-medium">{selectedRecord.tanggalBerangkat}</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Kembali</span>
+                <p className="text-xs font-medium">{selectedRecord.tanggalKembali}</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Hari ST</span>
+                <p className="text-xs font-bold">{selectedRecord.jumlahHariST} Hari</p>
+              </div>
+              <div>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Hari SPD</span>
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{selectedRecord.jumlahHariSPD} Hari</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
