@@ -78,17 +78,30 @@ router.post('/unsubscribe', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/push/test — Test push notification for the logged in user
+ * POST /api/push/test — Test push notification
+ * For superadmin, can send to a specific userId.
  */
 router.post('/test', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
+    const targetUserId = (actor.role === 'superadmin' && req.body.userId) ? req.body.userId : actor.id;
     
-    await sendPushNotification(actor.id, {
+    const payload = {
       title: 'Uji Coba Notifikasi',
       body: 'Ini adalah notifikasi uji coba dari sistem BOOKOLAKA.',
       url: '/user/account',
-    });
+    };
+
+    // Send Web Push
+    await sendPushNotification(targetUserId, payload);
+
+    // Send Ably Real-time Push
+    try {
+      const { default: ably } = await import('../lib/ably.js');
+      await ably.channels.get(`notifications:user_${targetUserId}`).publish('new_notification', payload);
+    } catch (ablyErr) {
+      console.error('[PushTest] Failed to send Ably notification:', ablyErr);
+    }
 
     res.json({ success: true, message: 'Notifikasi uji coba dikirim.' });
   } catch (err: any) {

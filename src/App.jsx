@@ -78,6 +78,7 @@ const AccountManagementPage = lazy(() => import('./pages/superadmin/AccountManag
 const ServiceControlPage = lazy(() => import('./pages/superadmin/ServiceControlPage'));
 const ActivityLogPage = lazy(() => import('./pages/superadmin/ActivityLogPage'));
 const SuperadminSettingsPage = lazy(() => import('./pages/superadmin/SettingsPage'));
+const TestingPage = lazy(() => import('./pages/superadmin/TestingPage'));
 
 function ProtectedRoute({ children, role }) {
   const { activeRole, isAuthenticated, serviceStatuses, user } = useAuth();
@@ -172,6 +173,7 @@ function AppRoutes() {
         <Route path="/superadmin/service" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ServiceControlPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/testing" element={<ProtectedRoute role="superadmin"><SuperadminLayout><TestingPage /></SuperadminLayout></ProtectedRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/login" replace />} />

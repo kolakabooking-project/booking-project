@@ -8,11 +8,11 @@ import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import {
   Menu, LogOut, ChevronLeft, Home, ChevronRight,
-  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard,
+  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard, Bell,
 } from 'lucide-react';
 import SkipLink from '../ui/SkipLink';
 
-const iconMap = { Shield, UsersCog: UserCog, Power, ScrollText };
+const iconMap = { Shield, UsersCog: UserCog, Power, ScrollText, Bell };
 
 const breadcrumbMap = {
   '/superadmin/dashboard': 'Dashboard',

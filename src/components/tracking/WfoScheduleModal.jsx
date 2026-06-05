@@ -111,7 +111,7 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
     XLSX.writeFile(workbook, `Jadwal_Jumat_${selectedDate}.xlsx`);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (shouldExport) => {
     setIsSaving(true);
     try {
       const userIdsArray = Array.from(selectedUserIds);
@@ -128,12 +128,13 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
 
       toast.success('Jadwal WFO berhasil disimpan!');
       
-      // Auto export
-      const updatedUsers = users.map(u => ({
-        ...u,
-        tipe: selectedUserIds.has(u.id) ? 'WFO' : 'WFH'
-      }));
-      exportToExcel(updatedUsers);
+      if (shouldExport) {
+        const updatedUsers = users.map(u => ({
+          ...u,
+          tipe: selectedUserIds.has(u.id) ? 'WFO' : 'WFH'
+        }));
+        exportToExcel(updatedUsers);
+      }
 
       if (onRefresh) onRefresh(selectedDate);
       onClose();
@@ -258,19 +259,27 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-elevated)' }}>
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 text-sm font-semibold text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-main)] transition-colors"
+              className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-main)] transition-colors"
             >
               Batal
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => handleSubmit(false)}
               disabled={isSaving || isLoading}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-main)] px-6 py-2 text-sm font-semibold transition-all hover:bg-[color:var(--color-border)] border border-[color:var(--color-border)] disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="animate-spin" size={16} /> : null}
+              Simpan
+            </button>
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={isSaving || isLoading}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 disabled:opacity-50"
             >
               {isSaving ? (
                 <><Loader2 className="animate-spin" size={16} /> Menyimpan...</>

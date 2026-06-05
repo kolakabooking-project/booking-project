@@ -78,6 +78,7 @@ export const NAV_SUPERADMIN = [
   { path: '/superadmin/accounts', label: 'Manajemen Akun', icon: 'UsersCog' },
   { path: '/superadmin/service', label: 'Kontrol Layanan', icon: 'Power' },
   { path: '/superadmin/logs', label: 'Log Aktivitas', icon: 'ScrollText' },
+  { path: '/superadmin/testing', label: 'Testing Notif', icon: 'Bell' },
 ];
 
 export const NAV_ROOM_USER = [
