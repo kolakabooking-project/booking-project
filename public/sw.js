@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v2';
+const CACHE_NAME = 'bookolaka-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -35,16 +35,46 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Only cache GET requests and skip API requests
+  // Skip API requests and non-GET requests
   if (e.request.method !== 'GET' || e.request.url.includes('/api/')) {
     return;
   }
+
+  const url = new URL(e.request.url);
+
+  // Network First strategy for HTML navigation requests (to always get the latest chunks)
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match('/index.html');
+        })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other assets (JS, CSS, images)
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request);
+      const fetchPromise = fetch(e.request).then((networkResponse) => {
+        // Only cache valid responses
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, networkResponse.clone());
+          });
+        }
+        return networkResponse;
+      }).catch((err) => {
+        console.warn('[SW] Fetch failed, returning cache if available', err);
+      });
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
