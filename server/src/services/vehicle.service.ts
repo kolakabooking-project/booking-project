@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { vehicle, booking } from '../db/schema.js';
-import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull } from 'drizzle-orm';
+import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { BOOKING_STATUS, VEHICLE_STATUS, TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -10,29 +10,45 @@ type VehicleUpdate = Partial<Omit<VehicleInsert, 'id' | 'createdAt'>>;
 /**
  * Get all vehicles with computed real-time status.
  * Vehicles with active bookings at the current moment are marked as "Sedang Dipakai".
+ * Uses a single query with subquery instead of 2 separate queries.
  */
 export async function getAllVehicles() {
   const now = new Date();
-  const allVehicles = await db.select().from(vehicle).where(isNull(vehicle.deletedAt));
 
-  // Get active bookings to compute "in-use" status
-  const activeBookings = await db
-    .select({ vehicleId: booking.vehicleId })
-    .from(booking)
-    .where(
-      and(
-        inArray(booking.status, [BOOKING_STATUS.ONGOING, BOOKING_STATUS.APPROVED]),
-        lte(booking.startTime, now),
-        gte(booking.endTime, now)
-      )
-    );
-
-  const inUseVehicleIds = new Set(activeBookings.map((b) => b.vehicleId).filter(Boolean));
+  // Single query: fetch vehicles + check active bookings via subquery
+  const allVehicles = await db
+    .select({
+      id: vehicle.id,
+      platNomor: vehicle.platNomor,
+      merek: vehicle.merek,
+      tipe: vehicle.tipe,
+      tahun: vehicle.tahun,
+      kapasitas: vehicle.kapasitas,
+      status: vehicle.status,
+      odometer: vehicle.odometer,
+      jadwalPajak: vehicle.jadwalPajak,
+      jadwalServis: vehicle.jadwalServis,
+      warna: vehicle.warna,
+      foto: vehicle.foto,
+      deletedAt: vehicle.deletedAt,
+      createdAt: vehicle.createdAt,
+      updatedAt: vehicle.updatedAt,
+      isInUse: sql<boolean>`EXISTS (
+        SELECT 1 FROM booking
+        WHERE booking.vehicle_id = ${vehicle.id}
+        AND booking.status IN ('Berlangsung', 'Disetujui')
+        AND booking.start_time <= ${now}
+        AND booking.end_time >= ${now}
+      )`.as('is_in_use'),
+    })
+    .from(vehicle)
+    .where(isNull(vehicle.deletedAt));
 
   return allVehicles.map((v) => {
-    if (v.status === VEHICLE_STATUS.MAINTENANCE) return v;
-    if (inUseVehicleIds.has(v.id)) return { ...v, status: VEHICLE_STATUS.IN_USE };
-    return { ...v, status: VEHICLE_STATUS.AVAILABLE };
+    const { isInUse, ...vehicleData } = v;
+    if (vehicleData.status === VEHICLE_STATUS.MAINTENANCE) return vehicleData;
+    if (isInUse) return { ...vehicleData, status: VEHICLE_STATUS.IN_USE };
+    return { ...vehicleData, status: VEHICLE_STATUS.AVAILABLE };
   });
 }
 

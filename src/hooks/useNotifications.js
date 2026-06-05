@@ -17,6 +17,8 @@ export default function useNotifications() {
       const data = await res.json();
       return data.data;
     },
+    staleTime: 30_000, // 30s — Ably subscription handles real-time updates
+    refetchOnWindowFocus: false,
   });
 
   const markAsReadMutation = useMutation({

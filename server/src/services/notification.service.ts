@@ -33,6 +33,35 @@ export async function createNotification(params: CreateNotificationParams) {
 }
 
 /**
+ * Creates multiple in-app notifications in a single batch INSERT.
+ * Significantly reduces DB roundtrips when notifying many users (e.g., WFO schedule).
+ */
+export async function createNotificationsBatch(
+  notifications: CreateNotificationParams[]
+): Promise<void> {
+  if (notifications.length === 0) return;
+
+  // Single batch INSERT for all notifications
+  const inserted = await db.insert(notification).values(
+    notifications.map((n) => ({
+      userId: n.userId,
+      title: n.title,
+      body: n.body,
+      url: n.url,
+      isRead: false,
+    }))
+  ).returning();
+
+  // Broadcast via Ably for real-time pop-up (fire-and-forget)
+  const ablyPromises = inserted.map((n) =>
+    ably.channels.get(`notifications:user_${n.userId}`)
+      .publish('new_notification', n)
+      .catch((err: any) => console.error(`[ABLY] Batch notification broadcast failed for ${n.userId}:`, err))
+  );
+  await Promise.allSettled(ablyPromises);
+}
+
+/**
  * Retrieves notifications for a specific user.
  * Limits to the 50 most recent notifications.
  */

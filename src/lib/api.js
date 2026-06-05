@@ -271,10 +271,12 @@ export const roomReportApi = {
 
 export const chatApi = {
   getUsers: () => request('/chat/users'),
-  getHistory: (userId, currentUserId, currentUserRole) => {
+  getHistory: (userId, currentUserId, currentUserRole, options = {}) => {
     const qs = new URLSearchParams();
     if (currentUserId) qs.set('currentUserId', currentUserId);
     if (currentUserRole) qs.set('currentUserRole', currentUserRole);
+    if (options.limit) qs.set('limit', options.limit);
+    if (options.before) qs.set('before', options.before);
     return request(`/chat/history/${userId}?${qs.toString()}`);
   },
   sendMessage: (data) => request('/chat/send', { method: 'POST', body: JSON.stringify(data) }),

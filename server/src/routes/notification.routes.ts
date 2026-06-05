@@ -32,7 +32,7 @@ router.put('/read-all', authGuard, async (req: Request, res: Response) => {
 router.put('/:id/read', authGuard, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { id } = req.params;
+    const id = req.params.id as string;
     await notificationService.markAsRead(id, user.id);
     res.json({ success: true, message: 'Notifikasi ditandai sudah dibaca' });
   } catch (error: any) {

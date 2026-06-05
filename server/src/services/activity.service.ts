@@ -173,28 +173,24 @@ export async function getActivityLogsForExport(startDate?: string, endDate?: str
 
 /**
  * Delete activity logs older than LOG_RETENTION_DAYS.
- * Should be called periodically (e.g., daily via cron or on startup).
+ * Should be called periodically (e.g., daily via cron).
+ * Uses a single DELETE query instead of COUNT + DELETE (saves 1 roundtrip).
  */
 export async function cleanupOldLogs(): Promise<number> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - LOG_RETENTION_DAYS);
 
-  // Use a subquery approach: count first, then delete
-  // Avoids .returning() which loads all deleted row IDs into memory
-  const countResult = await db
-    .select({ value: count(activityLog.id) })
-    .from(activityLog)
+  // Single DELETE query — use sql to get affected row count
+  const result = await db
+    .delete(activityLog)
     .where(lt(activityLog.createdAt, cutoff));
 
-  const toDelete = countResult[0]?.value || 0;
+  // Neon HTTP driver returns { rowCount } for mutations
+  const deletedCount = (result as any)?.rowCount ?? 0;
 
-  if (toDelete > 0) {
-    await db
-      .delete(activityLog)
-      .where(lt(activityLog.createdAt, cutoff));
-
-    console.log(`[ActivityLog] Cleaned up ${toDelete} logs older than ${LOG_RETENTION_DAYS} days.`);
+  if (deletedCount > 0) {
+    console.log(`[ActivityLog] Cleaned up ${deletedCount} logs older than ${LOG_RETENTION_DAYS} days.`);
   }
 
-  return toDelete;
+  return deletedCount;
 }

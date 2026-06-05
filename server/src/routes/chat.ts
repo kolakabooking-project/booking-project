@@ -22,11 +22,12 @@ router.get('/users', async (req, res) => {
     }
 
     const result = await db.execute(sql`
-      SELECT u.id, u.name, u.nip, u.image, MAX(c.created_at) as "lastMessageAt"
+      SELECT u.id, u.name, u.nip, u.image, (
+        SELECT MAX(created_at) FROM chat_message 
+        WHERE sender_id = u.id OR receiver_id = u.id
+      ) as "lastMessageAt"
       FROM "user" u
-      LEFT JOIN chat_message c ON c.sender_id = u.id OR c.receiver_id = u.id
-      WHERE u.role = 'user' OR u.role = 'admin' OR u.role = 'superadmin'
-      GROUP BY u.id
+      WHERE u.role IN ('user', 'admin', 'superadmin')
       ORDER BY "lastMessageAt" DESC NULLS LAST
     `);
     
@@ -53,17 +54,31 @@ router.get('/history/:userId', async (req, res) => {
     // Standard user is forced to fetch their own history with admin
     const targetUserId = (actor.role === 'admin' || actor.role === 'superadmin') ? userId : actor.id;
     
+    const limitNum = parseInt(req.query.limit as string) || 50;
+    const beforeDate = req.query.before ? new Date(req.query.before as string) : undefined;
+    
     // Fetch messages where sender is targetUser OR receiver is targetUser
+    // Use desc for pagination, then reverse
+    const conditions: any[] = [
+      or(
+        eq(chatMessage.senderId, targetUserId),
+        eq(chatMessage.receiverId, targetUserId),
+      )
+    ];
+
+    if (beforeDate) {
+      conditions.push(sql`${chatMessage.createdAt} < ${beforeDate}`);
+    }
+
     const messages = await db
       .select()
       .from(chatMessage)
-      .where(
-        or(
-          eq(chatMessage.senderId, targetUserId),
-          eq(chatMessage.receiverId, targetUserId),
-        )
-      )
-      .orderBy(asc(chatMessage.createdAt));
+      .where(and(...conditions))
+      .orderBy(desc(chatMessage.createdAt))
+      .limit(limitNum);
+
+    // Reverse to chronological order
+    messages.reverse();
 
     // Decrypt messages before sending to client
     const decryptedMessages = messages.map((msg: any) => ({

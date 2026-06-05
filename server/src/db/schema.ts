@@ -34,7 +34,9 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-});
+}, (table) => [
+  index('session_user_idx').on(table.userId),
+]);
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
@@ -52,7 +54,9 @@ export const account = pgTable('account', {
   password: text('password'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  index('account_user_idx').on(table.userId),
+]);
 
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
@@ -179,6 +183,8 @@ export const chatMessage = pgTable('chat_message', {
   index('chat_msg_sender_idx').on(table.senderId),
   index('chat_msg_receiver_idx').on(table.receiverId),
   index('chat_msg_created_idx').on(table.createdAt),
+  index('chat_msg_sender_created_idx').on(table.senderId, table.createdAt),
+  index('chat_msg_receiver_created_idx').on(table.receiverId, table.createdAt),
 ]);
 
 // ─────────────────────────────────────────────
@@ -224,6 +230,7 @@ export const activityLog = pgTable('activity_log', {
 }, (table) => [
   index('activity_log_user_idx').on(table.userId),
   index('activity_log_created_at_idx').on(table.createdAt),
+  index('activity_log_action_created_idx').on(table.action, table.createdAt),
 ]);
 
 export const notification = pgTable('notification', {
@@ -239,6 +246,7 @@ export const notification = pgTable('notification', {
 }, (table) => [
   index('notification_user_idx').on(table.userId),
   index('notification_created_at_idx').on(table.createdAt),
+  index('notification_user_is_read_idx').on(table.userId, table.isRead),
 ]);
 
 export const systemSettings = pgTable('system_settings', {

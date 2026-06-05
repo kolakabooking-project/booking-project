@@ -11,6 +11,8 @@ interface ReportFilters {
 
 /**
  * Get aggregated booking statistics.
+ * Uses a single query with conditional counting (PostgreSQL FILTER clause)
+ * instead of 4 separate COUNT queries — reduces 4 DB roundtrips to 1.
  */
 export async function getReportSummary(filters?: ReportFilters) {
   const conditions: any[] = [];
@@ -30,43 +32,22 @@ export async function getReportSummary(filters?: ReportFilters) {
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalResult] = await db
-    .select({ count: count() })
+  // Single query with conditional counting — replaces 4 separate COUNT queries
+  const [result] = await db
+    .select({
+      total: count(),
+      pending: sql<number>`count(*) filter (where ${booking.status} = 'Pending')`,
+      completed: sql<number>`count(*) filter (where ${booking.status} = 'Selesai')`,
+      rejected: sql<number>`count(*) filter (where ${booking.status} = 'Ditolak')`,
+    })
     .from(booking)
     .where(where);
 
-  const [pendingResult] = await db
-    .select({ count: count() })
-    .from(booking)
-    .where(
-      where
-        ? and(where, eq(booking.status, BOOKING_STATUS.PENDING))
-        : eq(booking.status, BOOKING_STATUS.PENDING)
-    );
-
-  const [completedResult] = await db
-    .select({ count: count() })
-    .from(booking)
-    .where(
-      where
-        ? and(where, eq(booking.status, BOOKING_STATUS.COMPLETED))
-        : eq(booking.status, BOOKING_STATUS.COMPLETED)
-    );
-
-  const [rejectedResult] = await db
-    .select({ count: count() })
-    .from(booking)
-    .where(
-      where
-        ? and(where, eq(booking.status, BOOKING_STATUS.REJECTED))
-        : eq(booking.status, BOOKING_STATUS.REJECTED)
-    );
-
   return {
-    total: totalResult.count,
-    pending: pendingResult.count,
-    completed: completedResult.count,
-    rejected: rejectedResult.count,
+    total: result.total,
+    pending: result.pending,
+    completed: result.completed,
+    rejected: result.rejected,
   };
 }
 

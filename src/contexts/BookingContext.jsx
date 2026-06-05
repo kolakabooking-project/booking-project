@@ -8,9 +8,12 @@ import { useAuth } from './AuthContext';
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, activeRole, user } = useAuth();
   const queryClient = useQueryClient();
   const { subscribe } = useAbly();
+
+  // Determine if the current role needs all bookings (admin views)
+  const isAdminView = activeRole === 'admin' || activeRole === 'superadmin';
 
   // ─── TanStack Queries (Server Cache) ───
 
@@ -21,6 +24,8 @@ export function BookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated,
+    staleTime: 30_000, // 30s — Ably handles real-time updates
+    refetchOnWindowFocus: false,
   });
 
   const driversQuery = useQuery({
@@ -30,15 +35,27 @@ export function BookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Role-aware booking fetch:
+  // - Admin/Superadmin: fetch ALL bookings (needed for request board, calendar, availability checks)
+  // - User: fetch only their own bookings (dramatically reduces query size and CU consumption)
   const bookingsQuery = useQuery({
-    queryKey: ['bookings'],
+    queryKey: ['bookings', isAdminView ? 'all' : 'mine'],
     queryFn: async () => {
-      const res = await bookingApi.getAll();
-      return res?.data || [];
+      if (isAdminView) {
+        const res = await bookingApi.getAll();
+        return res?.data || [];
+      } else {
+        const res = await bookingApi.getMine();
+        return res?.data || [];
+      }
     },
     enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   // Expose arrays or default to empty lists
@@ -67,6 +84,9 @@ export function BookingProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // Current query key based on role
+    const bookingQueryKey = ['bookings', isAdminView ? 'all' : 'mine'];
+
     const unsubscribe = subscribe('bookings', 'update', (message) => {
       console.log('[ABLY] Realtime Update received:', message.data);
       const { type, booking } = message.data;
@@ -76,15 +96,21 @@ export function BookingProvider({ children }) {
         return;
       }
 
+      // For user view: only apply updates relevant to this user
+      if (!isAdminView && booking.userId !== user?.id) {
+        // Booking belongs to another user — skip client cache mutation
+        return;
+      }
+
       // Intelligently mutate the server cache directly for zero-delay optimistic UI updates
       if (type === 'BOOKING_CREATED') {
-        queryClient.setQueryData(['bookings'], (old) => {
+        queryClient.setQueryData(bookingQueryKey, (old) => {
           const current = old || [];
           if (current.some(b => b.id === booking.id)) return current;
           return [booking, ...current];
         });
       } else if (['BOOKING_APPROVED', 'BOOKING_REJECTED', 'BOOKING_CANCELLED', 'REVIEW_SUBMITTED'].includes(type)) {
-        queryClient.setQueryData(['bookings'], (old) => {
+        queryClient.setQueryData(bookingQueryKey, (old) => {
           const current = old || [];
           return current.map(b => b.id === booking.id ? booking : b);
         });

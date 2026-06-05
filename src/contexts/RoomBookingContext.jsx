@@ -8,9 +8,12 @@ import { useAuth } from './AuthContext';
 const RoomBookingContext = createContext(null);
 
 export function RoomBookingProvider({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, activeRole, user } = useAuth();
   const queryClient = useQueryClient();
   const { subscribe } = useAbly();
+
+  // Determine if the current role needs all room bookings (admin views)
+  const isAdminView = activeRole === 'admin' || activeRole === 'superadmin';
 
   // ─── TanStack Queries (Server Cache) ───
 
@@ -21,15 +24,27 @@ export function RoomBookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Role-aware room booking fetch:
+  // - Admin/Superadmin: fetch ALL room bookings
+  // - User: fetch only their own room bookings (reduces CU consumption)
   const roomBookingsQuery = useQuery({
-    queryKey: ['roomBookings'],
+    queryKey: ['roomBookings', isAdminView ? 'all' : 'mine'],
     queryFn: async () => {
-      const res = await roomBookingApi.getAll({});
-      return res?.data || [];
+      if (isAdminView) {
+        const res = await roomBookingApi.getAll({});
+        return res?.data || [];
+      } else {
+        const res = await roomBookingApi.getMine();
+        return res?.data || [];
+      }
     },
     enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const rooms = useMemo(() => roomsQuery.data || [], [roomsQuery.data]);
@@ -52,6 +67,9 @@ export function RoomBookingProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // Current query key based on role
+    const roomBookingQueryKey = ['roomBookings', isAdminView ? 'all' : 'mine'];
+
     const unsubscribe = subscribe('room-bookings', 'update', (message) => {
       const { type, booking } = message.data;
       
@@ -60,15 +78,20 @@ export function RoomBookingProvider({ children }) {
         return;
       }
 
+      // For user view: only apply updates relevant to this user
+      if (!isAdminView && booking.userId !== user?.id) {
+        return;
+      }
+
       if (type === 'ROOM_BOOKING_CREATED') {
-        queryClient.setQueryData(['roomBookings'], (old) => {
+        queryClient.setQueryData(roomBookingQueryKey, (old) => {
           const current = old || [];
           if (current.some(b => b.id === booking.id)) return current;
           return [booking, ...current];
         });
         refreshRooms(); // status update for room
       } else if (['ROOM_BOOKING_CANCELLED', 'ROOM_REVIEW_SUBMITTED'].includes(type)) {
-        queryClient.setQueryData(['roomBookings'], (old) => {
+        queryClient.setQueryData(roomBookingQueryKey, (old) => {
           const current = old || [];
           return current.map(b => b.id === booking.id ? booking : b);
         });
@@ -79,7 +102,7 @@ export function RoomBookingProvider({ children }) {
     });
 
     return unsubscribe;
-  }, [isAuthenticated, subscribe, queryClient, refreshRoomBookings, refreshRooms]);
+  }, [isAuthenticated, isAdminView, user, subscribe, queryClient, refreshRoomBookings, refreshRooms]);
 
   // ─── Room Booking Actions ───
 

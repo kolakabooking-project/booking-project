@@ -1,8 +1,8 @@
 import { db } from '../config/db.js';
 import { jadwalWfo, user, activityLog } from '../db/schema.js';
 import { eq, and, inArray, ilike } from 'drizzle-orm';
-import { sendPushNotification } from './push.service.js';
-import { createNotification } from './notification.service.js';
+import { sendPushToUsers } from './push.service.js';
+import { createNotificationsBatch } from './notification.service.js';
 
 export async function getWfoSchedulesByDate(date: string) {
   // Return all users who are scheduled for WFO on the given date
@@ -60,7 +60,7 @@ export async function saveWfoSchedule(
     ipAddress,
   });
 
-  // 4. Send notifications
+  // 4. Send notifications using BATCH operations (eliminates N+1 pattern)
   let newlyWfhUserIds: string[] = [];
   
   // Check if this date has been configured before by looking at activityLog
@@ -80,40 +80,43 @@ export async function saveWfoSchedule(
   if (!previousLog && existingUserIds.length === 0) {
     // Get all users who are not superadmin
     const allUsers = await db.select({ id: user.id }).from(user).where(inArray(user.role, ['user', 'admin']));
-    newlyWfhUserIds = allUsers.map(u => u.id).filter(id => !userIds.includes(id));
+    newlyWfhUserIds = allUsers.map((u: any) => u.id).filter((id: any) => !userIds.includes(id));
   } else {
     // If it's an update, only notify those whose status changed from WFO to WFH
     newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
   }
 
-  const notifyPromises: Promise<any>[] = [];
+  // Batch create notifications (1 INSERT instead of N)
+  const notificationPayloads = [
+    ...newlyAddedUserIds.map((userId) => ({
+      userId,
+      title: 'Jadwal WFO Diperbarui',
+      body: `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`,
+      url: '/shared/tracking/jadwal-jumat',
+    })),
+    ...newlyWfhUserIds.map((userId) => ({
+      userId,
+      title: 'Jadwal WFH Diperbarui',
+      body: `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`,
+      url: '/shared/tracking/jadwal-jumat',
+    })),
+  ];
 
-  // Notify newly WFO
-  for (const userId of newlyAddedUserIds) {
-    const title = 'Jadwal WFO Diperbarui';
-    const body = `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`;
-    const url = '/shared/tracking/jadwal-jumat';
-    
-    notifyPromises.push(
-      createNotification({ userId, title, body, url }),
-      sendPushNotification(userId, { title, body, url })
-    );
-  }
-
-  // Notify newly WFH
-  for (const userId of newlyWfhUserIds) {
-    const title = 'Jadwal WFH Diperbarui';
-    const body = `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`;
-    const url = '/shared/tracking/jadwal-jumat';
-
-    notifyPromises.push(
-      createNotification({ userId, title, body, url }),
-      sendPushNotification(userId, { title, body, url })
-    );
-  }
-
-  // Don't await on promises so the response is fast, or await it if we want to log failures
-  await Promise.allSettled(notifyPromises);
+  // Execute batch operations concurrently (2 queries instead of 2N)
+  const allNotifyUserIds = [...newlyAddedUserIds, ...newlyWfhUserIds];
+  
+  await Promise.allSettled([
+    notificationPayloads.length > 0
+      ? createNotificationsBatch(notificationPayloads)
+      : Promise.resolve(),
+    allNotifyUserIds.length > 0
+      ? sendPushToUsers(allNotifyUserIds, {
+          title: 'Jadwal WFO/WFH Diperbarui',
+          body: `Jadwal untuk hari Jumat ${date} telah diperbarui. Periksa jadwal Anda.`,
+          url: '/shared/tracking/jadwal-jumat',
+        })
+      : Promise.resolve(),
+  ]);
 
   return { success: true, count: userIds.length, date };
 }

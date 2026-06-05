@@ -251,13 +251,7 @@ router.post('/:id/review', async (req: Request, res: Response) => {
     const actor = (req as any).user;
     const { reviewNotes } = req.body;
 
-    // Validate ownership before submitting review (IDOR protection)
-    const booking = await bookingService.getBookingById(req.params.id as string);
-    if (booking.userId !== actor.id) {
-      res.status(403).json({ error: 'Forbidden', message: 'Anda tidak memiliki akses untuk mereview peminjaman ini.' });
-      return;
-    }
-
+    // submitReview service internally handles ownership validation and 404 checks securely
     const review = await bookingService.submitReview(req.params.id as string, reviewNotes, actor.id);
     res.json({ data: review });
 

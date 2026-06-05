@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { db } from '../config/db.js';
 import { pushSubscription } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { env } from '../config/env.js';
 
 // Configure VAPID details
@@ -33,8 +33,9 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
     }
 
     const payloadString = JSON.stringify(payload);
+    const expiredIds: string[] = [];
 
-    const promises = subscriptions.map((sub) => {
+    const promises = subscriptions.map((sub: any) => {
       const subscriptionObj = {
         endpoint: sub.endpoint,
         keys: {
@@ -44,24 +45,79 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
       };
 
       return webpush.sendNotification(subscriptionObj, payloadString).catch(async (err) => {
-        // If subscription is expired or invalid (410 Gone / 404 Not Found), delete it
+        // If subscription is expired or invalid (410 Gone / 404 Not Found), collect for batch delete
         if (err.statusCode === 410 || err.statusCode === 404) {
           console.log(`[PushService] Removing expired subscription for user ${userId}: ${sub.endpoint}`);
-          await db
-            .delete(pushSubscription)
-            .where(eq(pushSubscription.id, sub.id));
+          expiredIds.push(sub.id);
         } else {
           console.error(`[PushService] Error sending to endpoint ${sub.endpoint}:`, err);
         }
       });
     });
 
-    // Run concurrently without blocking the main event loop
-    // Since this is in serverless context, we await Promise.all to ensure requests finish,
-    // but we catch individual errors inside the map so one failure doesn't reject the whole promise.
     await Promise.all(promises);
+
+    // Batch delete expired subscriptions (1 query instead of N)
+    if (expiredIds.length > 0) {
+      await db.delete(pushSubscription).where(inArray(pushSubscription.id, expiredIds));
+    }
   } catch (error) {
     console.error(`[PushService] Failed to send push notification to user ${userId}:`, error);
+  }
+}
+
+/**
+ * Send push notifications to multiple users in a single batch.
+ * Fetches ALL subscriptions for all target users in ONE query (instead of N queries).
+ * This eliminates the N+1 pattern when notifying many users (e.g., WFO schedule updates).
+ */
+export async function sendPushToUsers(userIds: string[], payload: PushPayload): Promise<void> {
+  if (userIds.length === 0) return;
+
+  try {
+    // Single query for ALL users' subscriptions
+    const subscriptions = await db
+      .select()
+      .from(pushSubscription)
+      .where(inArray(pushSubscription.userId, userIds));
+
+    if (subscriptions.length === 0) return;
+
+    const payloadString = JSON.stringify(payload);
+    const expiredIds: string[] = [];
+
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < subscriptions.length; i += BATCH_SIZE) {
+      const batch = subscriptions.slice(i, i + BATCH_SIZE);
+      
+      const results = await Promise.allSettled(
+        batch.map((sub: any) => {
+          const subscriptionObj = {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
+          };
+          return webpush.sendNotification(subscriptionObj, payloadString);
+        })
+      );
+
+      for (let j = 0; j < results.length; j++) {
+        if (results[j].status === 'rejected') {
+          const err = (results[j] as PromiseRejectedResult).reason as { statusCode?: number };
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            expiredIds.push(batch[j].id);
+          }
+        }
+      }
+    }
+
+    // Batch delete expired subscriptions
+    if (expiredIds.length > 0) {
+      await db.delete(pushSubscription).where(inArray(pushSubscription.id, expiredIds));
+    }
+
+    console.log(`[PushService] Batch sent to ${subscriptions.length} devices for ${userIds.length} users`);
+  } catch (error) {
+    console.error('[PushService] Batch push failed:', error);
   }
 }
 
@@ -83,12 +139,13 @@ export async function sendBroadcast(payload: PushPayload): Promise<{ success: nu
     let successCount = 0;
     let failedCount = 0;
     const payloadString = JSON.stringify(payload);
+    const expiredIds: string[] = [];
 
     for (let i = 0; i < allSubs.length; i += BATCH_SIZE) {
       const batch = allSubs.slice(i, i + BATCH_SIZE);
       
       const results = await Promise.allSettled(
-        batch.map(sub => {
+        batch.map((sub: any) => {
           const subscriptionObj = {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth }
@@ -105,10 +162,15 @@ export async function sendBroadcast(payload: PushPayload): Promise<{ success: nu
           failedCount++;
           const err = result.reason as { statusCode?: number };
           if (err.statusCode === 410 || err.statusCode === 404) {
-            await db.delete(pushSubscription).where(eq(pushSubscription.id, batch[j].id));
+            expiredIds.push(batch[j].id);
           }
         }
       }
+    }
+
+    // Batch delete expired subscriptions (1 query instead of N)
+    if (expiredIds.length > 0) {
+      await db.delete(pushSubscription).where(inArray(pushSubscription.id, expiredIds));
     }
 
     console.log(`[BROADCAST] Selesai. Berhasil: ${successCount}, Gagal/Dihapus: ${failedCount}`);

@@ -442,6 +442,8 @@ export async function getServiceStatus() {
 
 /**
  * Toggle service on/off.
+ * Uses upsert (ON CONFLICT DO UPDATE) to avoid redundant SELECT-before-write.
+ * Reduces from ~9 queries to ~5 queries per toggle call.
  */
 export async function toggleService(
   kdoActive: boolean | undefined,
@@ -451,83 +453,32 @@ export async function toggleService(
   actorName: string,
   ipAddress?: string
 ) {
-  // Upsert the kdo_service_active setting
-  if (kdoActive !== undefined) {
-    const existingKdo = await db
-      .select()
-      .from(systemSettings)
-      .where(eq(systemSettings.key, 'kdo_service_active'));
-
-    if (existingKdo.length > 0) {
-      await db
-        .update(systemSettings)
-        .set({
-          value: String(kdoActive),
-          updatedAt: new Date(),
-          updatedBy: actorId,
-        })
-        .where(eq(systemSettings.key, 'kdo_service_active'));
-    } else {
-      await db.insert(systemSettings).values({
-        key: 'kdo_service_active',
-        value: String(kdoActive),
+  // Upsert each setting in a single query (instead of SELECT + conditional UPDATE/INSERT)
+  const upsertSetting = async (key: string, value: boolean) => {
+    await db
+      .insert(systemSettings)
+      .values({
+        key,
+        value: String(value),
         updatedAt: new Date(),
         updatedBy: actorId,
-      });
-    }
-  }
-
-  // Upsert the room_service_active setting
-  if (roomActive !== undefined) {
-    const existingRoom = await db
-      .select()
-      .from(systemSettings)
-      .where(eq(systemSettings.key, 'room_service_active'));
-
-    if (existingRoom.length > 0) {
-      await db
-        .update(systemSettings)
-        .set({
-          value: String(roomActive),
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: {
+          value: String(value),
           updatedAt: new Date(),
           updatedBy: actorId,
-        })
-        .where(eq(systemSettings.key, 'room_service_active'));
-    } else {
-      await db.insert(systemSettings).values({
-        key: 'room_service_active',
-        value: String(roomActive),
-        updatedAt: new Date(),
-        updatedBy: actorId,
+        },
       });
-    }
-  }
+  };
 
-  // Upsert the spd_service_active setting
-  if (spdActive !== undefined) {
-    const existingSpd = await db
-      .select()
-      .from(systemSettings)
-      .where(eq(systemSettings.key, 'spd_service_active'));
-
-    if (existingSpd.length > 0) {
-      await db
-        .update(systemSettings)
-        .set({
-          value: String(spdActive),
-          updatedAt: new Date(),
-          updatedBy: actorId,
-        })
-        .where(eq(systemSettings.key, 'spd_service_active'));
-    } else {
-      await db.insert(systemSettings).values({
-        key: 'spd_service_active',
-        value: String(spdActive),
-        updatedAt: new Date(),
-        updatedBy: actorId,
-      });
-    }
-  }
+  // Fire upserts concurrently (each is independent)
+  const upsertPromises: Promise<void>[] = [];
+  if (kdoActive !== undefined) upsertPromises.push(upsertSetting('kdo_service_active', kdoActive));
+  if (roomActive !== undefined) upsertPromises.push(upsertSetting('room_service_active', roomActive));
+  if (spdActive !== undefined) upsertPromises.push(upsertSetting('spd_service_active', spdActive));
+  await Promise.all(upsertPromises);
 
   // Invalidate the cached service status (shared cache)
   invalidateServiceStatusCache();
