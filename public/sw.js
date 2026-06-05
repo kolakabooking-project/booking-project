@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v4';
+const CACHE_NAME = 'bookolaka-cache-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -98,19 +98,13 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body || 'Ada notifikasi baru dari sistem BOOKOLAKA.',
-    icon: '/iconweb.png',
+    icon: '/logoweb.png',
     badge: '/iconweb.png',
+    visibility: 'public',
     tag: data.tag || 'bookolaka-notification',
-    vibrate: [100, 50, 100],
     data: {
       url: data.url || '/user/my-bookings'
-    },
-    actions: [
-      {
-        action: 'open',
-        title: 'Buka Bookolaka',
-      },
-    ],
+    }
   };
 
   event.waitUntil(
