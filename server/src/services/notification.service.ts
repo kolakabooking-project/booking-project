@@ -1,6 +1,7 @@
 import { db } from '../config/db.js';
 import { notification } from '../db/schema.js';
 import { eq, desc, and } from 'drizzle-orm';
+import ably from '../lib/ably.js';
 
 interface CreateNotificationParams {
   userId: string;
@@ -20,6 +21,13 @@ export async function createNotification(params: CreateNotificationParams) {
     url: params.url,
     isRead: false,
   }).returning();
+
+  try {
+    // Broadcast via Ably for real-time pop-up
+    await ably.channels.get(`notifications:user_${params.userId}`).publish('new_notification', newNotification);
+  } catch (error) {
+    console.error(`[ABLY] Failed to broadcast notification to user ${params.userId}:`, error);
+  }
 
   return newNotification;
 }

@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { jadwalWfo, user, activityLog } from '../db/schema.js';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, ilike } from 'drizzle-orm';
 import { sendPushNotification } from './push.service.js';
 import { createNotification } from './notification.service.js';
 
@@ -61,7 +61,30 @@ export async function saveWfoSchedule(
   });
 
   // 4. Send notifications
-  const newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
+  let newlyWfhUserIds: string[] = [];
+  
+  // Check if this date has been configured before by looking at activityLog
+  const [previousLog] = await db
+    .select({ id: activityLog.id })
+    .from(activityLog)
+    .where(
+      and(
+        eq(activityLog.action, 'WFO_SCHEDULE_UPDATED'),
+        // Check if there is ANY previous log containing this date
+        ilike(activityLog.detail, `%${date}%`)
+      )
+    )
+    .limit(1);
+
+  // If this is the FIRST TIME saving for this date, notify everyone who is WFH
+  if (!previousLog && existingUserIds.length === 0) {
+    // Get all users who are not superadmin
+    const allUsers = await db.select({ id: user.id }).from(user).where(inArray(user.role, ['user', 'admin']));
+    newlyWfhUserIds = allUsers.map(u => u.id).filter(id => !userIds.includes(id));
+  } else {
+    // If it's an update, only notify those whose status changed from WFO to WFH
+    newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
+  }
 
   const notifyPromises: Promise<any>[] = [];
 

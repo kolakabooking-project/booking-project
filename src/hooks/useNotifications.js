@@ -1,7 +1,13 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
+import { useAbly } from '../contexts/AblyProvider';
 
 export default function useNotifications() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { subscribe } = useAbly();
 
   const query = useQuery({
     queryKey: ['notifications'],
@@ -35,6 +41,25 @@ export default function useNotifications() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
+
+  useEffect(() => {
+    if (!user || !subscribe) return;
+
+    const unsubscribe = subscribe(`notifications:user_${user.id}`, 'new_notification', (message) => {
+      const payload = message.data || {};
+      
+      // Show toast
+      toast.info(payload.title || 'Notifikasi Baru', {
+        description: payload.body || '',
+        duration: 5000,
+      });
+
+      // Refetch notifications to update badge and list
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    });
+
+    return unsubscribe;
+  }, [user, subscribe, queryClient]);
 
   return {
     notifications: query.data || [],
