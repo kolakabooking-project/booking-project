@@ -18,7 +18,7 @@ export default function TestingPage() {
       const res = await fetch('/api/superadmin/users?limit=1000');
       if (!res.ok) throw new Error('Gagal mengambil data pegawai');
       const data = await res.json();
-      setUsers(data.data || []);
+      setUsers(data.data?.users || data.data || []);
     } catch (err) {
       console.error(err);
       toast.error('Gagal memuat daftar pegawai');
