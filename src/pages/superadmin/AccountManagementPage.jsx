@@ -153,7 +153,7 @@ export default function AccountManagementPage() {
               variant="outline"
               size="sm"
               disabled={currentPage === 1 || loading}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
               className="text-xs py-1.5 px-3"
             >
               Sebelumnya
@@ -162,7 +162,7 @@ export default function AccountManagementPage() {
               variant="outline"
               size="sm"
               disabled={currentPage === totalPages || loading}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
               className="text-xs py-1.5 px-3"
             >
               Selanjutnya

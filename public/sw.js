@@ -47,10 +47,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(e.request)
         .then((networkResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, networkResponse.clone());
-            return networkResponse;
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
           });
+          return networkResponse;
         })
         .catch(() => {
           return caches.match('/index.html');
@@ -65,8 +66,9 @@ self.addEventListener('fetch', (e) => {
       const fetchPromise = fetch(e.request).then((networkResponse) => {
         // Only cache valid responses
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, networkResponse.clone());
+            cache.put(e.request, responseToCache);
           });
         }
         return networkResponse;
