@@ -21,8 +21,8 @@ router.get('/:date', async (req: Request, res: Response) => {
     const wfoRecords = await wfoService.getWfoSchedulesByDate(date as string);
     const wfoUserIds = new Set(wfoRecords.map((r: any) => r.userId));
 
-    // Get all users to determine WFH (everyone not WFO is WFH)
-    const allUsers = await listAllUsers();
+    // Get all users to determine WFH (everyone not WFO is WFH), excluding superadmin
+    const allUsers = (await listAllUsers()).filter((u: any) => u.role !== 'superadmin');
 
     const schedule = allUsers.map((user: any) => {
       const isWfo = wfoUserIds.has(user.id);

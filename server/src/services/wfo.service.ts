@@ -37,28 +37,26 @@ export async function saveWfoSchedule(
 
   const newlyAddedUserIds = userIds.filter((id) => !existingUserIds.includes(id));
 
-  // Perform updates inside a transaction to ensure atomicity
-  await db.transaction(async (tx: any) => {
-    // 1. Delete existing schedules for this date
-    await tx.delete(jadwalWfo).where(eq(jadwalWfo.date, date));
+  // Perform updates sequentially since Neon HTTP driver doesn't support interactive transactions
+  // 1. Delete existing schedules for this date
+  await db.delete(jadwalWfo).where(eq(jadwalWfo.date, date));
 
-    // 2. Insert new schedules if any
-    if (userIds.length > 0) {
-      const insertData = userIds.map((userId) => ({
-        date,
-        userId,
-      }));
-      await tx.insert(jadwalWfo).values(insertData);
-    }
+  // 2. Insert new schedules if any
+  if (userIds.length > 0) {
+    const insertData = userIds.map((userId) => ({
+      date,
+      userId,
+    }));
+    await db.insert(jadwalWfo).values(insertData);
+  }
 
-    // 3. Log activity
-    await tx.insert(activityLog).values({
-      userId: actorId,
-      userName: actorName,
-      action: 'WFO_SCHEDULE_UPDATED',
-      detail: `Memperbarui jadwal WFO untuk tanggal ${date} (${userIds.length} pegawai)`,
-      ipAddress,
-    });
+  // 3. Log activity
+  await db.insert(activityLog).values({
+    userId: actorId,
+    userName: actorName,
+    action: 'WFO_SCHEDULE_UPDATED',
+    detail: `Memperbarui jadwal WFO untuk tanggal ${date} (${userIds.length} pegawai)`,
+    ipAddress,
   });
 
   // 4. Send push notifications to newly added users
