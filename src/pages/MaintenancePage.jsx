@@ -20,6 +20,10 @@ export default function MaintenancePage() {
     }, 500);
   };
 
+  const handleBack = () => {
+    navigate('/select-service');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--color-surface)' }}>
       <div className="max-w-md w-full text-center space-y-8">
@@ -52,7 +56,7 @@ export default function MaintenancePage() {
                 Estimasi Downtime
               </p>
               <p className="text-xs text-[color:var(--color-text-soft)] mt-1">
-                Sistem akan segera aktif kembali. Halaman ini akan otomatis memeriksa status setiap 30 detik.
+                Sistem akan segera aktif kembali. Silakan kembali ke Halaman Utama untuk memilih layanan lainnya.
               </p>
             </div>
           </div>
@@ -67,6 +71,12 @@ export default function MaintenancePage() {
           >
             <RefreshCw size={16} className={checking ? 'animate-spin' : ''} />
             {checking ? 'Memeriksa...' : 'Periksa Ulang Status'}
+          </button>
+          <button
+            onClick={handleBack}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border border-djp-blue/30 text-djp-blue font-semibold text-sm transition-all hover:bg-djp-blue/10"
+          >
+            Kembali ke Pilihan Layanan
           </button>
           <button
             onClick={handleLogout}

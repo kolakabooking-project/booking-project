@@ -12,19 +12,30 @@ import { serviceApi } from '../lib/api';
 export default function ServiceSelectorPage() {
   const navigate = useNavigate();
   const { user, activeRole, logout } = useAuth();
-  const [serviceStatus, setServiceStatus] = useState({ kdoActive: true, roomActive: true, spdActive: true });
+  const [checkingService, setCheckingService] = useState(null);
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await serviceApi.getStatus();
-        if (res.data) setServiceStatus(res.data);
-      } catch (err) {
-        console.error('Failed to load service status:', err);
+  const handleServiceClick = async (serviceId, activeKey, adminPath, userPath, serviceName) => {
+    if (isAdmin) {
+      navigate(adminPath);
+      return;
+    }
+
+    setCheckingService(serviceId);
+    try {
+      const res = await serviceApi.getStatus();
+      const status = res.data;
+      if (!status[activeKey]) {
+        toast.error(`Layanan ${serviceName} sedang nonaktif dan dalam perbaikan.`);
+        setCheckingService(null);
+        return;
       }
-    };
-    fetchStatus();
-  }, []);
+      navigate(userPath);
+    } catch {
+      // If API fails, fallback to context/realtime status or just let it pass to let ProtectedRoute handle it
+      navigate(userPath);
+    }
+    setCheckingService(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -78,14 +89,9 @@ export default function ServiceSelectorPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl px-4">
         {/* KDO Card */}
         <button
-          onClick={() => {
-            if (!serviceStatus.kdoActive && !isAdmin) {
-              toast.error('Layanan Booking KDO sedang nonaktif dan dalam perbaikan.');
-              return;
-            }
-            navigate(isAdmin ? '/admin/dashboard' : '/user/dashboard');
-          }}
-          className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent hover:border-primary/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          onClick={() => handleServiceClick('kdo', 'kdoActive', '/admin/dashboard', '/user/dashboard', 'Booking KDO')}
+          disabled={checkingService !== null}
+          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'kdo' ? 'opacity-70 cursor-wait border-primary/50' : 'hover:border-primary/50 hover:shadow-xl'}`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -96,7 +102,7 @@ export default function ServiceSelectorPage() {
             Ajukan peminjaman kendaraan dinas operasional dengan atau tanpa pengemudi untuk keperluan kedinasan.
           </p>
           <div className="relative z-10 mt-8 text-primary font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            Masuk ke Layanan
+            {checkingService === 'kdo' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
@@ -105,14 +111,9 @@ export default function ServiceSelectorPage() {
 
         {/* Room Card */}
         <button
-          onClick={() => {
-            if (!serviceStatus.roomActive && !isAdmin) {
-              toast.error('Layanan Booking Ruangan sedang nonaktif dan dalam perbaikan.');
-              return;
-            }
-            navigate(isAdmin ? '/admin/room/dashboard' : '/user/room/dashboard');
-          }}
-          className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent hover:border-blue-500/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          onClick={() => handleServiceClick('room', 'roomActive', '/admin/room/dashboard', '/user/room/dashboard', 'Booking Ruangan')}
+          disabled={checkingService !== null}
+          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'room' ? 'opacity-70 cursor-wait border-blue-500/50' : 'hover:border-blue-500/50 hover:shadow-xl'}`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -123,7 +124,7 @@ export default function ServiceSelectorPage() {
             Pesan ruang rapat atau fasilitas lainnya untuk kegiatan meeting, sosialisasi, atau acara khusus.
           </p>
           <div className="relative z-10 mt-8 text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            Masuk ke Layanan
+            {checkingService === 'room' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
@@ -132,14 +133,9 @@ export default function ServiceSelectorPage() {
 
         {/* Tracking SPD Card */}
         <button
-          onClick={() => {
-            if (!serviceStatus.spdActive && !isAdmin) {
-              toast.error('Layanan Track SPD sedang nonaktif dan dalam perbaikan.');
-              return;
-            }
-            navigate(isAdmin ? '/admin/tracking/monitoring-spd' : '/user/tracking/dashboard');
-          }}
-          className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          onClick={() => handleServiceClick('spd', 'spdActive', '/admin/tracking/monitoring-spd', '/user/tracking/dashboard', 'Track SPD')}
+          disabled={checkingService !== null}
+          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'spd' ? 'opacity-70 cursor-wait border-emerald-500/50' : 'hover:border-emerald-500/50 hover:shadow-xl'}`}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -150,7 +146,7 @@ export default function ServiceSelectorPage() {
             Pantau status Surat Perjalanan Dinas, agenda surat tugas, dan rekap perjalanan dinas secara real-time.
           </p>
           <div className="relative z-10 mt-8 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            Masuk ke Layanan
+            {checkingService === 'spd' ? 'Memeriksa Status...' : 'Masuk ke Layanan'}
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
