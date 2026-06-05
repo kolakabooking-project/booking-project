@@ -64,3 +64,57 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
     console.error(`[PushService] Failed to send push notification to user ${userId}:`, error);
   }
 }
+
+/**
+ * Send a push notification broadcast to all registered devices.
+ * Uses batch processing and Promise.allSettled for optimal performance.
+ */
+export async function sendBroadcast(payload: PushPayload): Promise<{ success: number; failed: number }> {
+  console.log('[BROADCAST] Memulai pengiriman broadcast...');
+  
+  try {
+    const allSubs = await db.select().from(pushSubscription);
+    
+    if (allSubs.length === 0) return { success: 0, failed: 0 };
+
+    console.log(`[BROADCAST] Ditemukan ${allSubs.length} perangkat. Memulai pengiriman...`);
+
+    const BATCH_SIZE = 100;
+    let successCount = 0;
+    let failedCount = 0;
+    const payloadString = JSON.stringify(payload);
+
+    for (let i = 0; i < allSubs.length; i += BATCH_SIZE) {
+      const batch = allSubs.slice(i, i + BATCH_SIZE);
+      
+      const results = await Promise.allSettled(
+        batch.map(sub => {
+          const subscriptionObj = {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth }
+          };
+          return webpush.sendNotification(subscriptionObj, payloadString);
+        })
+      );
+
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        if (result.status === 'fulfilled') {
+          successCount++;
+        } else {
+          failedCount++;
+          const err = result.reason as { statusCode?: number };
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await db.delete(pushSubscription).where(eq(pushSubscription.id, batch[j].id));
+          }
+        }
+      }
+    }
+
+    console.log(`[BROADCAST] Selesai. Berhasil: ${successCount}, Gagal/Dihapus: ${failedCount}`);
+    return { success: successCount, failed: failedCount };
+  } catch (error) {
+    console.error('[BROADCAST] Error selama broadcast:', error);
+    return { success: 0, failed: 0 };
+  }
+}

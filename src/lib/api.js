@@ -370,3 +370,9 @@ export const sheetsApi = {
   getTrackingDashboard: () => request('/sheets/dashboard'),
   refreshCache: () => request('/sheets/cache/refresh', { method: 'POST' }),
 };
+
+// ─── Push Notifications ───
+
+export const pushApi = {
+  broadcast: (data) => request('/push/broadcast', { method: 'POST', body: JSON.stringify(data) }),
+};

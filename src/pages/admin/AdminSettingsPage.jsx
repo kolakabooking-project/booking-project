@@ -3,13 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, CircleUser, Car, Users, Shield, Bell, ArrowLeft, Building2, Loader2 } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, CircleUser, Car, Users, Shield, Bell, ArrowLeft, Building2, Loader2, Megaphone } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import usePushNotification from '../../hooks/usePushNotification';
 import ProfileCard from '../../components/settings/ProfileCard';
 import PasswordChangeModal from '../../components/settings/PasswordChangeModal';
 import AboutAppModal from '../../components/settings/AboutAppModal';
+import BroadcastModal from '../../components/admin/BroadcastModal';
 
 export default function AdminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
@@ -20,6 +21,7 @@ export default function AdminSettingsPage() {
 
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // ─── Shared hooks ───
@@ -188,13 +190,30 @@ export default function AdminSettingsPage() {
 
             <button 
               onClick={() => { setPasswordOpen(true); passwordProps.resetForm(); }}
-              className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              className="w-full flex items-center justify-between p-4 border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              style={{ borderColor: 'var(--color-border)' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
                   <Settings size={18} className="text-djp-blue" />
                 </div>
                 <span className="font-semibold text-[color:var(--color-heading)] text-sm">Ubah Password</span>
+              </div>
+              <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
+            </button>
+
+            <button 
+              onClick={() => setBroadcastOpen(true)}
+              className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
+                  <Megaphone size={18} className="text-djp-blue" />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-[color:var(--color-heading)] text-sm block">Kirim Broadcast</span>
+                  <span className="text-[10px] text-[color:var(--color-text-soft)] block">Kirim notifikasi push massal ke pengguna</span>
+                </div>
               </div>
               <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
             </button>
@@ -269,6 +288,11 @@ export default function AdminSettingsPage() {
         onClose={() => setInfoOpen(false)} 
         showProcessSteps={true}
         accentColor="djp-blue"
+      />
+
+      <BroadcastModal
+        isOpen={broadcastOpen}
+        onClose={() => setBroadcastOpen(false)}
       />
     </div>
   );

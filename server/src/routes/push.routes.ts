@@ -3,8 +3,9 @@ import { db } from '../config/db.js';
 import { pushSubscription } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { AppError } from '../utils/errors.js';
-import { sendPushNotification } from '../services/push.service.js';
+import { sendPushNotification, sendBroadcast } from '../services/push.service.js';
 import { env } from '../config/env.js';
+import { roleGuard } from '../middleware/roleGuard.js';
 
 const router = Router();
 
@@ -118,6 +119,39 @@ router.get('/vapid-public-key', async (req: Request, res: Response) => {
     res.json({ publicKey: env.VAPID_PUBLIC_KEY });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to retrieve public key' });
+  }
+});
+
+/**
+ * POST /api/push/broadcast — Broadcast push notification to all users
+ * For admin and superadmin.
+ */
+router.post('/broadcast', roleGuard('admin'), async (req: Request, res: Response) => {
+  try {
+    const { title, body, url } = req.body;
+
+    if (!title || !body) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Title dan body tidak boleh kosong.',
+      });
+    }
+
+    const payload = {
+      title,
+      body,
+      url: url || '/',
+    };
+
+    // Fire and Forget broadcast
+    sendBroadcast(payload).then((stats) => {
+      console.log("[Broadcast] Stats:", stats);
+    });
+
+    res.json({ success: true, message: 'Broadcast sedang dikirim ke seluruh pengguna di latar belakang.' });
+  } catch (err: any) {
+    console.error('[PushBroadcast] Error:', err);
+    res.status(500).json({ error: 'Gagal memicu broadcast.' });
   }
 });
 
