@@ -139,6 +139,28 @@ router.post('/users', async (req: Request, res: Response) => {
 });
 
 /**
+ * PUT /api/superadmin/users/:id — Update user details (nip, name, jabatan)
+ */
+router.put('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const { nip, name, jabatan } = req.body;
+
+    const result = await superadminService.updateUser(
+      req.params.id as string,
+      { nip, name, jabatan },
+      actor.id,
+      actor.name,
+      getClientIp(req)
+    );
+
+    res.json({ data: result });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
  * DELETE /api/superadmin/users/:id — Delete a user
  */
 router.delete('/users/:id', async (req: Request, res: Response) => {

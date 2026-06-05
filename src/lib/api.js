@@ -306,6 +306,7 @@ export const superadminApi = {
   },
   getStats: () => request('/superadmin/stats'),
   createUser: (data) => request('/superadmin/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) => request(`/superadmin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id) => request(`/superadmin/users/${id}`, { method: 'DELETE' }),
   changeRole: (id, role) => request(`/superadmin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   resetPassword: (id) => request(`/superadmin/users/${id}/reset-password`, { method: 'PATCH' }),

@@ -12,10 +12,12 @@ export default function useAccountManagement() {
   const [filterRole, setFilterRole] = useState('');
   
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [roleTarget, setRoleTarget] = useState(null);
   const [createForm, setCreateForm] = useState({ nip: '', name: '', jabatan: '', role: 'user' });
+  const [editForm, setEditForm] = useState({ id: '', nip: '', name: '', jabatan: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -99,6 +101,54 @@ export default function useAccountManagement() {
     }
   };
 
+  // Open edit modal
+  const handleEditOpen = (user) => {
+    setEditForm({
+      id: user.id,
+      nip: user.nip || '',
+      name: user.name || '',
+      jabatan: user.jabatan || '',
+    });
+    setEditOpen(true);
+  };
+
+  // Edit user
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    
+    const cleanNip = editForm.nip.trim();
+    const cleanName = editForm.name.trim().toUpperCase();
+    const cleanJabatan = editForm.jabatan.trim();
+
+    if (!cleanNip || !cleanName) {
+      toast.error('NIP dan Nama wajib diisi');
+      return;
+    }
+
+    if (!/^\d+$/.test(cleanNip)) {
+      toast.error('Format NIP tidak valid (harus berupa angka)');
+      return;
+    }
+
+    setSubmitting(true);
+    showLoading('Memperbarui akun...');
+    try {
+      await superadminApi.updateUser(editForm.id, {
+        nip: cleanNip,
+        name: cleanName,
+        jabatan: cleanJabatan,
+      });
+      toast.success(`Akun ${cleanName} berhasil diperbarui`);
+      setEditOpen(false);
+      refresh();
+    } catch (err) {
+      toast.error(err.message || 'Gagal memperbarui akun');
+    } finally {
+      setSubmitting(false);
+      hideLoading();
+    }
+  };
+
   // Delete user
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -149,19 +199,23 @@ export default function useAccountManagement() {
   return {
     state: {
       users, loading, search, filterRole,
-      createOpen, deleteTarget, resetTarget, roleTarget,
-      createForm, submitting,
+      createOpen, editOpen, deleteTarget, resetTarget, roleTarget,
+      createForm, editForm, submitting,
       currentPage, totalUsers, totalPages,
     },
     actions: {
       setSearch,
       setFilterRole,
       setCreateOpen,
+      setEditOpen,
       setDeleteTarget,
       setResetTarget,
       setRoleTarget,
       setCreateForm,
+      setEditForm,
       handleCreate,
+      handleEditOpen,
+      handleEditSubmit,
       handleDelete,
       handleReset,
       handleRoleChange,

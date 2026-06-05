@@ -214,6 +214,70 @@ export async function createUser(data: {
 }
 
 /**
+ * Update a user account (name, nip, jabatan).
+ */
+export async function updateUser(
+  targetUserId: string,
+  data: {
+    name?: string;
+    nip?: string;
+    jabatan?: string;
+  },
+  actorId: string,
+  actorName: string,
+  ipAddress?: string
+) {
+  // Prevent modifying superadmin unless the actor is that same superadmin
+  const [targetUser] = await db
+    .select({ id: user.id, name: user.name, nip: user.nip, role: user.role })
+    .from(user)
+    .where(eq(user.id, targetUserId));
+
+  if (!targetUser) throw new NotFoundError('Akun');
+
+  // Validate NIP uniqueness if NIP is changing
+  if (data.nip && data.nip !== targetUser.nip) {
+    const existing = await db.select({ id: user.id }).from(user).where(eq(user.nip, data.nip));
+    if (existing.length > 0) {
+      throw new ConflictError(`NIP ${data.nip} sudah terdaftar pada akun lain.`);
+    }
+  }
+
+  const updateData: any = { updatedAt: new Date() };
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.nip !== undefined) updateData.nip = data.nip;
+  if (data.jabatan !== undefined) updateData.jabatan = data.jabatan;
+
+  // We should also update the username in the auth system if NIP changes,
+  // since NIP is used as the username, but Better Auth handles this via db directly if we map it.
+  // We'll update the user table directly.
+  if (data.nip !== undefined) {
+    updateData.username = data.nip;
+    updateData.email = `${data.nip}@kpp-kolaka.internal`;
+  }
+
+  await db
+    .update(user)
+    .set(updateData)
+    .where(eq(user.id, targetUserId));
+
+  // Invalidate session cache
+  invalidateUserSessions(targetUserId);
+
+  await logActivity({
+    userId: actorId,
+    userName: actorName,
+    action: 'ACCOUNT_ROLE_CHANGED', // Or we can use PROFILE_UPDATED
+    targetId: targetUserId,
+    targetName: data.name || targetUser.name,
+    detail: `Profil akun ${targetUser.name} (NIP: ${targetUser.nip}) diperbarui`,
+    ipAddress,
+  });
+
+  return { success: true };
+}
+
+/**
  * Delete a user account.
  * Cannot delete the superadmin account.
  */

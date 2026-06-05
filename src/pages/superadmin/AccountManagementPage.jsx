@@ -2,7 +2,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users } from 'lucide-react';
+import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, Edit } from 'lucide-react';
 import useAccountManagement from '../../hooks/useAccountManagement';
 
 const ROLE_BADGES = {
@@ -15,14 +15,14 @@ export default function AccountManagementPage() {
   const { state, actions } = useAccountManagement();
   const {
     users, loading, search, filterRole,
-    createOpen, deleteTarget, resetTarget, roleTarget,
-    createForm, submitting,
+    createOpen, editOpen, deleteTarget, resetTarget, roleTarget,
+    createForm, editForm, submitting,
     currentPage, totalUsers, totalPages,
   } = state;
   const {
-    setSearch, setFilterRole, setCreateOpen,
+    setSearch, setFilterRole, setCreateOpen, setEditOpen,
     setDeleteTarget, setResetTarget, setRoleTarget,
-    setCreateForm, handleCreate, handleDelete,
+    setCreateForm, setEditForm, handleCreate, handleEditOpen, handleEditSubmit, handleDelete,
     handleReset, handleRoleChange, handlePageChange
   } = actions;
 
@@ -107,6 +107,13 @@ export default function AccountManagementPage() {
                     <td className="px-4 py-3 text-right">
                       {u.role !== 'superadmin' ? (
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleEditOpen(u)}
+                            title="Edit Akun"
+                            className="p-2 rounded-xl text-[color:var(--color-text-soft)] hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                          >
+                            <Edit size={15} />
+                          </button>
                           <button
                             onClick={() => setRoleTarget(u)}
                             title="Ubah Role"
@@ -206,6 +213,28 @@ export default function AccountManagementPage() {
           <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
             <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)}>Batal</Button>
             <Button type="submit" loading={submitting}>Buat Akun</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Akun" size="sm">
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP <span className="text-danger">*</span></label>
+            <input type="text" value={editForm.nip} onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })} className="form-control" placeholder="Masukkan NIP" required />
+          </div>
+          <div>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">Nama Lengkap <span className="text-danger">*</span></label>
+            <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value.toUpperCase() })} className="form-control" placeholder="Masukkan nama lengkap" required />
+          </div>
+          <div>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">Jabatan & Unit Organisasi</label>
+            <input type="text" value={editForm.jabatan} onChange={(e) => setEditForm({ ...editForm, jabatan: e.target.value })} className="form-control" placeholder="Contoh: Pelaksana Subbagian Umum" />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>Batal</Button>
+            <Button type="submit" loading={submitting}>Simpan Perubahan</Button>
           </div>
         </form>
       </Modal>
