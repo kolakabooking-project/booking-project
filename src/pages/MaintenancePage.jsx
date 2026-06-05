@@ -1,16 +1,22 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, WrenchIcon, RefreshCw } from 'lucide-react';
+import { LogOut, WrenchIcon, RefreshCw, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function MaintenancePage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleRefresh = () => {
@@ -80,10 +86,11 @@ export default function MaintenancePage() {
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border border-danger/30 text-danger bg-danger/5 font-semibold text-sm transition-all hover:bg-danger hover:text-white"
+            disabled={isLoggingOut}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border border-danger/30 text-danger bg-danger/5 font-semibold text-sm transition-all hover:bg-danger hover:text-white disabled:opacity-50"
           >
-            <LogOut size={16} />
-            Keluar dari Akun
+            {isLoggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+            {isLoggingOut ? 'Keluar dari Akun...' : 'Keluar dari Akun'}
           </button>
         </div>
 

@@ -12,7 +12,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   LogOut, ChevronLeft, Home, ChevronRight,
   BarChart3, FileText, PieChart,
-  Settings, Shield, ArrowLeft, Users, CalendarDays, RefreshCw
+  Settings, Shield, ArrowLeft, Users, CalendarDays, RefreshCw, Loader2
 } from 'lucide-react';
 import SkipLink from '../ui/SkipLink';
 
@@ -25,7 +25,7 @@ const breadcrumbMap = {
   '/admin/tracking/jadwal-jumat': 'Jadwal Jumat',
 };
 
-function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, handleSwitchToUser, handleSwitchToSuperadmin }) {
+function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, handleSwitchToUser, handleSwitchToSuperadmin, isLoggingOut }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-4 pb-2 pt-6 flex justify-center items-center min-h-[5rem]">
@@ -114,12 +114,13 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         </Link>
         <button
           onClick={handleLogout}
+          disabled={isLoggingOut}
           title={collapsed ? 'Keluar' : undefined}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white ${collapsed && !isMobile ? 'justify-center' : ''
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 ${collapsed && !isMobile ? 'justify-center' : ''
             }`}
         >
-          <LogOut size={20} className="flex-shrink-0" />
-          {(!collapsed || isMobile) && <span>Logout</span>}
+          {isLoggingOut ? <Loader2 size={20} className="flex-shrink-0 animate-spin" /> : <LogOut size={20} className="flex-shrink-0" />}
+          {(!collapsed || isMobile) && <span>{isLoggingOut ? 'Logout...' : 'Logout'}</span>}
         </button>
       </div>
     </div>
@@ -134,6 +135,7 @@ export default function AdminTrackingLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const trackingMenuRef = useRef(null);
   const refreshCache = useRefreshCache();
 
@@ -148,11 +150,13 @@ export default function AdminTrackingLayout({ children }) {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     showLoading('Melakukan logout...');
     try {
       await logout();
     } finally {
       hideLoading();
+      setIsLoggingOut(false);
       navigate('/login');
     }
   };
@@ -188,7 +192,7 @@ export default function AdminTrackingLayout({ children }) {
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col bg-[linear-gradient(180deg,#0f4c3a_0%,#0a3328_100%)] shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'
           }`}
       >
-        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} />
+        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} isLoggingOut={isLoggingOut} />
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-20 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors text-[color:var(--color-text-soft)] hover:text-[color:var(--color-heading)]"
@@ -206,7 +210,7 @@ export default function AdminTrackingLayout({ children }) {
         <aside
           className={`absolute left-0 top-0 h-full w-[280px] bg-[linear-gradient(180deg,#0f4c3a_0%,#0a3328_100%)] shadow-2xl transition-transform duration-300 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <SidebarContent collapsed={collapsed} isMobile user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} />
+          <SidebarContent collapsed={collapsed} isMobile user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToUser={handleSwitchToUser} handleSwitchToSuperadmin={handleSwitchToSuperadmin} isLoggingOut={isLoggingOut} />
         </aside>
       </div>
 

@@ -8,7 +8,7 @@ import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import {
   Menu, LogOut, ChevronLeft, Home, ChevronRight,
-  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard, Bell,
+  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard, Bell, Loader2
 } from 'lucide-react';
 import SkipLink from '../ui/SkipLink';
 
@@ -22,7 +22,7 @@ const breadcrumbMap = {
   '/superadmin/settings': 'Pengaturan',
 };
 
-function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, handleSwitchToAdmin }) {
+function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMobileOpen, handleSwitchToAdmin, isLoggingOut }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-4 pb-2 pt-6 flex justify-center items-center min-h-[5rem]">
@@ -93,11 +93,12 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         </button>
         <button
           onClick={handleLogout}
+          disabled={isLoggingOut}
           title={collapsed ? 'Keluar' : undefined}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 ${collapsed && !isMobile ? 'justify-center' : ''}`}
         >
-          <LogOut size={20} className="flex-shrink-0" />
-          {(!collapsed || isMobile) && <span>Logout</span>}
+          {isLoggingOut ? <Loader2 size={20} className="flex-shrink-0 animate-spin" /> : <LogOut size={20} className="flex-shrink-0" />}
+          {(!collapsed || isMobile) && <span>{isLoggingOut ? 'Logout...' : 'Logout'}</span>}
         </button>
       </div>
     </div>
@@ -111,13 +112,16 @@ export default function SuperadminLayout({ children }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     showLoading('Melakukan logout...');
     try {
       await logout();
     } finally {
       hideLoading();
+      setIsLoggingOut(false);
       navigate('/login');
     }
   };
@@ -137,7 +141,7 @@ export default function SuperadminLayout({ children }) {
         className={`fixed left-0 top-0 z-30 hidden h-screen flex-col shadow-[var(--shadow-sidebar)] transition-all duration-300 lg:flex ${collapsed ? 'w-[72px]' : 'w-[250px]'}`}
         style={{ background: 'linear-gradient(180deg, #3b1a2d 0%, #1a0f1f 100%)' }}
       >
-        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToAdmin={handleSwitchToAdmin} />
+        <SidebarContent collapsed={collapsed} user={user} handleLogout={handleLogout} setMobileOpen={setMobileOpen} handleSwitchToAdmin={handleSwitchToAdmin} isLoggingOut={isLoggingOut} />
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-20 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors text-[color:var(--color-text-soft)] hover:text-[color:var(--color-heading)]"

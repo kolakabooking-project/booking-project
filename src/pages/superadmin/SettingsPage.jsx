@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, LayoutDashboard, Bell } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, LayoutDashboard, Bell, Loader2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import usePushNotification from '../../hooks/usePushNotification';
@@ -19,6 +19,7 @@ export default function SuperadminSettingsPage() {
   
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // ─── Shared hooks ───
   const passwordProps = usePasswordChange({
@@ -35,11 +36,13 @@ export default function SuperadminSettingsPage() {
   } = usePushNotification();
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     showLoading('Melakukan logout...');
     try {
       await logout();
     } finally {
       hideLoading();
+      setIsLoggingOut(false);
       navigate('/login');
     }
   };
@@ -152,9 +155,13 @@ export default function SuperadminSettingsPage() {
           Masuk Mode Admin
         </button>
 
-        <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-danger/30 text-danger bg-danger/5 font-semibold transition-all hover:bg-danger hover:text-white">
-          <LogOut size={18} />
-          Keluar dari Akun
+        <button 
+          onClick={handleLogout} 
+          disabled={isLoggingOut}
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-danger/30 text-danger bg-danger/5 font-semibold transition-all hover:bg-danger hover:text-white disabled:opacity-50"
+        >
+          {isLoggingOut ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
+          {isLoggingOut ? 'Keluar dari Akun...' : 'Keluar dari Akun'}
         </button>
       </div>
 

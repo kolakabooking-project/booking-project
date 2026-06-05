@@ -13,6 +13,7 @@ export default function ServiceSelectorPage() {
   const navigate = useNavigate();
   const { user, activeRole, logout } = useAuth();
   const [checkingService, setCheckingService] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleServiceClick = async (serviceId, activeKey, adminPath, userPath, serviceName) => {
     if (isAdmin) {
@@ -39,10 +40,12 @@ export default function ServiceSelectorPage() {
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('Failed to log out:', error);
+      setIsLoggingOut(false);
     }
   };
 
@@ -71,10 +74,11 @@ export default function ServiceSelectorPage() {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+            disabled={isLoggingOut}
+            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors disabled:opacity-50"
           >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Keluar</span>
+            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            <span className="hidden sm:inline">{isLoggingOut ? 'Keluar...' : 'Keluar'}</span>
           </button>
         </div>
       </div>

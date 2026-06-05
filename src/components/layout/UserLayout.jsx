@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_USER } from '../../utils/constants';
-import { LogOut, ChevronDown, LayoutDashboard, CalendarPlus, ClipboardList, Bell, Home, CalendarDays, MessageSquareText, CircleUser, Car, Plus, ArrowLeft } from 'lucide-react';
+import { LogOut, ChevronDown, LayoutDashboard, CalendarPlus, ClipboardList, Bell, Home, CalendarDays, MessageSquareText, CircleUser, Car, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,6 +25,7 @@ export default function UserLayout({ children }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isDark } = useTheme();
 
   const profileRef = useRef(null);
@@ -47,11 +48,13 @@ export default function UserLayout({ children }) {
   const notifBookings = myBookings.filter(b => b.status === 'Disetujui' || b.status === 'Ditolak').slice(0, 5);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     showLoading('Melakukan logout...');
     try {
       await logout();
     } finally {
       hideLoading();
+      setIsLoggingOut(false);
       navigate('/login');
     }
   };
@@ -167,10 +170,11 @@ export default function UserLayout({ children }) {
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger-light"
+                        disabled={isLoggingOut}
+                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger-light disabled:opacity-50"
                       >
-                        <LogOut size={16} />
-                        Keluar
+                        {isLoggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+                        {isLoggingOut ? 'Keluar...' : 'Keluar'}
                       </button>
                     </div>
                   </>

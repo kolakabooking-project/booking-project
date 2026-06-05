@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_TRACKING_USER } from '../../utils/constants';
-import { LogOut, ChevronDown, LayoutDashboard, FileText, Home, CircleUser, ArrowLeft, CalendarDays } from 'lucide-react';
+import { LogOut, ChevronDown, LayoutDashboard, FileText, Home, CircleUser, ArrowLeft, CalendarDays, Loader2 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import NotificationBell from '../ui/NotificationBell';
@@ -20,6 +20,7 @@ export default function UserTrackingLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isDark } = useTheme();
 
   const profileRef = useRef(null);
@@ -35,11 +36,13 @@ export default function UserTrackingLayout({ children }) {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     showLoading('Melakukan logout...');
     try {
       await logout();
     } finally {
       hideLoading();
+      setIsLoggingOut(false);
       navigate('/login');
     }
   };
@@ -144,10 +147,11 @@ export default function UserTrackingLayout({ children }) {
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger-light"
+                      disabled={isLoggingOut}
+                      className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-danger transition-colors hover:bg-danger-light disabled:opacity-50"
                     >
-                      <LogOut size={16} />
-                      Keluar
+                      {isLoggingOut ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+                      {isLoggingOut ? 'Keluar...' : 'Keluar'}
                     </button>
                   </div>
                 )}
