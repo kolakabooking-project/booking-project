@@ -5,7 +5,10 @@ import { inArray } from 'drizzle-orm';
 import { vehicle, driver, booking, bookingReview, user, account } from './schema.js';
 import { auth } from '../auth/auth.js';
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString =
+  process.env.NODE_ENV === 'development' && process.env.LOCAL_DATABASE_URL
+    ? process.env.LOCAL_DATABASE_URL
+    : process.env.DATABASE_URL!;
 const client = postgres(connectionString);
 const db = drizzle(client);
 

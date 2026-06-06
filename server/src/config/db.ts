@@ -5,8 +5,11 @@ import postgres from 'postgres';
 import { env } from './env.js';
 import * as schema from '../db/schema.js';
 
-// Connection string
-const connectionString = env.DATABASE_URL;
+// Connection string — use local database if running in development and LOCAL_DATABASE_URL is set
+const connectionString = 
+  env.NODE_ENV === 'development' && env.LOCAL_DATABASE_URL
+    ? env.LOCAL_DATABASE_URL
+    : env.DATABASE_URL;
 
 // Auto-detect NeonDB from connection string
 const isNeonDB = connectionString.includes('neon.tech');

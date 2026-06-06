@@ -16,11 +16,6 @@ export default function ServiceSelectorPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleServiceClick = async (serviceId, activeKey, adminPath, userPath, serviceName) => {
-    if (isAdmin) {
-      navigate(adminPath);
-      return;
-    }
-
     setCheckingService(serviceId);
     try {
       const res = await serviceApi.getStatus();
@@ -30,10 +25,10 @@ export default function ServiceSelectorPage() {
         setCheckingService(null);
         return;
       }
-      navigate(userPath);
+      navigate(isAdmin ? adminPath : userPath);
     } catch {
       // If API fails, fallback to context/realtime status or just let it pass to let ProtectedRoute handle it
-      navigate(userPath);
+      navigate(isAdmin ? adminPath : userPath);
     }
     setCheckingService(null);
   };

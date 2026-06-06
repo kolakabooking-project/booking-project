@@ -87,16 +87,24 @@ function ProtectedRoute({ children, role }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   // Determine active state based on route
+  const isSuperadminRoute = location.pathname.startsWith('/superadmin');
+  const isSelectorRoute = location.pathname === '/select-service';
   const isRoomRoute = location.pathname.includes('/room');
   const isTrackingRoute = location.pathname.includes('/tracking') || location.pathname.includes('/sheets');
   
   let isActive = true;
-  if (isTrackingRoute) isActive = serviceStatuses?.spdActive;
-  else if (isRoomRoute) isActive = serviceStatuses?.roomActive;
-  else isActive = serviceStatuses?.kdoActive;
+  if (isSuperadminRoute || isSelectorRoute) {
+    isActive = true;
+  } else if (isTrackingRoute) {
+    isActive = serviceStatuses?.spdActive;
+  } else if (isRoomRoute) {
+    isActive = serviceStatuses?.roomActive;
+  } else {
+    isActive = serviceStatuses?.kdoActive;
+  }
 
-  // Show maintenance page for non-superadmin users when service is off
-  if (isActive === false && user?.role !== 'superadmin') {
+  // Show maintenance page when service is off (for all roles including superadmin/admin)
+  if (isActive === false) {
     return <MaintenancePage />;
   }
 

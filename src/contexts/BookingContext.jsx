@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
-  const { isAuthenticated, activeRole, user } = useAuth();
+  const { isAuthenticated, activeRole, user, serviceStatuses } = useAuth();
   const queryClient = useQueryClient();
   const { subscribe } = useAbly();
 
@@ -23,7 +23,7 @@ export function BookingProvider({ children }) {
       const res = await vehicleApi.getAll();
       return res?.data || [];
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && serviceStatuses?.kdoActive,
     staleTime: 30_000, // 30s — Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
@@ -34,7 +34,7 @@ export function BookingProvider({ children }) {
       const res = await driverApi.getAll();
       return res?.data || [];
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && serviceStatuses?.kdoActive,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -53,7 +53,7 @@ export function BookingProvider({ children }) {
         return res?.data || [];
       }
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && serviceStatuses?.kdoActive,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });

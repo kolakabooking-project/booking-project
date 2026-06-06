@@ -16,7 +16,10 @@ import { eq } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { systemSettings, user } from './schema.js';
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString =
+  process.env.NODE_ENV === 'development' && process.env.LOCAL_DATABASE_URL
+    ? process.env.LOCAL_DATABASE_URL
+    : process.env.DATABASE_URL!;
 
 // Strip unsupported parameters
 const cleanConnectionString = connectionString

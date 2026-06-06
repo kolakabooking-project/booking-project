@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 const RoomBookingContext = createContext(null);
 
 export function RoomBookingProvider({ children }) {
-  const { isAuthenticated, activeRole, user } = useAuth();
+  const { isAuthenticated, activeRole, user, serviceStatuses } = useAuth();
   const queryClient = useQueryClient();
   const { subscribe } = useAbly();
 
@@ -23,7 +23,7 @@ export function RoomBookingProvider({ children }) {
       const res = await roomApi.getAll();
       return res?.data || [];
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && serviceStatuses?.roomActive,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -42,7 +42,7 @@ export function RoomBookingProvider({ children }) {
         return res?.data || [];
       }
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && serviceStatuses?.roomActive,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
