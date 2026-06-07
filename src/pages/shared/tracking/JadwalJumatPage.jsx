@@ -26,7 +26,7 @@ export default function JadwalJumatPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
-  const allData = result?.data || [];
+  const allData = result?.isConfigured ? (result?.data || []) : [];
 
   const handleRefresh = async () => {
     refetch();
@@ -196,7 +196,9 @@ export default function JadwalJumatPage() {
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-8 text-center text-[color:var(--color-text-soft)]">
-                    Tidak ada jadwal ditemukan pada tanggal ini.
+                    {result?.isConfigured === false 
+                      ? 'Belum diinput oleh SUKI' 
+                      : 'Tidak ada jadwal ditemukan pada tanggal ini.'}
                   </td>
                 </tr>
               ) : (

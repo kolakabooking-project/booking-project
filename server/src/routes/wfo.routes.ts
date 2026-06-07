@@ -42,8 +42,8 @@ router.get('/:date', async (req: Request, res: Response) => {
     const schedule = allUsers.map((user: any) => {
       let isWfo;
       if (!isConfigured) {
-        // Default to WFO if not configured
-        isWfo = true;
+        // Default to WFH (not WFO) if not configured
+        isWfo = false;
       } else {
         isWfo = wfoUserIds.has(user.id);
       }
@@ -57,7 +57,7 @@ router.get('/:date', async (req: Request, res: Response) => {
       };
     });
 
-    res.json({ data: schedule });
+    res.json({ data: schedule, isConfigured });
   } catch (err: any) {
     console.error('[WFO] Error fetching WFO schedule:', err.message);
     res.status(500).json({ error: 'Gagal mengambil data jadwal WFO.' });
