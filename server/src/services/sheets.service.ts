@@ -155,27 +155,27 @@ export async function getAgendaSuratTugas(filters: SheetFilters = {}): Promise<P
 
   // Transform and filter
   let records: AgendaST[] = rawData
-    .filter((row) => isValidRow(row[4])) // col E = namaPegawai must be valid
+    .filter((row) => isValidRow(row[3])) // col D = namaPegawai must be valid
     .map((row) => ({
       nomorSpd: safeInt(row[0]),
       noUrut: safeInt(row[1]),
       tanggalPembuatan: safeStr(row[2]),
-      nip: safeStr(row[3]),
-      namaPegawai: safeStr(row[4]),
-      nomorST: safeStr(row[5]),
-      tanggalSurat: safeStr(row[6]),
-      perihalSurat: safeStr(row[7]),
-      perihalKegiatan: safeStr(row[8]),
-      berangkatDari: safeStr(row[9]),
-      wilayahTugas: safeStr(row[10]),
-      jumlahHariST: safeInt(row[11]),
-      jumlahHariSPD: safeInt(row[12]),
-      tanggalAkhir: safeStr(row[13]),
-      tanggalBerangkat: safeStr(row[14]),
-      tanggalKembali: safeStr(row[15]),
-      keterangan: safeStr(row[16]),
-      spdStatus: safeStr(row[17]),
-      inputSikka: safeStr(row[18]),
+      nip: '', // NIP column deleted
+      namaPegawai: safeStr(row[3]),
+      nomorST: safeStr(row[4]),
+      tanggalSurat: safeStr(row[5]),
+      perihalSurat: safeStr(row[6]),
+      perihalKegiatan: safeStr(row[7]),
+      berangkatDari: safeStr(row[8]),
+      wilayahTugas: safeStr(row[9]),
+      jumlahHariST: safeInt(row[10]),
+      jumlahHariSPD: safeInt(row[11]),
+      tanggalAkhir: safeStr(row[12]),
+      tanggalBerangkat: safeStr(row[13]),
+      tanggalKembali: safeStr(row[14]),
+      keterangan: safeStr(row[15]),
+      spdStatus: safeStr(row[16]),
+      inputSikka: safeStr(row[17]),
     }))
     .reverse(); // Sort from newest to oldest
 
@@ -227,25 +227,25 @@ export async function getRekapSPD(filters: SheetFilters = {}): Promise<Paginated
   // Transform and filter
   let records: RekapSPD[] = rawData
     .filter((row) => {
-      if (!isValidRow(row[3])) return false; // col D = namaPegawai
+      if (!isValidRow(row[2])) return false; // col C = namaPegawai
       // Filter out placeholder dates
-      if (row[9]?.includes('00 Januari 1900')) return false;
+      if (row[8]?.includes('00 Januari 1900')) return false;
       return true;
     })
     .map((row) => ({
       nomorSpd: safeInt(row[0]),
       nomorPegawai: safeInt(row[1]),
-      nip: safeStr(row[2]),
-      namaPegawai: safeStr(row[3]),
-      wilayahTugas: safeStr(row[4]),
-      nomorST: safeStr(row[5]),
-      tanggalST: safeStr(row[6]),
-      perihalTugas: safeStr(row[7]),
-      jumlahHariSpd: safeStr(row[8]),
-      jumlahHariSpdNumeric: parseInt(row[8] || '0', 10) || 0, // "5 (lima) hari" → 5
-      tanggalMulai: safeStr(row[9]),
-      tanggalAkhir: safeStr(row[10]),
-      tanggalDitetapkan: safeStr(row[11]),
+      nip: '', // NIP column deleted
+      namaPegawai: safeStr(row[2]),
+      wilayahTugas: safeStr(row[3]),
+      nomorST: safeStr(row[4]),
+      tanggalST: safeStr(row[5]),
+      perihalTugas: safeStr(row[6]),
+      jumlahHariSpd: safeStr(row[7]),
+      jumlahHariSpdNumeric: parseInt(row[7] || '0', 10) || 0, // "5 (lima) hari" → 5
+      tanggalMulai: safeStr(row[8]),
+      tanggalAkhir: safeStr(row[9]),
+      tanggalDitetapkan: safeStr(row[10]),
     }))
     .reverse(); // Sort from newest to oldest
 
@@ -303,22 +303,22 @@ export async function getSPDSummary(userName?: string): Promise<SPDSummary> {
   const wilayahSet = new Set<string>();
 
   for (const row of rawRekap) {
-    if (!isValidRow(row[3])) continue; // col D = namaPegawai
-    if (row[9]?.includes('00 Januari 1900')) continue; // placeholder date
-    if (userName && !row[3]?.toLowerCase().includes(userName.toLowerCase())) continue;
+    if (!isValidRow(row[2])) continue; // col C = namaPegawai
+    if (row[8]?.includes('00 Januari 1900')) continue; // placeholder date
+    if (userName && !row[2]?.toLowerCase().includes(userName.toLowerCase())) continue;
 
     totalSpd++;
-    totalHari += parseInt(row[8] || '0', 10) || 0;
-    const wilayah = row[4]?.trim();
+    totalHari += parseInt(row[7] || '0', 10) || 0;
+    const wilayah = row[3]?.trim();
     if (wilayah) wilayahSet.add(wilayah);
-    if (isCurrentMonth(row[9]?.trim() || '')) spdBulanIni++;
+    if (isCurrentMonth(row[8]?.trim() || '')) spdBulanIni++;
   }
 
   let sikkaSelesai = 0;
   for (const row of rawAgenda) {
-    if (!isValidRow(row[4])) continue; // col E = namaPegawai
-    if (userName && !row[4]?.toLowerCase().includes(userName.toLowerCase())) continue;
-    if (row[18]?.trim() === 'SUDAH') sikkaSelesai++;
+    if (!isValidRow(row[3])) continue; // col D = namaPegawai
+    if (userName && !row[3]?.toLowerCase().includes(userName.toLowerCase())) continue;
+    if (row[17]?.trim() === 'SUDAH') sikkaSelesai++;
   }
 
   return {
@@ -406,10 +406,10 @@ export async function getActiveSTToday(): Promise<ActiveST[]> {
   const active: ActiveST[] = [];
 
   for (const row of rawRekap) {
-    if (!isValidRow(row[3])) continue; // col D = namaPegawai
+    if (!isValidRow(row[2])) continue; // col C = namaPegawai
 
-    const berangkatStr = safeStr(row[9]); // col J = Tgl Mulai
-    const kembaliStr = safeStr(row[10]); // col K = Tgl Akhir
+    const berangkatStr = safeStr(row[8]); // col I = Tgl Mulai
+    const kembaliStr = safeStr(row[9]); // col J = Tgl Akhir
 
     if (!berangkatStr || !kembaliStr) continue;
     if (berangkatStr.includes('1900')) continue; // Skip placeholder dates
@@ -424,8 +424,8 @@ export async function getActiveSTToday(): Promise<ActiveST[]> {
 
     if (today >= berangkatDate && today <= kembaliDate) {
       active.push({
-        namaPegawai: safeStr(row[3]),
-        wilayahTugas: safeStr(row[4]),
+        namaPegawai: safeStr(row[2]),
+        wilayahTugas: safeStr(row[3]),
         tanggalBerangkat: berangkatStr,
         tanggalKembali: kembaliStr,
       });
