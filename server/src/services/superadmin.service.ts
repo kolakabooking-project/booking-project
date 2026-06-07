@@ -43,10 +43,10 @@ function getSectionRank(jabatan: string | null | undefined): number {
     }
     return 5;
   }
-  if (job.includes('pengawasan i') || job.includes('pengawasan 1')) return 6;
-  if (job.includes('pengawasan ii') || job.includes('pengawasan 2')) return 7;
   if (job.includes('pengawasan iii') || job.includes('pengawasan 3')) return 8;
+  if (job.includes('pengawasan ii') || job.includes('pengawasan 2')) return 7;
   if (job.includes('pengawasan iv') || job.includes('pengawasan 4')) return 9;
+  if (job.includes('pengawasan i') || job.includes('pengawasan 1')) return 6;
   if (job.includes('pengawasan v') || job.includes('pengawasan 5')) return 10;
   if (job.includes('pemeriksa pajak') || job.includes('penyuluh pajak')) return 11;
   if (job.includes('kp2kp')) return 12;
