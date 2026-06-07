@@ -13,7 +13,71 @@ import { broadcastBookingUpdate } from '../lib/ably.js';
 export const DEFAULT_PASSWORD = 'Kolaka2026!';
 const SUPERADMIN_NIP = '000';
 
-// ─── User Management ───
+/**
+ * Helper to get the hierarchical rank of a section (seksi) based on employee's jabatan.
+ * Hierarchical order of KPP Pratama Kolaka:
+ * 1. Kepala Kantor
+ * 2. Subbagian Umum dan Kepatuhan Internal (Subbag Umum)
+ * 3. Seksi Penjaminan Kualitas Data (PKD)
+ * 4. Seksi Pelayanan
+ * 5. Seksi Pemeriksaan, Penilaian, dan Penagihan (P3)
+ * 6. Seksi Pengawasan I
+ * 7. Seksi Pengawasan II
+ * 8. Seksi Pengawasan III
+ * 9. Seksi Pengawasan IV
+ * 10. Seksi Pengawasan V
+ * 11. Fungsional Pemeriksa / Penyuluh Pajak (jika tidak spesifik seksi)
+ * 12. KP2KP
+ */
+function getSectionRank(jabatan: string | null | undefined): number {
+  if (!jabatan) return 99;
+  const job = jabatan.toLowerCase();
+  
+  if (job.includes('kepala kantor')) return 1;
+  if (job.includes('umum') || job.includes('kepatuhan internal') || job.includes('sekretaris') || job.includes('subbag')) return 2;
+  if (job.includes('penjaminan kualitas data') || job.includes('pkd')) return 3;
+  if (job.includes('pelayanan')) return 4;
+  if (job.includes('pemeriksaan') || job.includes('penilaian') || job.includes('penagihan') || job.includes('juru sita')) {
+    if (job.includes('pemeriksa pajak') && !job.includes('seksi')) {
+      return 11;
+    }
+    return 5;
+  }
+  if (job.includes('pengawasan i') || job.includes('pengawasan 1')) return 6;
+  if (job.includes('pengawasan ii') || job.includes('pengawasan 2')) return 7;
+  if (job.includes('pengawasan iii') || job.includes('pengawasan 3')) return 8;
+  if (job.includes('pengawasan iv') || job.includes('pengawasan 4')) return 9;
+  if (job.includes('pengawasan v') || job.includes('pengawasan 5')) return 10;
+  if (job.includes('pemeriksa pajak') || job.includes('penyuluh pajak')) return 11;
+  if (job.includes('kp2kp')) return 12;
+  
+  return 99;
+}
+
+/**
+ * Compare two employees for consistent sorting order by Section -> Job Level -> Name.
+ */
+function compareEmployees(a: any, b: any): number {
+  const rankA = getSectionRank(a.jabatan);
+  const rankB = getSectionRank(b.jabatan);
+  
+  if (rankA !== rankB) {
+    return rankA - rankB;
+  }
+  
+  // Sort within the same section by job level hierarchy
+  const jobA = (a.jabatan || '').toLowerCase();
+  const jobB = (b.jabatan || '').toLowerCase();
+  
+  const isKepalaA = jobA.includes('kepala') || jobA.includes('kasi') || jobA.includes('kasub') || jobA.includes('pimpinan');
+  const isKepalaB = jobB.includes('kepala') || jobB.includes('kasi') || jobB.includes('kasub') || jobB.includes('pimpinan');
+  
+  if (isKepalaA && !isKepalaB) return -1;
+  if (!isKepalaA && isKepalaB) return 1;
+  
+  // Sort alphabetically by name
+  return (a.name || '').localeCompare(b.name || '');
+}
 
 /**
  * List all users (except the requesting superadmin's own account for safety).
@@ -30,10 +94,9 @@ export async function listAllUsers() {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     })
-    .from(user)
-    .orderBy(desc(user.createdAt));
+    .from(user);
 
-  return users;
+  return users.sort(compareEmployees);
 }
 
 /**
@@ -49,11 +112,9 @@ export async function listRecentUsers(limit: number = 6) {
       role: user.role,
       jabatan: user.jabatan,
     })
-    .from(user)
-    .orderBy(desc(user.createdAt))
-    .limit(limit);
+    .from(user);
 
-  return users;
+  return users.sort(compareEmployees).slice(0, limit);
 }
 
 /**
@@ -88,7 +149,7 @@ export async function listUsers(filters?: {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [users, countResult] = await Promise.all([
+  const [allMatchingUsers, countResult] = await Promise.all([
     db
       .select({
         id: user.id,
@@ -101,10 +162,7 @@ export async function listUsers(filters?: {
         updatedAt: user.updatedAt,
       })
       .from(user)
-      .where(whereClause)
-      .orderBy(desc(user.createdAt))
-      .limit(limit)
-      .offset(offset),
+      .where(whereClause),
     db
       .select({ value: count() })
       .from(user)
@@ -113,8 +171,14 @@ export async function listUsers(filters?: {
 
   const total = countResult[0].value;
 
+  // Sort them in memory by section and name
+  allMatchingUsers.sort(compareEmployees);
+
+  // Paginate the sorted results in memory
+  const paginatedUsers = allMatchingUsers.slice(offset, offset + limit);
+
   return {
-    users,
+    users: paginatedUsers,
     pagination: {
       page,
       limit,
