@@ -105,6 +105,9 @@ function ProtectedRoute({ children, role }) {
 
   // Show maintenance page when service is off (for all roles including superadmin/admin)
   if (isActive === false) {
+    if (isTrackingRoute) {
+      return <Navigate to="/select-service" replace />;
+    }
     return <MaintenancePage />;
   }
 

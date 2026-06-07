@@ -17,7 +17,7 @@ export async function maintenanceGuard(req: Request, res: Response, next: NextFu
   const user = (req as any).user;
 
   const isRoomRoute = req.originalUrl.includes('/api/room');
-  const isSpdRoute = req.originalUrl.includes('/api/sheets');
+  const isSpdRoute = req.originalUrl.includes('/api/sheets') || req.originalUrl.includes('/api/wfo');
   
   let active: boolean;
   if (isSpdRoute) {

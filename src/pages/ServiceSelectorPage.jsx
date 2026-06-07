@@ -14,6 +14,28 @@ export default function ServiceSelectorPage() {
   const { user, activeRole, logout } = useAuth();
   const [checkingService, setCheckingService] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [statuses, setStatuses] = useState({ kdoActive: true, roomActive: true, spdActive: true });
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchStatuses() {
+      try {
+        const res = await serviceApi.getStatus();
+        if (active) {
+          setStatuses(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch service status:', err);
+      } finally {
+        if (active) {
+          setLoadingStatuses(false);
+        }
+      }
+    }
+    fetchStatuses();
+    return () => { active = false; };
+  }, []);
 
   const handleServiceClick = async (serviceId, activeKey, adminPath, userPath, serviceName) => {
     setCheckingService(serviceId);
@@ -85,81 +107,107 @@ export default function ServiceSelectorPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl px-4">
-        {/* KDO Card */}
-        <button
-          onClick={() => handleServiceClick('kdo', 'kdoActive', '/admin/dashboard', '/user/dashboard', 'Booking KDO')}
-          disabled={checkingService !== null}
-          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'kdo' ? 'opacity-70 cursor-wait border-primary/50' : 'hover:border-primary/50 hover:shadow-xl'}`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <DynamicCarIcon className="w-full h-full" />
+      <div className="flex flex-col md:flex-row flex-wrap justify-center items-stretch gap-6 w-full max-w-6xl px-4">
+        {loadingStatuses ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm animate-pulse w-full md:max-w-[360px]">
+              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 mb-6" />
+              <div className="h-6 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
+              <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded mb-6" />
+              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded mt-4" />
+            </div>
+          ))
+        ) : !statuses.kdoActive && !statuses.roomActive && !statuses.spdActive ? (
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700 max-w-lg w-full">
+            <p className="text-gray-500 dark:text-gray-400 font-medium text-lg leading-relaxed">
+              Semua layanan saat ini sedang dinonaktifkan untuk pemeliharaan. Silakan hubungi Administrator.
+            </p>
           </div>
-          <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Booking Kendaraan</h3>
-          <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm md:text-base leading-relaxed">
-            Ajukan peminjaman kendaraan dinas operasional dengan atau tanpa pengemudi untuk keperluan kedinasan.
-          </p>
-          <div className="relative z-10 mt-8 text-primary font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'kdo' ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
-            ) : (
-              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg></>
+        ) : (
+          <>
+            {/* KDO Card */}
+            {statuses.kdoActive && (
+              <button
+                onClick={() => handleServiceClick('kdo', 'kdoActive', '/admin/dashboard', '/user/dashboard', 'Booking KDO')}
+                disabled={checkingService !== null}
+                className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full md:max-w-[360px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'kdo' ? 'opacity-70 cursor-wait border-primary/50' : 'hover:border-primary/50 hover:shadow-xl'}`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <DynamicCarIcon className="w-full h-full" />
+                </div>
+                <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Booking Kendaraan</h3>
+                <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm leading-relaxed">
+                  Ajukan peminjaman kendaraan dinas operasional dengan atau tanpa pengemudi untuk keperluan kedinasan.
+                </p>
+                <div className="relative z-10 mt-8 text-primary font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+                  {checkingService === 'kdo' ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+                  ) : (
+                    <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg></>
+                  )}
+                </div>
+              </button>
             )}
-          </div>
-        </button>
 
-        {/* Room Card */}
-        <button
-          onClick={() => handleServiceClick('room', 'roomActive', '/admin/room/dashboard', '/user/room/dashboard', 'Booking Ruangan')}
-          disabled={checkingService !== null}
-          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'room' ? 'opacity-70 cursor-wait border-blue-500/50' : 'hover:border-blue-500/50 hover:shadow-xl'}`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <DynamicRoomIcon className="w-full h-full" />
-          </div>
-          <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Booking Ruangan</h3>
-          <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm md:text-base leading-relaxed">
-            Pesan ruang rapat atau fasilitas lainnya untuk kegiatan meeting, sosialisasi, atau acara khusus.
-          </p>
-          <div className="relative z-10 mt-8 text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'room' ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
-            ) : (
-              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg></>
+            {/* Room Card */}
+            {statuses.roomActive && (
+              <button
+                onClick={() => handleServiceClick('room', 'roomActive', '/admin/room/dashboard', '/user/room/dashboard', 'Booking Ruangan')}
+                disabled={checkingService !== null}
+                className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full md:max-w-[360px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'room' ? 'opacity-70 cursor-wait border-blue-500/50' : 'hover:border-blue-500/50 hover:shadow-xl'}`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <DynamicRoomIcon className="w-full h-full" />
+                </div>
+                <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Booking Ruangan</h3>
+                <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm leading-relaxed">
+                  Pesan ruang rapat atau fasilitas lainnya untuk kegiatan meeting, sosialisasi, atau acara khusus.
+                </p>
+                <div className="relative z-10 mt-8 text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+                  {checkingService === 'room' ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+                  ) : (
+                    <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg></>
+                  )}
+                </div>
+              </button>
             )}
-          </div>
-        </button>
 
-        {/* Tracking SPD Card */}
-        <button
-          onClick={() => handleServiceClick('spd', 'spdActive', '/admin/tracking/monitoring-spd', '/user/tracking/dashboard', 'Track SPD')}
-          disabled={checkingService !== null}
-          className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'spd' ? 'opacity-70 cursor-wait border-emerald-500/50' : 'hover:border-emerald-500/50 hover:shadow-xl'}`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <DynamicTrackingIcon className="w-full h-full" />
-          </div>
-          <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Tracking SPD</h3>
-          <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm md:text-base leading-relaxed">
-            Pantau status Surat Perjalanan Dinas, agenda surat tugas, dan rekap perjalanan dinas secara real-time.
-          </p>
-          <div className="relative z-10 mt-8 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
-            {checkingService === 'spd' ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
-            ) : (
-              <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg></>
+            {/* Tracking SPD Card */}
+            {statuses.spdActive && (
+              <button
+                onClick={() => handleServiceClick('spd', 'spdActive', '/admin/tracking/monitoring-spd', '/user/tracking/dashboard', 'Track SPD')}
+                disabled={checkingService !== null}
+                className={`group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full md:max-w-[360px] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${checkingService === 'spd' ? 'opacity-70 cursor-wait border-emerald-500/50' : 'hover:border-emerald-500/50 hover:shadow-xl'}`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <DynamicTrackingIcon className="w-full h-full" />
+                </div>
+                <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">Tracking SPD</h3>
+                <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm leading-relaxed">
+                  Pantau status Surat Perjalanan Dinas, agenda surat tugas, dan rekap perjalanan dinas secara real-time.
+                </p>
+                <div className="relative z-10 mt-8 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+                  {checkingService === 'spd' ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Memeriksa Status...</>
+                  ) : (
+                    <>Masuk ke Layanan <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg></>
+                  )}
+                </div>
+              </button>
             )}
-          </div>
-        </button>
+          </>
+        )}
       </div>
     </div>
   );

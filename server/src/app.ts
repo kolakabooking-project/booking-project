@@ -220,7 +220,7 @@ export function createApp() {
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);
   app.use('/api/sheets', sheetsLimiter, authGuard, maintenanceGuard, sheetsRoutes);
-  app.use('/api/wfo', authGuard, wfoRoutes);
+  app.use('/api/wfo', authGuard, maintenanceGuard, wfoRoutes);
   app.use('/api/notifications', authGuard, notificationRoutes);
 
   // ─── Health Check ───
