@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTrackingDashboard } from '../../hooks/useSheetData';
-import { UserCheck, MapPin, Calendar, Radar, AlertCircle } from 'lucide-react';
+import { UserCheck, MapPin, Calendar, Radar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import './ActiveSTWidget.css';
 
 /**
@@ -79,6 +80,7 @@ function SkeletonCard() {
 export default function ActiveSTWidget() {
   const { data: dashboard, isLoading, error } = useTrackingDashboard();
   const activeSTToday = dashboard?.activeSTToday || [];
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="ast-root">
@@ -89,7 +91,10 @@ export default function ActiveSTWidget() {
         className="ast-container"
       >
         {/* Header */}
-        <div className="ast-header">
+        <div 
+          className="ast-header cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors duration-200"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           <div className="ast-header-left">
             <div className="ast-beacon-wrap">
               <div className="ast-beacon-icon">
@@ -100,7 +105,10 @@ export default function ActiveSTWidget() {
               )}
             </div>
             <div className="ast-title-group">
-              <h2 className="ast-title">Sedang Dinas Hari Ini</h2>
+              <h2 className="ast-title flex items-center gap-2">
+                Sedang Dinas Hari Ini
+                {isExpanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+              </h2>
               <div className="ast-subtitle">
                 {!isLoading && !error && activeSTToday.length > 0 && (
                   <span className="ast-live-dot" />
@@ -128,6 +136,15 @@ export default function ActiveSTWidget() {
         </div>
 
         {/* Body */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
         {isLoading ? (
           <div className="ast-cards">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -215,6 +232,9 @@ export default function ActiveSTWidget() {
             })}
           </div>
         )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

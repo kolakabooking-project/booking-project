@@ -422,6 +422,9 @@ export async function getActiveSTToday(): Promise<ActiveST[]> {
     berangkatDate.setHours(0, 0, 0, 0);
     kembaliDate.setHours(0, 0, 0, 0);
 
+    const nomorSTStr = safeStr(row[4]); // col E = nomorST
+    if (nomorSTStr.toUpperCase().includes('BATAL')) continue;
+
     if (today >= berangkatDate && today <= kembaliDate) {
       active.push({
         namaPegawai: safeStr(row[2]),

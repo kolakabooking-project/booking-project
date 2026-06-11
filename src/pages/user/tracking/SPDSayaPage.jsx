@@ -51,7 +51,7 @@ export default function SPDSayaPage() {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Cari perihal, wilayah, nomor ST..."
+            placeholder="Cari perihal, wilayah..."
             className="w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm font-heading bg-[color:var(--color-surface-elevated)] text-[color:var(--color-heading)] placeholder:text-[color:var(--color-text-soft)] focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             style={{ borderColor: 'var(--color-border)' }}
           />
