@@ -37,8 +37,8 @@ export async function getAllVehicles() {
         SELECT 1 FROM booking
         WHERE booking.vehicle_id = ${vehicle.id}
         AND booking.status IN ('Berlangsung', 'Disetujui')
-        AND booking.start_time <= ${now}
-        AND booking.end_time >= ${now}
+        AND booking.start_time <= ${now.toISOString()}
+        AND booking.end_time >= ${now.toISOString()}
       )`.as('is_in_use'),
     })
     .from(vehicle)
