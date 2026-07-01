@@ -137,7 +137,8 @@ export default function SuperadminSettingsPage() {
 
             <button 
               onClick={() => setBroadcastOpen(true)}
-              className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              className="w-full flex items-center justify-between p-4 border-b transition-colors hover:bg-[color:var(--color-surface-muted)]"
+              style={{ borderColor: 'var(--color-border)' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
@@ -146,6 +147,22 @@ export default function SuperadminSettingsPage() {
                 <div className="text-left">
                   <span className="font-semibold text-[color:var(--color-heading)] text-sm block">Kirim Broadcast</span>
                   <span className="text-[10px] text-[color:var(--color-text-soft)] block">Kirim notifikasi push massal ke pengguna</span>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
+            </button>
+
+            <button 
+              onClick={() => navigate('/superadmin/announcements')}
+              className="w-full flex items-center justify-between p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-surface-muted)' }}>
+                  <Bell size={18} className="text-red-400" />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-[color:var(--color-heading)] text-sm block">Notifikasi Login</span>
+                  <span className="text-[10px] text-[color:var(--color-text-soft)] block">Kelola popup pengumuman saat pengguna login</span>
                 </div>
               </div>
               <ChevronRight size={16} className="text-[color:var(--color-text-muted)]" />
@@ -195,6 +212,7 @@ export default function SuperadminSettingsPage() {
         onClose={() => setInfoOpen(false)} 
         showProcessSteps={false}
         accentColor="red-500"
+        role="superadmin"
       />
 
       <BroadcastModal

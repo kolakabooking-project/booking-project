@@ -288,6 +288,7 @@ export default function AdminSettingsPage() {
         onClose={() => setInfoOpen(false)} 
         showProcessSteps={true}
         accentColor="djp-blue"
+        role="admin"
       />
 
       <BroadcastModal

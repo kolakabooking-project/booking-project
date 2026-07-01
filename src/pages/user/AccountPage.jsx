@@ -205,6 +205,7 @@ export default function AccountPage() {
         onClose={() => setInfoOpen(false)} 
         showProcessSteps={true}
         accentColor="djp-blue"
+        role="user"
       />
     </div>
   );

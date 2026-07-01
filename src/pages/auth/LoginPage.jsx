@@ -15,6 +15,25 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDev, setShowDev] = useState(false);
+
+  const handleMouseEnter = () => {
+    if (window.matchMedia('(hover: hover)').matches) {
+      setShowDev(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (window.matchMedia('(hover: hover)').matches) {
+      setShowDev(false);
+    }
+  };
+
+  const handleClick = () => {
+    if (!window.matchMedia('(hover: hover)').matches) {
+      setShowDev(prev => !prev);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,10 +128,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/*<div className="mt-4 rounded-2xl border border-djp-yellow/20 bg-djp-yellow/10 px-4 py-3 text-sm leading-6 text-[color:var(--color-text-muted)]">
-              Demo: gunakan NIP `198002021002 / admin123` untuk admin atau `198001011001 / user1234` untuk pegawai.
-            </div>*/}
-
             <div className="pt-2 mt-8">
               <Button type="submit" loading={loading} size="lg" className="w-full">
                 Masuk
@@ -120,10 +135,24 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <div className="relative z-10 mt-8 text-center">
-            <p className="text-[10px] font-heading font-bold uppercase tracking-[0.32em] text-[color:var(--color-text-soft)]">
+          <div 
+            className="relative z-10 mt-8 text-center select-none cursor-pointer"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+          >
+            <p className="text-[10px] font-heading font-bold uppercase tracking-[0.32em] text-[color:var(--color-text-soft)] transition-colors hover:text-[color:var(--color-heading)] inline-block py-1 px-2 rounded-lg">
               © 2026 KPP PRATAMA KOLAKA V1.0.0
             </p>
+            <div 
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                showDev ? 'max-h-12 opacity-100 mt-1.5' : 'max-h-0 opacity-0 mt-0'
+              }`}
+            >
+              <p className="text-[11px] text-[color:var(--color-text-soft)]">
+                Dikembangkan oleh <span className="font-bold text-[color:var(--color-heading)]">Ahmad Fikri Rafiuddin</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
