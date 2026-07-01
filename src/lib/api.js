@@ -379,3 +379,17 @@ export const sheetsApi = {
 export const pushApi = {
   broadcast: (data) => request('/push/broadcast', { method: 'POST', body: JSON.stringify(data) }),
 };
+
+// ─── Login Announcements / Broadcast Notifications ───
+
+export const announcementApi = {
+  getActive: () => request('/announcements/active'),
+  acknowledge: (id) => request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
+  superadmin: {
+    getAll: () => request('/superadmin/announcements'),
+    create: (data) => request('/superadmin/announcements', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/superadmin/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/superadmin/announcements/${id}`, { method: 'DELETE' }),
+  },
+};
+

@@ -8,6 +8,7 @@ import DynamicTrackingIcon from '../components/icons/DynamicTrackingIcon';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { serviceApi } from '../lib/api';
+import LoginAnnouncementPopup from '../components/shared/LoginAnnouncementPopup';
 
 export default function ServiceSelectorPage() {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ export default function ServiceSelectorPage() {
 
   return (
     <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 pt-32 md:pt-20">
+      <LoginAnnouncementPopup />
       {/* Top Navbar */}
       <div className="absolute top-0 w-full px-6 pb-6 pt-[max(env(safe-area-inset-top,1.5rem),1.5rem)] flex justify-between items-center z-20">
         <div className="flex items-center gap-3">

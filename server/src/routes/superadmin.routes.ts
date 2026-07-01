@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { AppError } from '../utils/errors.js';
 import * as superadminService from '../services/superadmin.service.js';
 import * as activityService from '../services/activity.service.js';
+import * as announcementService from '../services/announcement.service.js';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -342,6 +343,71 @@ router.post('/reset', async (req: Request, res: Response) => {
     );
 
     res.json({ data: result, message: `Reset data ${type} berhasil dilakukan.` });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+// ─── Login Announcements / Broadcast Notifications Routes ───
+
+/**
+ * GET /api/superadmin/announcements — List all login announcements
+ */
+router.get('/announcements', async (_req: Request, res: Response) => {
+  try {
+    const list = await announcementService.getAllAnnouncements();
+    res.json({ data: list });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * POST /api/superadmin/announcements — Create a new login announcement
+ */
+router.post('/announcements', async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const { title, content, isActive, priority, targetRole, displayFrequency, startDate, endDate } = req.body;
+
+    if (!title || !content) {
+      res.status(400).json({ error: 'Judul dan isi pengumuman wajib diisi.' });
+      return;
+    }
+
+    const created = await announcementService.createAnnouncement(
+      { title, content, isActive, priority, targetRole, displayFrequency, startDate, endDate },
+      actor.id
+    );
+
+    res.status(201).json({ data: created, message: 'Notifikasi login berhasil dibuat.' });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * PUT /api/superadmin/announcements/:id — Update a login announcement
+ */
+router.put('/announcements/:id', async (req: Request, res: Response) => {
+  try {
+    const updated = await announcementService.updateAnnouncement(
+      req.params.id as string,
+      req.body
+    );
+    res.json({ data: updated, message: 'Notifikasi login berhasil diperbarui.' });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * DELETE /api/superadmin/announcements/:id — Delete a login announcement
+ */
+router.delete('/announcements/:id', async (req: Request, res: Response) => {
+  try {
+    await announcementService.deleteAnnouncement(req.params.id as string);
+    res.json({ success: true, message: 'Notifikasi login berhasil dihapus.' });
   } catch (err: any) {
     handleError(err, res);
   }

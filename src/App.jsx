@@ -77,6 +77,7 @@ const SuperadminDashboard = lazy(() => import('./pages/superadmin/DashboardPage'
 const AccountManagementPage = lazy(() => import('./pages/superadmin/AccountManagementPage'));
 const ServiceControlPage = lazy(() => import('./pages/superadmin/ServiceControlPage'));
 const ActivityLogPage = lazy(() => import('./pages/superadmin/ActivityLogPage'));
+const AnnouncementManagementPage = lazy(() => import('./pages/superadmin/AnnouncementManagementPage'));
 const SuperadminSettingsPage = lazy(() => import('./pages/superadmin/SettingsPage'));
 const TestingPage = lazy(() => import('./pages/superadmin/TestingPage'));
 
@@ -182,6 +183,7 @@ function AppRoutes() {
         <Route path="/superadmin/dashboard" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminDashboard /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/accounts" element={<ProtectedRoute role="superadmin"><SuperadminLayout><AccountManagementPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/service" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ServiceControlPage /></SuperadminLayout></ProtectedRoute>} />
+        <Route path="/superadmin/announcements" element={<ProtectedRoute role="superadmin"><SuperadminLayout><AnnouncementManagementPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/testing" element={<ProtectedRoute role="superadmin"><SuperadminLayout><TestingPage /></SuperadminLayout></ProtectedRoute>} />

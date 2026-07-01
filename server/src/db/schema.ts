@@ -348,3 +348,41 @@ export const jadwalWfo = pgTable('jadwal_wfo', {
   index('jadwal_wfo_date_idx').on(table.date),
   index('jadwal_wfo_user_idx').on(table.userId),
 ]);
+
+// ─────────────────────────────────────────────
+//  Login Announcement / Broadcast Notification Tables
+// ─────────────────────────────────────────────
+
+export const loginAnnouncement = pgTable('login_announcement', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  priority: text('priority', { enum: ['info', 'warning', 'urgent'] }).notNull().default('info'),
+  targetRole: text('target_role', { enum: ['all', 'user', 'admin'] }).notNull().default('all'),
+  displayFrequency: text('display_frequency', { enum: ['always', 'once', 'daily'] }).notNull().default('always'),
+  startDate: timestamp('start_date'),
+  endDate: timestamp('end_date'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+}, (table) => [
+  index('login_announcement_active_idx').on(table.isActive),
+  index('login_announcement_role_idx').on(table.targetRole),
+  index('login_announcement_created_idx').on(table.createdAt),
+]);
+
+export const announcementRead = pgTable('announcement_read', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  announcementId: text('announcement_id')
+    .notNull()
+    .references(() => loginAnnouncement.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  readAt: timestamp('read_at').notNull().defaultNow(),
+}, (table) => [
+  index('announcement_read_user_idx').on(table.userId),
+  index('announcement_read_ann_user_idx').on(table.announcementId, table.userId),
+]);
+

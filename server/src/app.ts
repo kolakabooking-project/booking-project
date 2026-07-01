@@ -21,6 +21,7 @@ import pushRoutes from './routes/push.routes.js';
 import sheetsRoutes from './routes/sheets.routes.js';
 import wfoRoutes from './routes/wfo.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import announcementRoutes from './routes/announcement.routes.js';
 
 // Middleware
 import { authGuard } from './middleware/authGuard.js';
@@ -222,6 +223,7 @@ export function createApp() {
   app.use('/api/sheets', sheetsLimiter, authGuard, maintenanceGuard, sheetsRoutes);
   app.use('/api/wfo', authGuard, maintenanceGuard, wfoRoutes);
   app.use('/api/notifications', authGuard, notificationRoutes);
+  app.use('/api/announcements', authGuard, announcementRoutes);
 
   // ─── Health Check ───
   app.get('/api/health', (_req, res) => {

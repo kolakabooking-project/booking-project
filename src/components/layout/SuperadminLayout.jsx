@@ -8,16 +8,17 @@ import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import {
   Menu, LogOut, ChevronLeft, Home, ChevronRight,
-  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard, Bell, Loader2
+  Shield, UserCog, Power, ScrollText, Settings, LayoutDashboard, Bell, Loader2, Megaphone
 } from 'lucide-react';
 import SkipLink from '../ui/SkipLink';
 
-const iconMap = { Shield, UsersCog: UserCog, Power, ScrollText, Bell };
+const iconMap = { Shield, UsersCog: UserCog, Power, ScrollText, Bell, Megaphone };
 
 const breadcrumbMap = {
   '/superadmin/dashboard': 'Dashboard',
   '/superadmin/accounts': 'Manajemen Akun',
   '/superadmin/service': 'Kontrol Layanan',
+  '/superadmin/announcements': 'Notifikasi Login',
   '/superadmin/logs': 'Log Aktivitas',
   '/superadmin/settings': 'Pengaturan',
 };
