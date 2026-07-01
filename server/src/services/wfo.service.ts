@@ -61,62 +61,68 @@ export async function saveWfoSchedule(
   });
 
   // 4. Send notifications using BATCH operations (eliminates N+1 pattern)
-  let newlyWfhUserIds: string[] = [];
-  
-  // Check if this date has been configured before by looking at activityLog
-  const [previousLog] = await db
-    .select({ id: activityLog.id })
-    .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.action, 'WFO_SCHEDULE_UPDATED'),
-        // Check if there is ANY previous log containing this date
-        ilike(activityLog.detail, `%${date}%`)
+  // Skip notifications if updating historical schedule (past dates)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isPastDate = date < todayStr;
+
+  if (!isPastDate) {
+    let newlyWfhUserIds: string[] = [];
+    
+    // Check if this date has been configured before by looking at activityLog
+    const [previousLog] = await db
+      .select({ id: activityLog.id })
+      .from(activityLog)
+      .where(
+        and(
+          eq(activityLog.action, 'WFO_SCHEDULE_UPDATED'),
+          // Check if there is ANY previous log containing this date
+          ilike(activityLog.detail, `%${date}%`)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  // If this is the FIRST TIME saving for this date, notify everyone who is WFH
-  if (!previousLog && existingUserIds.length === 0) {
-    // Get all users who are not superadmin
-    const allUsers = await db.select({ id: user.id }).from(user).where(inArray(user.role, ['user', 'admin']));
-    newlyWfhUserIds = allUsers.map((u: any) => u.id).filter((id: any) => !userIds.includes(id));
-  } else {
-    // If it's an update, only notify those whose status changed from WFO to WFH
-    newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
+    // If this is the FIRST TIME saving for this date, notify everyone who is WFH
+    if (!previousLog && existingUserIds.length === 0) {
+      // Get all users who are not superadmin
+      const allUsers = await db.select({ id: user.id }).from(user).where(inArray(user.role, ['user', 'admin']));
+      newlyWfhUserIds = allUsers.map((u: any) => u.id).filter((id: any) => !userIds.includes(id));
+    } else {
+      // If it's an update, only notify those whose status changed from WFO to WFH
+      newlyWfhUserIds = existingUserIds.filter((id: string) => !userIds.includes(id));
+    }
+
+    // Batch create notifications (1 INSERT instead of N)
+    const notificationPayloads = [
+      ...newlyAddedUserIds.map((userId) => ({
+        userId,
+        title: 'Jadwal WFO Diperbarui',
+        body: `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`,
+        url: '/shared/tracking/jadwal-jumat',
+      })),
+      ...newlyWfhUserIds.map((userId) => ({
+        userId,
+        title: 'Jadwal WFH Diperbarui',
+        body: `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`,
+        url: '/shared/tracking/jadwal-jumat',
+      })),
+    ];
+
+    // Execute batch operations concurrently (2 queries instead of 2N)
+    const allNotifyUserIds = [...newlyAddedUserIds, ...newlyWfhUserIds];
+    
+    await Promise.allSettled([
+      notificationPayloads.length > 0
+        ? createNotificationsBatch(notificationPayloads)
+        : Promise.resolve(),
+      allNotifyUserIds.length > 0
+        ? sendPushToUsers(allNotifyUserIds, {
+            title: 'Jadwal WFO/WFH Diperbarui',
+            body: `Jadwal untuk hari Jumat ${date} telah diperbarui. Periksa jadwal Anda.`,
+            url: '/shared/tracking/jadwal-jumat',
+          })
+        : Promise.resolve(),
+    ]);
   }
-
-  // Batch create notifications (1 INSERT instead of N)
-  const notificationPayloads = [
-    ...newlyAddedUserIds.map((userId) => ({
-      userId,
-      title: 'Jadwal WFO Diperbarui',
-      body: `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`,
-      url: '/shared/tracking/jadwal-jumat',
-    })),
-    ...newlyWfhUserIds.map((userId) => ({
-      userId,
-      title: 'Jadwal WFH Diperbarui',
-      body: `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`,
-      url: '/shared/tracking/jadwal-jumat',
-    })),
-  ];
-
-  // Execute batch operations concurrently (2 queries instead of 2N)
-  const allNotifyUserIds = [...newlyAddedUserIds, ...newlyWfhUserIds];
-  
-  await Promise.allSettled([
-    notificationPayloads.length > 0
-      ? createNotificationsBatch(notificationPayloads)
-      : Promise.resolve(),
-    allNotifyUserIds.length > 0
-      ? sendPushToUsers(allNotifyUserIds, {
-          title: 'Jadwal WFO/WFH Diperbarui',
-          body: `Jadwal untuk hari Jumat ${date} telah diperbarui. Periksa jadwal Anda.`,
-          url: '/shared/tracking/jadwal-jumat',
-        })
-      : Promise.resolve(),
-  ]);
 
   return { success: true, count: userIds.length, date };
 }

@@ -4,7 +4,7 @@ import { X, Calendar, Search, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
-export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
+export default function WfoScheduleModal({ isOpen, onClose, onRefresh, initialDate }) {
   const [selectedDate, setSelectedDate] = useState('');
   const [dateOptions, setDateOptions] = useState([]);
   const [users, setUsers] = useState([]);
@@ -13,7 +13,7 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Generate 4 upcoming Fridays
+  // Generate 3 previous weeks + this week + 3 upcoming Fridays
   useEffect(() => {
     if (isOpen) {
       const fridays = [];
@@ -24,19 +24,36 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh }) {
       let nextFriday = new Date(today);
       nextFriday.setDate(today.getDate() + distanceToFriday);
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = -3; i <= 3; i++) {
         const d = new Date(nextFriday);
         d.setDate(nextFriday.getDate() + i * 7);
         const dateString = d.toISOString().split('T')[0];
+        
+        let label = `Jumat, ${dateString}`;
+        if (i === 0) {
+          label = `Jumat Minggu Ini (${dateString})`;
+        } else if (i === -1) {
+          label = `Jumat Minggu Lalu (${dateString})`;
+        } else if (i < -1) {
+          label = `Jumat, ${dateString} (${Math.abs(i)} minggu lalu)`;
+        } else if (i === 1) {
+          label = `Jumat Minggu Depan (${dateString})`;
+        } else if (i > 1) {
+          label = `Jumat, ${dateString} (${i} minggu ke depan)`;
+        }
+
         fridays.push({
           value: dateString,
-          label: i === 0 ? `Jumat Minggu Ini (${dateString})` : `Jumat, ${dateString}`
+          label
         });
       }
       setDateOptions(fridays);
-      setSelectedDate(fridays[0].value);
+      const targetDate = initialDate && fridays.some(f => f.value === initialDate)
+        ? initialDate
+        : fridays[3]?.value;
+      setSelectedDate(targetDate);
     }
-  }, [isOpen]);
+  }, [isOpen, initialDate]);
 
   // Fetch schedule and all users when date changes
   useEffect(() => {

@@ -40,7 +40,7 @@ export default function JadwalJumatPage() {
     }
   };
 
-  // Generate date options for the dropdown (This week + 3 next weeks)
+  // Generate date options for the dropdown (3 previous weeks + This week + 3 next weeks)
   const dateOptions = useMemo(() => {
     const fridays = [];
     const today = new Date();
@@ -49,13 +49,27 @@ export default function JadwalJumatPage() {
     let nextFriday = new Date(today);
     nextFriday.setDate(today.getDate() + distanceToFriday);
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = -3; i <= 3; i++) {
       const d = new Date(nextFriday);
       d.setDate(nextFriday.getDate() + i * 7);
       const dateString = d.toISOString().split('T')[0];
+      
+      let label = `Jumat, ${dateString}`;
+      if (i === 0) {
+        label = `Jumat Minggu Ini (${dateString})`;
+      } else if (i === -1) {
+        label = `Jumat Minggu Lalu (${dateString})`;
+      } else if (i < -1) {
+        label = `Jumat, ${dateString} (${Math.abs(i)} minggu lalu)`;
+      } else if (i === 1) {
+        label = `Jumat Minggu Depan (${dateString})`;
+      } else if (i > 1) {
+        label = `Jumat, ${dateString} (${i} minggu ke depan)`;
+      }
+
       fridays.push({
         value: dateString,
-        label: i === 0 ? `Jumat Minggu Ini (${dateString})` : `Jumat, ${dateString}`
+        label
       });
     }
     return fridays;
@@ -243,6 +257,7 @@ export default function JadwalJumatPage() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onRefresh={handleModalRefresh}
+        initialDate={selectedDate}
       />
     </div>
   );

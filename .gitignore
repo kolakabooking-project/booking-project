@@ -56,11 +56,43 @@ uploads/
 # ─── TypeScript Build Info ───
 *.tsbuildinfo
 
-# ─── Test Coverage ───
+# ─── Test Coverage & Testing / Verification Scripts ───
 coverage/
 .nyc_output/
+test-*.ts
+test-*.js
+test-*.mjs
+*.test.ts
+*.test.js
+*.test.mjs
+*.test.jsx
+*.test.tsx
+*.spec.ts
+*.spec.js
+*.spec.mjs
+*.spec.jsx
+*.spec.tsx
+test/
+tests/
+__tests__/
+verify.ts
+verify.js
+
+# ─── Temporary & Scratch Files ───
+temp-*
+tmp-*
+*.tmp
+*.temp
+*.scratch.*
+scratch/
+temp/
+tmp/
+temp-build.*
 
 # ─── Misc ───
 *.local
 .cache/
 .turbo/
+
+# ─── AI Agent Skills ───
+.agents/
