@@ -3,6 +3,7 @@ import { Bell, Check, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useNotifications from '../../hooks/useNotifications';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 
@@ -11,6 +12,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { activeRole, user } = useAuth();
 
   // Handle outside click
   useEffect(() => {
@@ -28,7 +30,12 @@ export default function NotificationBell() {
       markAsRead(notification.id);
     }
     if (notification.url) {
-      navigate(notification.url);
+      let targetUrl = notification.url;
+      if (targetUrl === '/shared/tracking/jadwal-jumat' || targetUrl.includes('jadwal-jumat')) {
+        const role = activeRole || user?.role || 'user';
+        targetUrl = role === 'admin' ? '/admin/tracking/jadwal-jumat' : '/user/tracking/jadwal-jumat';
+      }
+      navigate(targetUrl);
     }
     setIsOpen(false);
   };

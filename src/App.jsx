@@ -130,6 +130,15 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function SharedJadwalJumatRedirect() {
+  const { activeRole, user } = useAuth();
+  const role = activeRole || user?.role || 'user';
+  if (role === 'admin') {
+    return <Navigate to="/admin/tracking/jadwal-jumat" replace />;
+  }
+  return <Navigate to="/user/tracking/jadwal-jumat" replace />;
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -187,6 +196,9 @@ function AppRoutes() {
         <Route path="/superadmin/logs" element={<ProtectedRoute role="superadmin"><SuperadminLayout><ActivityLogPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/settings" element={<ProtectedRoute role="superadmin"><SuperadminLayout><SuperadminSettingsPage /></SuperadminLayout></ProtectedRoute>} />
         <Route path="/superadmin/testing" element={<ProtectedRoute role="superadmin"><SuperadminLayout><TestingPage /></SuperadminLayout></ProtectedRoute>} />
+
+        {/* Shared / Legacy Tracking Redirect */}
+        <Route path="/shared/tracking/jadwal-jumat" element={<ProtectedRoute><SharedJadwalJumatRedirect /></ProtectedRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/login" replace />} />

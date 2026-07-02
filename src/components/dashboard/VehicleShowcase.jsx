@@ -28,16 +28,20 @@ export default function VehicleShowcase() {
     
     // UI Renderers
     renderCard: (v, statusCls, statusLabel) => (
-      <div className={`vs-vehicle-card vs-vehicle-card--${statusCls}`}>
+      <div className={`vs-vehicle-card vs-vehicle-card--${v.foto ? 'has-photo' : 'no-photo'} vs-vehicle-card--${statusCls}`}>
         <div className="vs-vehicle-card-bg">
           {v.foto ? (
-            <img src={v.foto} alt={v.merek} className="vs-vehicle-card-img" loading="lazy" />
+            <>
+              <img src={v.foto} alt={v.merek} className="vs-vehicle-card-img" loading="lazy" />
+              <div className="vs-vehicle-card-overlay" />
+            </>
           ) : (
             <div className="vs-vehicle-card-fallback">
-              <img src={isMotorcycle(v) ? "/icon-motor-white.png" : "/icon-car-white.png"} alt="Fallback" className="vs-vehicle-fallback-icon" />
+              <div className="vs-vehicle-fallback-icon-wrapper">
+                {isMotorcycle(v) ? <MotorcycleSVG size={48} /> : <CarSVG size={56} />}
+              </div>
             </div>
           )}
-          <div className="vs-vehicle-card-overlay" />
         </div>
         <div className="vs-vehicle-card-content">
           <div className="vs-vehicle-card-name">{v.merek}</div>
@@ -50,7 +54,7 @@ export default function VehicleShowcase() {
         {statusCls === 'maintenance' && (
           <Wrench size={14} style={{
             position: 'absolute', top: 10, right: 10, zIndex: 10,
-            color: '#cbd5e1', opacity: 0.8
+            color: 'var(--color-text-soft)', opacity: 0.8
           }} />
         )}
       </div>
