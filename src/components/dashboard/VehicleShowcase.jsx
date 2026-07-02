@@ -28,20 +28,29 @@ export default function VehicleShowcase() {
     
     // UI Renderers
     renderCard: (v, statusCls, statusLabel) => (
-      <div className={`vs-card vs-card--${statusCls}`}>
-        <div className="vs-card-svg">
-          {isMotorcycle(v) ? <MotorcycleSVG size={40} /> : <CarSVG size={48} />}
+      <div className={`vs-vehicle-card vs-vehicle-card--${statusCls}`}>
+        <div className="vs-vehicle-card-bg">
+          {v.foto ? (
+            <img src={v.foto} alt={v.merek} className="vs-vehicle-card-img" loading="lazy" />
+          ) : (
+            <div className="vs-vehicle-card-fallback">
+              <img src={isMotorcycle(v) ? "/icon-motor-white.png" : "/icon-car-white.png"} alt="Fallback" className="vs-vehicle-fallback-icon" />
+            </div>
+          )}
+          <div className="vs-vehicle-card-overlay" />
         </div>
-        <div className="vs-card-name">{v.merek}</div>
-        <div className="vs-card-plate">{v.platNomor}</div>
-        <div className={`vs-card-status vs-card-status--${statusCls}`}>
-          <span className="vs-card-status-dot" />
-          {statusLabel}
+        <div className="vs-vehicle-card-content">
+          <div className="vs-vehicle-card-name">{v.merek}</div>
+          <div className="vs-vehicle-card-plate">{v.platNomor}</div>
+          <div className={`vs-card-status vs-card-status--${statusCls}`}>
+            <span className="vs-card-status-dot" />
+            {statusLabel}
+          </div>
         </div>
         {statusCls === 'maintenance' && (
-          <Wrench size={12} style={{
-            position: 'absolute', top: 6, right: 6,
-            color: 'var(--color-text-soft)', opacity: 0.5
+          <Wrench size={14} style={{
+            position: 'absolute', top: 10, right: 10, zIndex: 10,
+            color: '#cbd5e1', opacity: 0.8
           }} />
         )}
       </div>
@@ -50,10 +59,12 @@ export default function VehicleShowcase() {
     renderModalHeader: (v, statusCls, statusLabel) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         <div style={{
-          width: 56, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: '0.75rem', background: 'var(--color-surface-muted)'
+          width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: '0.875rem', background: 'var(--color-surface-muted)', overflow: 'hidden', flexShrink: 0
         }}>
-          {isMotorcycle(v) ? <MotorcycleSVG size={36} /> : <CarSVG size={42} />}
+          {v.foto ? (
+            <img src={v.foto} alt={v.merek} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : isMotorcycle(v) ? <MotorcycleSVG size={36} /> : <CarSVG size={42} />}
         </div>
         <div>
           <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-heading)', fontSize: '0.9375rem' }}>
