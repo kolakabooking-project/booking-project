@@ -122,6 +122,21 @@ export async function createAnnouncement(params: CreateAnnouncementParams, creat
     })
     .returning();
 
+  if (newAnn && newAnn.isActive) {
+    (async () => {
+      try {
+        const { sendBroadcast } = await import('./push.service.js');
+        await sendBroadcast({
+          title: `Pengumuman: ${newAnn.title}`,
+          body: newAnn.content ? (newAnn.content.length > 100 ? newAnn.content.slice(0, 100) + '...' : newAnn.content) : 'Silakan cek pengumuman baru di aplikasi.',
+          url: '/user/dashboard',
+        });
+      } catch (err) {
+        console.error('[AnnouncementService] Failed to send push broadcast:', err);
+      }
+    })();
+  }
+
   return newAnn;
 }
 

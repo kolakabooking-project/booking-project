@@ -313,6 +313,21 @@ export async function createMandatoryBooking(data: BookingInsert) {
     console.error('[BookingService] Ably broadcast failed:', err)
   );
 
+  (async () => {
+    try {
+      const formattedStart = formatDateTime(startTime);
+      const payload = {
+        title: 'Penugasan Kendaraan Dinas Baru',
+        body: `Admin telah menugaskan peminjaman kendaraan untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
+        url: '/user/my-bookings',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await sendPushNotification(fullBooking.userId, payload);
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notification for mandatory booking:', err);
+    }
+  })();
+
   return fullBooking;
 }
 
@@ -464,6 +479,22 @@ export async function cancelBooking(bookingId: string, userId: string) {
     console.error('[BookingService] Ably broadcast failed:', err)
   );
 
+  (async () => {
+    try {
+      const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
+      const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+      const payload = {
+        title: 'Peminjaman KDO Dibatalkan',
+        body: `Pegawai ${fullBooking.userName} membatalkan pengajuan peminjaman untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart}.`,
+        url: '/admin/requests',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notifications for cancelled booking:', err);
+    }
+  })();
+
   return fullBooking;
 }
 
@@ -504,6 +535,21 @@ export async function submitReview(bookingId: string, reviewNotes: string, userI
   broadcastBookingUpdate('REVIEW_SUBMITTED', { booking: fullBooking }).catch((err) =>
     console.error('[BookingService] Ably broadcast failed:', err)
   );
+
+  (async () => {
+    try {
+      const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
+      const payload = {
+        title: 'Review Peminjaman KDO Baru',
+        body: `Pegawai ${fullBooking.userName} menambahkan catatan review pada peminjaman "${fullBooking.keperluan}".`,
+        url: '/admin/requests',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notifications for review:', err);
+    }
+  })();
 
   return review;
 }

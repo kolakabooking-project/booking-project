@@ -114,10 +114,17 @@ export async function saveWfoSchedule(
       notificationPayloads.length > 0
         ? createNotificationsBatch(notificationPayloads)
         : Promise.resolve(),
-      allNotifyUserIds.length > 0
-        ? sendPushToUsers(allNotifyUserIds, {
-            title: 'Jadwal WFO/WFH Diperbarui',
-            body: `Jadwal untuk hari Jumat ${date} telah diperbarui. Periksa jadwal Anda.`,
+      newlyAddedUserIds.length > 0
+        ? sendPushToUsers(newlyAddedUserIds, {
+            title: 'Jadwal WFO Diperbarui',
+            body: `Anda dijadwalkan untuk Work From Office (WFO) pada hari Jumat, ${date}.`,
+            url: '/shared/tracking/jadwal-jumat',
+          })
+        : Promise.resolve(),
+      newlyWfhUserIds.length > 0
+        ? sendPushToUsers(newlyWfhUserIds, {
+            title: 'Jadwal WFH Diperbarui',
+            body: `Anda dijadwalkan untuk Work From Home (WFH) pada hari Jumat, ${date}.`,
             url: '/shared/tracking/jadwal-jumat',
           })
         : Promise.resolve(),

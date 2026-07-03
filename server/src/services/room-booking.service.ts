@@ -298,6 +298,22 @@ export async function cancelRoomBooking(bookingId: string, userId: string, isAdm
         console.error('[RoomBookingService] Failed to send push notification:', err);
       }
     })();
+  } else {
+    (async () => {
+      try {
+        const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
+        const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+        const payload = {
+          title: 'Peminjaman Ruangan Dibatalkan',
+          body: `Pegawai ${fullBooking.userName} membatalkan peminjaman ruangan ${fullBooking.roomName} pada ${formattedStart}.`,
+          url: '/admin/room/requests',
+        };
+        const { sendPushNotification } = await import('./push.service.js');
+        await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
+      } catch (err) {
+        console.error('[RoomBookingService] Failed to send push notifications for cancelled room booking:', err);
+      }
+    })();
   }
 
   return fullBooking;
@@ -332,6 +348,21 @@ export async function submitRoomReview(bookingId: string, reviewNotes: string, u
   broadcastBookingUpdate('ROOM_REVIEW_SUBMITTED', { booking: fullBooking }, 'room-bookings').catch((err) =>
     console.error('[RoomBookingService] Ably broadcast failed:', err)
   );
+
+  (async () => {
+    try {
+      const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
+      const payload = {
+        title: 'Review Ruangan Baru',
+        body: `Pegawai ${fullBooking.userName} menambahkan catatan review pada peminjaman ruangan ${fullBooking.roomName}.`,
+        url: '/admin/room/requests',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
+    } catch (err) {
+      console.error('[RoomBookingService] Failed to send push notifications for room review:', err);
+    }
+  })();
 
   return review;
 }
