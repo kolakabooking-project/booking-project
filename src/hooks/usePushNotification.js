@@ -38,6 +38,16 @@ export default function usePushNotification() {
       navigator.serviceWorker.ready.then((reg) => {
         reg.pushManager.getSubscription().then((sub) => {
           setIsSubscribed(!!sub);
+          // Otomatis sinkronisasi token langganan browser ke database backend untuk mencegah data hilang di DB
+          if (sub) {
+            const subData = JSON.parse(JSON.stringify(sub));
+            fetch('/api/push/subscribe', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscription: subData }),
+            }).catch(() => {});
+          }
         });
       });
     }
@@ -84,7 +94,13 @@ export default function usePushNotification() {
         if (!keyRes.ok) throw new Error('Gagal mengambil VAPID key dari server');
         const { publicKey } = await keyRes.json();
 
-        // 3. Subscribe to push manager
+        // Bersihkan subscription lama yang mungkin terkait dengan VAPID key lama
+        const oldSub = await reg.pushManager.getSubscription();
+        if (oldSub) {
+          await oldSub.unsubscribe().catch(() => {});
+        }
+
+        // 3. Subscribe to push manager with current VAPID key
         const subscribeOptions = {
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),

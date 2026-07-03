@@ -94,7 +94,7 @@ router.post('/test', async (req: Request, res: Response) => {
     };
 
     // Send Web Push
-    await sendPushNotification(targetUserId, payload);
+    const pushStats = await sendPushNotification(targetUserId, payload);
 
     // Send Ably Real-time Push
     try {
@@ -104,7 +104,14 @@ router.post('/test', async (req: Request, res: Response) => {
       console.error('[PushTest] Failed to send Ably notification:', ablyErr);
     }
 
-    res.json({ success: true, message: 'Notifikasi uji coba dikirim.' });
+    let message = `Notifikasi uji coba dikirim. (Berhasil: ${pushStats.success}, Gagal: ${pushStats.failed} dari total ${pushStats.total} perangkat terdaftar)`;
+    if (pushStats.total === 0) {
+      message = `Perhatian: User ini belum mengaktifkan notifikasi di perangkat manapun (0 perangkat di database). Silakan login di HP user tersebut dan klik tombol 'Aktifkan Notifikasi' di menu Akun.`;
+    } else if (pushStats.success === 0 && pushStats.failed > 0) {
+      message = `Gagal: ${pushStats.failed} perangkat terdaftar ditolak oleh server Google/Apple (token lama/VAPID tidak cocok). Silakan matikan lalu aktifkan ulang notifikasi di HP user tersebut.`;
+    }
+
+    res.json({ success: pushStats.success > 0 || pushStats.total === 0, message, stats: pushStats });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message || 'Gagal mengirim notifikasi uji coba.' });

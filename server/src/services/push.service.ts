@@ -29,10 +29,10 @@ interface PushPayload {
  * Send a push notification to a specific user.
  * It will send to all active subscriptions of that user.
  */
-export async function sendPushNotification(userId: string, payload: PushPayload): Promise<void> {
+export async function sendPushNotification(userId: string, payload: PushPayload): Promise<{ success: number; failed: number; total: number }> {
   if (!isVapidInitialized) {
     console.warn('[PushService] Cannot send push notification: VAPID is not initialized.');
-    return;
+    return { success: 0, failed: 0, total: 0 };
   }
   try {
     const subscriptions = await db
@@ -41,40 +41,54 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
       .where(eq(pushSubscription.userId, userId));
 
     if (subscriptions.length === 0) {
-      return;
+      console.log(`[PushService] No subscriptions found in DB for user ${userId}`);
+      return { success: 0, failed: 0, total: 0 };
     }
 
     const payloadString = JSON.stringify(payload);
     const expiredIds: string[] = [];
+    let successCount = 0;
+    let failedCount = 0;
 
-    const promises = subscriptions.map((sub: any) => {
-      const subscriptionObj = {
-        endpoint: sub.endpoint,
-        keys: {
-          p256dh: sub.p256dh,
-          auth: sub.auth,
-        },
-      };
+    const results = await Promise.allSettled(
+      subscriptions.map((sub: any) => {
+        const subscriptionObj = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        };
+        return webpush.sendNotification(subscriptionObj, payloadString);
+      })
+    );
 
-      return webpush.sendNotification(subscriptionObj, payloadString).catch(async (err) => {
-        // If subscription is expired or invalid (410 Gone / 404 Not Found), collect for batch delete
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled') {
+        successCount++;
+      } else {
+        failedCount++;
+        const err = result.reason as { statusCode?: number; message?: string };
+        const sub = subscriptions[i];
         if (err.statusCode === 410 || err.statusCode === 404) {
           console.log(`[PushService] Removing expired subscription for user ${userId}: ${sub.endpoint}`);
           expiredIds.push(sub.id);
         } else {
-          console.error(`[PushService] Error sending to endpoint ${sub.endpoint}:`, err);
+          console.error(`[PushService] Error sending to endpoint ${sub.endpoint} (status ${err.statusCode}):`, err.message || err);
         }
-      });
-    });
+      }
+    }
 
-    await Promise.all(promises);
-
-    // Batch delete expired subscriptions (1 query instead of N)
     if (expiredIds.length > 0) {
       await db.delete(pushSubscription).where(inArray(pushSubscription.id, expiredIds));
     }
+
+    console.log(`[PushService] Sent to user ${userId}: ${successCount} success, ${failedCount} failed out of ${subscriptions.length} devices.`);
+    return { success: successCount, failed: failedCount, total: subscriptions.length };
   } catch (error) {
     console.error(`[PushService] Failed to send push notification to user ${userId}:`, error);
+    return { success: 0, failed: 0, total: 0 };
   }
 }
 

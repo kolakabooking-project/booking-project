@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v6';
+const CACHE_NAME = 'bookolaka-cache-v7';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -129,12 +129,15 @@ self.addEventListener('push', (event) => {
     };
   }
 
+  // Gunakan ikon kecil (logo.png 27KB) agar tidak ditolak oleh batas memori/timeout Service Worker iOS/Android
   const options = {
     body: data.body || 'Ada notifikasi baru dari sistem BOOKOLAKA.',
-    icon: '/logoweb.png',
-    badge: '/iconweb.png',
+    icon: '/logo.png',
+    badge: '/logo.png',
+    vibrate: [200, 100, 200, 100, 200],
+    renotify: true, // Wajib agar notifikasi dengan tag sama tetap bergetar & berbunyi di Android/iOS
     visibility: 'public',
-    tag: data.tag || 'bookolaka-notification',
+    tag: data.tag || 'bookolaka-' + Date.now(), // Tag unik agar tidak menimpa notifikasi sebelumnya secara bisu
     data: {
       url: data.url || '/user/my-bookings'
     }
@@ -142,6 +145,7 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || 'BOOKOLAKA', options)
+      .catch((err) => console.error('[SW] Gagal menampilkan notifikasi:', err))
   );
 });
 

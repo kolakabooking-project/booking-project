@@ -41,12 +41,16 @@ export default function TestingPage() {
         body: JSON.stringify({ userId: selectedUser })
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || 'Gagal mengirim notifikasi');
       }
 
-      toast.success('Notifikasi uji coba berhasil dikirim!');
+      if (data.stats && (data.stats.total === 0 || data.stats.success === 0)) {
+        toast.warning(data.message || 'Perhatian pada pengiriman notifikasi');
+      } else {
+        toast.success(data.message || 'Notifikasi uji coba berhasil dikirim!');
+      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Terjadi kesalahan saat mengirim notifikasi');
