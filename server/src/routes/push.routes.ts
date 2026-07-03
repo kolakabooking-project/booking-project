@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { db } from '../config/db.js';
-import { pushSubscription } from '../db/schema.js';
+import { pushSubscription, user } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { AppError } from '../utils/errors.js';
 import { sendPushNotification, sendBroadcast } from '../services/push.service.js';
@@ -10,6 +10,32 @@ import { roleGuard } from '../middleware/roleGuard.js';
 const router = Router();
 
 // authGuard sudah diterapkan di app.ts saat mounting router ini
+
+/**
+ * GET /api/push/subscriptions — List all active push subscriptions in DB
+ * For superadmin / admin diagnostic.
+ */
+router.get('/subscriptions', roleGuard('admin'), async (_req: Request, res: Response) => {
+  try {
+    const subs = await db
+      .select({
+        id: pushSubscription.id,
+        userId: pushSubscription.userId,
+        userName: user.name,
+        userRole: user.role,
+        userNip: user.nip,
+        endpoint: pushSubscription.endpoint,
+        createdAt: pushSubscription.createdAt,
+      })
+      .from(pushSubscription)
+      .leftJoin(user, eq(pushSubscription.userId, user.id));
+
+    res.json({ success: true, data: subs });
+  } catch (err: any) {
+    console.error('[PushSubscriptions] Error:', err);
+    res.status(500).json({ error: 'Gagal mengambil daftar subscription dari database.' });
+  }
+});
 
 /**
  * POST /api/push/subscribe — Register or update a push subscription
