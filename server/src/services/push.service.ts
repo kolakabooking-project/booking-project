@@ -6,18 +6,24 @@ import { env } from '../config/env.js';
 
 // Configure VAPID details safely with fallback and try-catch to prevent server startup crash if env vars are malformed
 let isVapidInitialized = false;
-try {
-  if (env.VAPID_SUBJECT && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-      env.VAPID_SUBJECT,
-      env.VAPID_PUBLIC_KEY,
-      env.VAPID_PRIVATE_KEY
-    );
-    isVapidInitialized = true;
+function ensureVapid(): boolean {
+  if (isVapidInitialized) return true;
+  try {
+    if (env.VAPID_SUBJECT && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY) {
+      webpush.setVapidDetails(
+        env.VAPID_SUBJECT,
+        env.VAPID_PUBLIC_KEY,
+        env.VAPID_PRIVATE_KEY
+      );
+      isVapidInitialized = true;
+      return true;
+    }
+  } catch (error) {
+    console.error('[PushService] Warning: Failed to initialize VAPID details:', error);
   }
-} catch (error) {
-  console.error('[PushService] Warning: Failed to initialize VAPID details at startup:', error);
+  return false;
 }
+ensureVapid();
 
 interface PushPayload {
   title: string;
@@ -30,10 +36,6 @@ interface PushPayload {
  * It will send to all active subscriptions of that user.
  */
 export async function sendPushNotification(userId: string, payload: PushPayload): Promise<{ success: number; failed: number; total: number }> {
-  if (!isVapidInitialized) {
-    console.warn('[PushService] Cannot send push notification: VAPID is not initialized.');
-    return { success: 0, failed: 0, total: 0 };
-  }
   try {
     const subscriptions = await db
       .select()
@@ -43,6 +45,11 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
     if (subscriptions.length === 0) {
       console.log(`[PushService] No subscriptions found in DB for user ${userId}`);
       return { success: 0, failed: 0, total: 0 };
+    }
+
+    if (!ensureVapid()) {
+      console.warn('[PushService] Cannot send push notification: VAPID failed to initialize.');
+      return { success: 0, failed: subscriptions.length, total: subscriptions.length };
     }
 
     const payloadString = JSON.stringify(payload);
@@ -98,7 +105,7 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
  * This eliminates the N+1 pattern when notifying many users (e.g., WFO schedule updates).
  */
 export async function sendPushToUsers(userIds: string[], payload: PushPayload): Promise<void> {
-  if (userIds.length === 0 || !isVapidInitialized) return;
+  if (userIds.length === 0 || !ensureVapid()) return;
 
   try {
     // Single query for ALL users' subscriptions
@@ -152,7 +159,7 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload): 
  * Uses batch processing and Promise.allSettled for optimal performance.
  */
 export async function sendBroadcast(payload: PushPayload): Promise<{ success: number; failed: number }> {
-  if (!isVapidInitialized) {
+  if (!ensureVapid()) {
     console.warn('[BROADCAST] Cannot send broadcast: VAPID is not initialized.');
     return { success: 0, failed: 0 };
   }

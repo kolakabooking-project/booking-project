@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Send, Loader2, User, Smartphone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Bell, Send, Loader2, User, Smartphone, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TestingPage() {
@@ -9,6 +9,7 @@ export default function TestingPage() {
   const [selectedUser, setSelectedUser] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     fetchUsersAndSubs();
@@ -35,6 +36,25 @@ export default function TestingPage() {
       toast.error('Gagal memuat daftar pegawai dan subscription');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResetDatabase = async () => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus/mereset SELURUH data perangkat dari database? Semua pegawai harus mengklik Aktifkan Notifikasi ulang di HP mereka.')) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/push/subscriptions/all', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mereset database.');
+      toast.success(data.message || 'Database perangkat berhasil dibersihkan!');
+      fetchUsersAndSubs();
+    } catch (err) {
+      toast.error(err.message || 'Gagal mereset database.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -169,14 +189,24 @@ export default function TestingPage() {
               <p className="text-xs text-[color:var(--color-text-soft)]">Total perangkat yang saat ini terdaftar dan siap menerima push notification.</p>
             </div>
           </div>
-          <button
-            onClick={fetchUsersAndSubs}
-            disabled={isLoading}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border bg-[color:var(--color-bg-shell)] hover:bg-[color:var(--color-border)] transition-colors"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-main)' }}
-          >
-            Refresh Data
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetDatabase}
+              disabled={isLoading || isResetting || activeSubs.length === 0}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isResetting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+              Reset Database
+            </button>
+            <button
+              onClick={fetchUsersAndSubs}
+              disabled={isLoading}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border bg-[color:var(--color-bg-shell)] hover:bg-[color:var(--color-border)] transition-colors"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-main)' }}
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
 
         {activeSubs.length === 0 ? (

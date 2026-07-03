@@ -38,6 +38,21 @@ router.get('/subscriptions', roleGuard('admin'), async (_req: Request, res: Resp
 });
 
 /**
+ * DELETE /api/push/subscriptions/all — Delete all push subscriptions from DB
+ * Allows superadmin to reset database table cleanly to test from scratch.
+ */
+router.delete('/subscriptions/all', roleGuard('admin'), async (_req: Request, res: Response) => {
+  try {
+    await db.delete(pushSubscription);
+    console.log('[PushSubscriptions] All subscriptions reset from database.');
+    res.json({ success: true, message: 'Berhasil mereset dan menghapus seluruh data perangkat dari database.' });
+  } catch (err: any) {
+    console.error('[PushSubscriptions] Reset error:', err);
+    res.status(500).json({ error: 'Gagal mereset data perangkat dari database.' });
+  }
+});
+
+/**
  * POST /api/push/subscribe — Register or update a push subscription
  */
 router.post('/subscribe', async (req: Request, res: Response) => {
