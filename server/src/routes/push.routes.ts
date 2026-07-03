@@ -149,7 +149,8 @@ router.post('/test', async (req: Request, res: Response) => {
     if (pushStats.total === 0) {
       message = `Perhatian: User ini belum mengaktifkan notifikasi di perangkat manapun (0 perangkat di database). Silakan login di HP user tersebut dan klik tombol 'Aktifkan Notifikasi' di menu Akun.`;
     } else if (pushStats.success === 0 && pushStats.failed > 0) {
-      message = `Gagal: ${pushStats.failed} perangkat terdaftar ditolak oleh server Google/Apple (token lama/VAPID tidak cocok). Silakan matikan lalu aktifkan ulang notifikasi di HP user tersebut.`;
+      const errReason = pushStats.lastError ? ` (${pushStats.lastError})` : ' (token lama/VAPID tidak cocok)';
+      message = `Gagal: ${pushStats.failed} perangkat terdaftar ditolak oleh server Google/Apple${errReason}. Silakan cek kesesuaian pasangan VAPID_PUBLIC_KEY dan VAPID_PRIVATE_KEY di Vercel.`;
     }
 
     res.json({ success: pushStats.success > 0 || pushStats.total === 0, message, stats: pushStats });

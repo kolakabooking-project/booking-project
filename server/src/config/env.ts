@@ -13,13 +13,14 @@ const envSchema = z.object({
   MAX_FILE_SIZE_MB: z.coerce.number().default(1),
   ABLY_API_KEY: z.string().trim().min(1, 'ABLY_API_KEY is required for realtime features'),
   ENCRYPTION_KEY: z.string().trim().length(64, 'ENCRYPTION_KEY must be exactly 64 hex characters (256-bit key)'),
-  VAPID_PUBLIC_KEY: z.string().trim().min(1, 'VAPID_PUBLIC_KEY is required'),
-  VAPID_PRIVATE_KEY: z.string().trim().min(1, 'VAPID_PRIVATE_KEY is required'),
-  VAPID_SUBJECT: z.string().trim().default('mailto:admin@kpp-kolaka.internal').transform((val) => {
-    if (!val.startsWith('mailto:') && !val.startsWith('http://') && !val.startsWith('https://')) {
-      return `mailto:${val}`;
+  VAPID_PUBLIC_KEY: z.string().transform((val) => val.replace(/^["']|["']$/g, '').trim()).refine((val) => val.length > 0, 'VAPID_PUBLIC_KEY is required'),
+  VAPID_PRIVATE_KEY: z.string().transform((val) => val.replace(/^["']|["']$/g, '').trim()).refine((val) => val.length > 0, 'VAPID_PRIVATE_KEY is required'),
+  VAPID_SUBJECT: z.string().default('mailto:admin@kpp-kolaka.internal').transform((val) => {
+    const cleaned = val.replace(/^["']|["']$/g, '').trim();
+    if (!cleaned.startsWith('mailto:') && !cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+      return `mailto:${cleaned}`;
     }
-    return val;
+    return cleaned;
   }),
   // Google Sheets API (optional — tracking feature)
   GOOGLE_SHEETS_ID: z.string().optional(),

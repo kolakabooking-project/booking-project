@@ -35,7 +35,7 @@ interface PushPayload {
  * Send a push notification to a specific user.
  * It will send to all active subscriptions of that user.
  */
-export async function sendPushNotification(userId: string, payload: PushPayload): Promise<{ success: number; failed: number; total: number }> {
+export async function sendPushNotification(userId: string, payload: PushPayload): Promise<{ success: number; failed: number; total: number; lastError?: string }> {
   try {
     const subscriptions = await db
       .select()
@@ -49,13 +49,22 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
 
     if (!ensureVapid()) {
       console.warn('[PushService] Cannot send push notification: VAPID failed to initialize.');
-      return { success: 0, failed: subscriptions.length, total: subscriptions.length };
+      return { success: 0, failed: subscriptions.length, total: subscriptions.length, lastError: 'VAPID failed to initialize' };
     }
+
+    const vapidOptions = {
+      vapidDetails: {
+        subject: env.VAPID_SUBJECT,
+        publicKey: env.VAPID_PUBLIC_KEY,
+        privateKey: env.VAPID_PRIVATE_KEY,
+      },
+    };
 
     const payloadString = JSON.stringify(payload);
     const expiredIds: string[] = [];
     let successCount = 0;
     let failedCount = 0;
+    let lastErrorDetail = '';
 
     const results = await Promise.allSettled(
       subscriptions.map((sub: any) => {
@@ -66,7 +75,7 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
             auth: sub.auth,
           },
         };
-        return webpush.sendNotification(subscriptionObj, payloadString);
+        return webpush.sendNotification(subscriptionObj, payloadString, vapidOptions);
       })
     );
 
@@ -76,13 +85,17 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
         successCount++;
       } else {
         failedCount++;
-        const err = result.reason as { statusCode?: number; message?: string };
+        const err = result.reason as any;
         const sub = subscriptions[i];
-        if (err.statusCode === 410 || err.statusCode === 404) {
+        const status = err?.statusCode || 'Unknown';
+        const bodyText = err?.body || err?.message || JSON.stringify(err);
+        lastErrorDetail = `HTTP ${status}: ${bodyText}`;
+        
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
           console.log(`[PushService] Removing expired subscription for user ${userId}: ${sub.endpoint}`);
           expiredIds.push(sub.id);
         } else {
-          console.error(`[PushService] Error sending to endpoint ${sub.endpoint} (status ${err.statusCode}):`, err.message || err);
+          console.error(`[PushService] Error sending to endpoint ${sub.endpoint} (${lastErrorDetail})`);
         }
       }
     }
@@ -92,10 +105,10 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
     }
 
     console.log(`[PushService] Sent to user ${userId}: ${successCount} success, ${failedCount} failed out of ${subscriptions.length} devices.`);
-    return { success: successCount, failed: failedCount, total: subscriptions.length };
-  } catch (error) {
+    return { success: successCount, failed: failedCount, total: subscriptions.length, lastError: lastErrorDetail };
+  } catch (error: any) {
     console.error(`[PushService] Failed to send push notification to user ${userId}:`, error);
-    return { success: 0, failed: 0, total: 0 };
+    return { success: 0, failed: 0, total: 0, lastError: error?.message || 'Unknown server error' };
   }
 }
 
