@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Search, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { X, Calendar, Search, FileSpreadsheet, Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -12,6 +12,8 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh, initialDa
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Generate 3 previous weeks + this week + 3 upcoming Fridays
   useEffect(() => {
@@ -99,6 +101,44 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh, initialDa
       setSelectedUserIds(new Set());
     } else {
       setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
+    }
+  };
+
+  const handleImportPdf = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast.error('File harus berupa PDF');
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/wfo/import-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Gagal import PDF');
+      }
+
+      const { data } = await res.json();
+      if (data.wfoIds && Array.isArray(data.wfoIds)) {
+        setSelectedUserIds(new Set(data.wfoIds));
+        toast.success(`Berhasil mengimport ${data.wfoIds.length} pegawai WFO. Silakan periksa kembali daftar.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Terjadi kesalahan saat memproses PDF');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -219,12 +259,29 @@ export default function WfoScheduleModal({ isOpen, onClose, onRefresh, initialDa
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-semibold text-[color:var(--color-text-main)]">Pilih Pegawai (WFO)</label>
-                <button 
-                  onClick={handleSelectAll}
-                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  {selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0 ? 'Deselect All' : 'Select All'}
-                </button>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleImportPdf} 
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || isLoading}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20"
+                  >
+                    {isUploading ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                    Import PDF
+                  </button>
+                  <button 
+                    onClick={handleSelectAll}
+                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    {selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0 ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
               </div>
 
               {/* Search Pegawai */}
