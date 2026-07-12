@@ -65,16 +65,16 @@ export default function LoginPage() {
         />
         <div className="relative z-10">
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-[clamp(2.4rem,3vw,3.35rem)] leading-none font-heading font-extrabold tracking-tight text-[color:var(--color-heading)]">
+            <div className="min-w-0">
+              <h2 className="text-[clamp(2.2rem,3vw,3.35rem)] leading-none font-heading font-extrabold tracking-tight text-[color:var(--color-heading)] truncate">
                 LOGIN
               </h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--color-surface-muted)] text-[color:var(--color-heading)] shadow-md transition-colors hover:bg-[color:var(--color-border)]"
+                className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[color:var(--color-surface-muted)] text-[color:var(--color-heading)] shadow-md transition-colors hover:bg-[color:var(--color-border)] shrink-0"
                 aria-label="Toggle theme"
               >
                 {isDark ? <Moon size={22} className="text-djp-blue" /> : <Sun size={22} className="text-djp-yellow" />}
@@ -141,7 +141,7 @@ export default function LoginPage() {
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
           >
-            <p className="text-[10px] font-heading font-bold uppercase tracking-[0.32em] text-[color:var(--color-text-soft)] transition-colors hover:text-[color:var(--color-heading)] inline-block py-1 px-2 rounded-lg">
+            <p className="text-[10px] font-heading font-bold uppercase tracking-[0.18em] sm:tracking-[0.32em] text-[color:var(--color-text-soft)] transition-colors hover:text-[color:var(--color-heading)] inline-block py-1 px-2 rounded-lg max-w-full break-words">
               © 2026 KPP PRATAMA KOLAKA V1.0.0
             </p>
             <div 
