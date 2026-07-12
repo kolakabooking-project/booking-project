@@ -546,3 +546,45 @@ input:focus, select:focus, textarea:focus {
 .rich-text-content p:last-child {
   margin-bottom: 0 !important;
 }
+
+/* Traveling Light Beams & Shimmer Animations for Login Card */
+@keyframes beamTop {
+  0% { left: -50%; opacity: 0.3; filter: blur(1px); }
+  50% { opacity: 0.85; filter: blur(2.5px); }
+  100% { left: 100%; opacity: 0.3; filter: blur(1px); }
+}
+@keyframes beamRight {
+  0% { top: -50%; opacity: 0.3; filter: blur(1px); }
+  50% { opacity: 0.85; filter: blur(2.5px); }
+  100% { top: 100%; opacity: 0.3; filter: blur(1px); }
+}
+@keyframes beamBottom {
+  0% { right: -50%; opacity: 0.3; filter: blur(1px); }
+  50% { opacity: 0.85; filter: blur(2.5px); }
+  100% { right: 100%; opacity: 0.3; filter: blur(1px); }
+}
+@keyframes beamLeft {
+  0% { bottom: -50%; opacity: 0.3; filter: blur(1px); }
+  50% { opacity: 0.85; filter: blur(2.5px); }
+  100% { bottom: 100%; opacity: 0.3; filter: blur(1px); }
+}
+@keyframes shimmerWave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-beam-top {
+  animation: beamTop 3s ease-in-out infinite;
+}
+.animate-beam-right {
+  animation: beamRight 3s ease-in-out infinite 0.75s;
+}
+.animate-beam-bottom {
+  animation: beamBottom 3s ease-in-out infinite 1.5s;
+}
+.animate-beam-left {
+  animation: beamLeft 3s ease-in-out infinite 2.25s;
+}
+.animate-shimmer {
+  animation: shimmerWave 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
