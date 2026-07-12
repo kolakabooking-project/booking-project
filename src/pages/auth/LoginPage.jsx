@@ -78,7 +78,7 @@ export default function LoginPage() {
         <div className="absolute -inset-[0.5px] rounded-[1.75rem] bg-gradient-to-br from-white/40 via-white/10 to-white/20 dark:from-white/20 dark:via-white/5 dark:to-white/10 opacity-70 group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
 
         {/* Glass Card Main Body */}
-        <div className="relative bg-white/85 dark:bg-slate-950/75 backdrop-blur-xl rounded-[1.75rem] p-7 sm:p-9 border border-slate-200/80 dark:border-white/[0.12] shadow-[0_25px_60px_-15px_rgba(39,60,102,0.18)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-700 ease-in-out">
+        <div className="relative bg-white/85 dark:bg-slate-950/75 backdrop-blur-xl rounded-3xl sm:rounded-[1.75rem] p-6 sm:p-9 border border-slate-200/80 dark:border-white/[0.12] shadow-[0_25px_60px_-15px_rgba(39,60,102,0.18)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-700 ease-in-out">
           {/* Subtle card inner grid pattern */}
           <div
             className="absolute inset-0 opacity-[0.025] pointer-events-none"
@@ -106,8 +106,8 @@ export default function LoginPage() {
           </div>
 
           {/* Card Title Header */}
-          <div className="relative z-10 pr-10 mb-7">
-            <h2 className="text-[clamp(2rem,3vw,2.75rem)] leading-none font-heading font-extrabold tracking-tight text-[#273c66] dark:text-white transition-colors duration-700">
+          <div className="relative z-10 pr-10 mb-5 sm:mb-7">
+            <h2 className="text-[clamp(1.85rem,6vw,2.75rem)] leading-none font-heading font-extrabold tracking-tight text-[#273c66] dark:text-white transition-colors duration-700">
               LOGIN
             </h2>
           </div>
@@ -200,12 +200,12 @@ export default function LoginPage() {
 
           {/* Footer Copyright */}
           <div
-            className="relative z-10 mt-7 text-center select-none cursor-pointer"
+            className="relative z-10 mt-5 sm:mt-7 text-center select-none cursor-pointer"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
           >
-            <p className="text-[10px] font-heading font-extrabold uppercase tracking-[0.18em] sm:tracking-[0.32em] text-slate-950 dark:text-white/80 transition-colors hover:text-black dark:hover:text-white inline-block py-1 px-2 rounded-lg max-w-full break-words dark:[text-shadow:_0_1px_8px_rgba(0,0,0,0.95)]">
+            <p className="text-[10px] font-heading font-extrabold uppercase tracking-[0.18em] sm:tracking-[0.32em] text-slate-900 dark:text-white/85 transition-colors hover:text-black dark:hover:text-white inline-block py-1 px-2 rounded-lg max-w-full break-words drop-shadow-sm">
               © 2026 KPP PRATAMA KOLAKA V1.0.0
             </p>
             <div
