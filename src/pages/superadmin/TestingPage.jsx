@@ -127,6 +127,14 @@ export default function TestingPage() {
           </div>
         </div>
 
+        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs leading-relaxed text-[color:var(--color-text-main)] mb-6">
+          <AlertCircle className="text-blue-500 shrink-0 mt-0.5" size={16} />
+          <div>
+            <span className="font-semibold text-blue-500 block mb-0.5">Catatan Pendaftaran HP / Perangkat Pegawai:</span>
+            Notifikasi Web Push bergantung pada izin browser di HP masing-masing pegawai. Sistem <strong>AutoPushSync</strong> telah aktif: setiap pegawai yang membuka aplikasi dan telah mengizinkan notifikasi di HP mereka akan otomatis terdaftar di database.
+          </div>
+        </div>
+
         <div className="space-y-4 max-w-md">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-[color:var(--color-text-main)]">Target Pegawai</label>

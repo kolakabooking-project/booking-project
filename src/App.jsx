@@ -208,6 +208,7 @@ function AppRoutes() {
 }
 
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import AutoPushSync from './components/shared/AutoPushSync';
 
 function AppShell() {
   const { theme } = useTheme();
@@ -217,6 +218,7 @@ function AppShell() {
       <ErrorBoundary>
         <AppRoutes />
         <ServiceStatusListener />
+        <AutoPushSync />
       </ErrorBoundary>
       <PWAInstallPrompt />
       <Toaster
