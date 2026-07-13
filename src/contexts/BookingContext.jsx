@@ -39,19 +39,15 @@ export function BookingProvider({ children }) {
     refetchOnWindowFocus: false,
   });
 
-  // Role-aware booking fetch:
-  // - Admin/Superadmin: fetch ALL bookings (needed for request board, calendar, availability checks)
-  // - User: fetch only their own bookings (dramatically reduces query size and CU consumption)
+  // Fetch ALL bookings so that:
+  // - Every employee can see agenda & availability on the dashboard calendar
+  // - Client-side collision checks work accurately
+  // - Personal views filter client-side via getUserBookings(userId)
   const bookingsQuery = useQuery({
-    queryKey: ['bookings', isAdminView ? 'all' : 'mine'],
+    queryKey: ['bookings'],
     queryFn: async () => {
-      if (isAdminView) {
-        const res = await bookingApi.getAll();
-        return res?.data || [];
-      } else {
-        const res = await bookingApi.getMine();
-        return res?.data || [];
-      }
+      const res = await bookingApi.getAll();
+      return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.kdoActive,
     staleTime: 30_000,
@@ -84,8 +80,7 @@ export function BookingProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Current query key based on role
-    const bookingQueryKey = ['bookings', isAdminView ? 'all' : 'mine'];
+    const bookingQueryKey = ['bookings'];
 
     const unsubscribe = subscribe('bookings', 'update', (message) => {
       console.log('[ABLY] Realtime Update received:', message.data);
@@ -93,12 +88,6 @@ export function BookingProvider({ children }) {
       
       if (!booking) {
         refreshBookings();
-        return;
-      }
-
-      // For user view: only apply updates relevant to this user
-      if (!isAdminView && booking.userId !== user?.id) {
-        // Booking belongs to another user — skip client cache mutation
         return;
       }
 
@@ -146,8 +135,8 @@ export function BookingProvider({ children }) {
     return res?.data;
   }, [refreshBookings]);
 
-  const cancelBooking = useCallback(async (bookingId) => {
-    await Promise.all([bookingApi.cancel(bookingId), minDelay()]);
+  const cancelBooking = useCallback(async (bookingId, alasan) => {
+    await Promise.all([bookingApi.cancel(bookingId, alasan), minDelay()]);
     refreshBookings();
   }, [refreshBookings]);
 

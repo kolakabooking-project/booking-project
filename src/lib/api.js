@@ -136,6 +136,7 @@ export const bookingApi = {
   getMine: () => request('/bookings/mine'),
   getPending: () => request('/bookings/pending'),
   getNotifications: () => request('/bookings/notifications'),
+  getPegawaiList: (search) => request(`/bookings/pegawai${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   getForDate: (date) => request(`/bookings/date/${date}`),
   getById: (id) => request(`/bookings/${id}`),
   create: (data) => request('/bookings', { method: 'POST', body: JSON.stringify(data) }),
@@ -144,7 +145,7 @@ export const bookingApi = {
     request(`/bookings/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ vehicleId, driverId }) }),
   reject: (id, alasan) =>
     request(`/bookings/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ alasan }) }),
-  cancel: (id) => request(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+  cancel: (id, alasan) => request(`/bookings/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ alasan }) }),
   submitReview: (id, reviewNotes) =>
     request(`/bookings/${id}/review`, { method: 'POST', body: JSON.stringify({ reviewNotes }) }),
   markReviewRead: (id) =>

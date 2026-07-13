@@ -209,6 +209,31 @@ export async function getReviewNotifications() {
 }
 
 /**
+ * Get active pegawai list for admin selection.
+ */
+export async function getPegawaiList(search?: string) {
+  const conditions: any[] = [];
+  if (search?.trim()) {
+    const term = `%${search.trim()}%`;
+    conditions.push(or(ilike(user.name, term), ilike(user.nip, term)));
+  }
+
+  const results = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      nip: user.nip,
+      jabatan: user.jabatan,
+      role: user.role,
+    })
+    .from(user)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(user.name));
+
+  return results;
+}
+
+/**
  * Get a single booking by ID.
  */
 export async function getBookingById(id: string) {
@@ -246,20 +271,34 @@ export async function getBookingById(id: string) {
 
 // ─── Mutations ───
 
+function sanitizeBookingInsert(data: any) {
+  return {
+    userId: data.userId,
+    vehicleId: data.vehicleId || null,
+    driverId: data.driverId || null,
+    jenisKendaraan: data.jenisKendaraan || 'Mobil',
+    keperluan: data.keperluan,
+    jumlahPenumpang: typeof data.jumlahPenumpang === 'number' ? data.jumlahPenumpang : parseInt(data.jumlahPenumpang) || 1,
+    perluSopir: Boolean(data.perluSopir),
+    catatan: data.catatan || null,
+  };
+}
+
 /**
  * Create a new booking (user — status=Pending).
  */
-export async function createBooking(data: BookingInsert) {
+export async function createBooking(data: any) {
   if (!data.keperluan) throw new ValidationError('Keperluan wajib diisi.');
   if (!data.startTime || !data.endTime) throw new ValidationError('Waktu mulai dan selesai wajib diisi.');
 
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
+  const cleanData = sanitizeBookingInsert(data);
 
   // ── Core mutation (awaited — must succeed) ──
   const [created] = await db
     .insert(booking)
-    .values({ ...data, startTime, endTime, status: BOOKING_STATUS.PENDING })
+    .values({ ...cleanData, startTime, endTime, status: BOOKING_STATUS.PENDING })
     .returning();
 
   const fullBooking = await getBookingById(created.id);
@@ -293,17 +332,18 @@ export async function createBooking(data: BookingInsert) {
 /**
  * Create a mandatory booking (admin — status=Disetujui).
  */
-export async function createMandatoryBooking(data: BookingInsert) {
+export async function createMandatoryBooking(data: any) {
   if (!data.keperluan) throw new ValidationError('Keperluan wajib diisi.');
   if (!data.startTime || !data.endTime) throw new ValidationError('Waktu mulai dan selesai wajib diisi.');
 
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
+  const cleanData = sanitizeBookingInsert(data);
 
   // ── Core mutation (awaited) ──
   const [created] = await db
     .insert(booking)
-    .values({ ...data, startTime, endTime, status: BOOKING_STATUS.APPROVED })
+    .values({ ...cleanData, startTime, endTime, status: BOOKING_STATUS.APPROVED })
     .returning();
 
   const fullBooking = await getBookingById(created.id);
@@ -456,19 +496,41 @@ export async function rejectBooking(bookingId: string, alasan: string) {
 /**
  * Cancel a booking (only PENDING can be cancelled by users).
  */
-export async function cancelBooking(bookingId: string, userId: string) {
+export async function cancelBooking(bookingId: string, userId: string, isAdmin: boolean = false, alasan?: string) {
   // ── Validation (awaited — security critical) ──
   const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman');
-  if (target.userId !== userId) throw new ForbiddenError('Anda hanya bisa membatalkan peminjaman sendiri.');
-  if (target.status !== BOOKING_STATUS.PENDING) {
+
+  if (!isAdmin && target.userId !== userId) {
+    throw new ForbiddenError('Anda hanya bisa membatalkan peminjaman sendiri.');
+  }
+
+  if (!isAdmin && target.status !== BOOKING_STATUS.PENDING) {
     throw new ValidationError('Hanya peminjaman Pending yang bisa dibatalkan.');
+  }
+
+  if (isAdmin) {
+    const isPendingOrActive =
+      target.status === BOOKING_STATUS.PENDING ||
+      target.status === BOOKING_STATUS.APPROVED ||
+      target.status === BOOKING_STATUS.ONGOING;
+    if (!isPendingOrActive) {
+      throw new ValidationError('Hanya peminjaman aktif atau pending yang bisa dibatalkan.');
+    }
+    if (new Date() >= new Date(target.endTime)) {
+      throw new ValidationError('Peminjaman yang waktunya sudah terlewat tidak dapat dibatalkan.');
+    }
+  }
+
+  const updateFields: any = { status: BOOKING_STATUS.CANCELLED, updatedAt: new Date() };
+  if (isAdmin && alasan) {
+    updateFields.alasanPenolakan = alasan;
   }
 
   // ── Core mutation (awaited) ──
   const [cancelled] = await db
     .update(booking)
-    .set({ status: BOOKING_STATUS.CANCELLED, updatedAt: new Date() })
+    .set(updateFields)
     .where(eq(booking.id, bookingId))
     .returning();
 

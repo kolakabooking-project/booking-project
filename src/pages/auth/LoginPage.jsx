@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
-import { Eye, EyeOff, Sun, Moon, User, Lock, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Sun, Moon, User, Lock, ArrowRight, Info } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import AboutAppModal from '../../components/settings/AboutAppModal';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDev, setShowDev] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const handleMouseEnter = () => {
     if (window.matchMedia('(hover: hover)').matches) {
@@ -40,7 +42,11 @@ export default function LoginPage() {
     try {
       const result = await login(nip, password);
       if (result.success) {
-        navigate('/admin/dashboard');
+        if (result.role === 'superadmin') {
+          navigate('/superadmin/dashboard', { replace: true });
+        } else {
+          navigate('/select-service', { replace: true });
+        }
       } else {
         setError(result.error || 'NIP atau password salah.');
       }
@@ -89,8 +95,18 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Theme Toggle Button Top-Right */}
-          <div className="absolute top-5 right-5 z-20">
+          {/* Top-Right Controls: About App & Theme Toggle */}
+          <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              aria-label="Tentang Aplikasi Bookolaka"
+              className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-500 bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300/90 dark:hover:bg-white/20 text-slate-700 dark:text-white/90 border border-slate-300/80 dark:border-white/15 shadow-sm hover:scale-105 active:scale-95 focus:outline-none"
+            >
+              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="text-xs font-bold tracking-wide">Tentang</span>
+            </button>
+
             <button
               type="button"
               onClick={toggleTheme}
@@ -221,6 +237,14 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <AboutAppModal
+        isOpen={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        showProcessSteps={true}
+        accentColor="djp-blue"
+        role="login"
+      />
     </AuthLayout>
   );
 }

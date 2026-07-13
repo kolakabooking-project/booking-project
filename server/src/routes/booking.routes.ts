@@ -76,6 +76,20 @@ router.get('/notifications', roleGuard('admin'), async (_req: Request, res: Resp
 });
 
 /**
+ * GET /api/bookings/pegawai — Active pegawai list for admin selection
+ */
+router.get('/pegawai', roleGuard('admin'), async (req: Request, res: Response) => {
+  try {
+    const search = req.query.search as string | undefined;
+    const pegawaiList = await bookingService.getPegawaiList(search);
+    res.json({ data: pegawaiList });
+  } catch (err: any) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/bookings/date/:date — Bookings for specific date
  */
 router.get('/date/:date', async (req: Request, res: Response) => {
@@ -142,9 +156,10 @@ router.post('/', async (req: Request, res: Response) => {
 router.post('/mandatory', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
+    const { targetUserId, targetUserName, ...restBody } = req.body;
     const booking = await bookingService.createMandatoryBooking({
-      ...req.body,
-      userId: actor.id,
+      ...restBody,
+      userId: targetUserId || restBody.userId || actor.id,
     });
     res.status(201).json({ data: booking });
 
@@ -154,7 +169,8 @@ router.post('/mandatory', roleGuard('admin'), async (req: Request, res: Response
       userName: actor.name,
       action: 'BOOKING_MANDATORY',
       targetId: booking.id,
-      detail: `Booking mandatory dibuat: ${req.body.keperluan || '-'} (langsung disetujui)`,
+      targetName: booking.userName || targetUserName || undefined,
+      detail: `Booking mandatory dibuat untuk ${booking.userName || targetUserName || actor.name}: ${req.body.keperluan || '-'} (langsung disetujui)`,
       ipAddress: getIp(req),
     });
   } catch (err: any) {
@@ -225,16 +241,22 @@ router.patch('/:id/reject', roleGuard('admin'), async (req: Request, res: Respon
 router.patch('/:id/cancel', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
-    const booking = await bookingService.cancelBooking(req.params.id as string, actor.id);
+    const { alasan } = req.body || {};
+    const booking = await bookingService.cancelBooking(
+      req.params.id as string,
+      actor.id,
+      actor.role === 'admin',
+      alasan
+    );
     res.json({ data: booking });
 
-    // Log: user cancel
+    // Log: cancel
     logActivity({
       userId: actor.id,
       userName: actor.name,
       action: 'BOOKING_CANCELLED',
       targetId: booking.id,
-      detail: `Peminjaman dibatalkan oleh user`,
+      detail: actor.role === 'admin' ? `Peminjaman dibatalkan oleh Admin: ${alasan || '-'}` : `Peminjaman dibatalkan oleh user`,
       ipAddress: getIp(req),
     });
   } catch (err: any) {

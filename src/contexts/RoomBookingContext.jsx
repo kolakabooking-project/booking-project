@@ -28,19 +28,15 @@ export function RoomBookingProvider({ children }) {
     refetchOnWindowFocus: false,
   });
 
-  // Role-aware room booking fetch:
-  // - Admin/Superadmin: fetch ALL room bookings
-  // - User: fetch only their own room bookings (reduces CU consumption)
+  // Fetch ALL room bookings so that:
+  // - Every employee can see agenda & availability on the room calendar
+  // - Client-side collision checks work accurately
+  // - Personal views filter client-side via getUserRoomBookings(userId)
   const roomBookingsQuery = useQuery({
-    queryKey: ['roomBookings', isAdminView ? 'all' : 'mine'],
+    queryKey: ['roomBookings'],
     queryFn: async () => {
-      if (isAdminView) {
-        const res = await roomBookingApi.getAll({});
-        return res?.data || [];
-      } else {
-        const res = await roomBookingApi.getMine();
-        return res?.data || [];
-      }
+      const res = await roomBookingApi.getAll({});
+      return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.roomActive,
     staleTime: 30_000,
@@ -67,19 +63,13 @@ export function RoomBookingProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Current query key based on role
-    const roomBookingQueryKey = ['roomBookings', isAdminView ? 'all' : 'mine'];
+    const roomBookingQueryKey = ['roomBookings'];
 
     const unsubscribe = subscribe('room-bookings', 'update', (message) => {
       const { type, booking } = message.data;
       
       if (!booking) {
         refreshRoomBookings();
-        return;
-      }
-
-      // For user view: only apply updates relevant to this user
-      if (!isAdminView && booking.userId !== user?.id) {
         return;
       }
 

@@ -217,10 +217,21 @@ export async function createRoomBooking(data: RoomBookingInsert, isAdmin: boolea
     throw new ValidationError('Ruangan sudah dibooking pada waktu tersebut. Silakan pilih waktu atau ruangan lain.');
   }
 
-  // Create as Disetujui
+function sanitizeRoomBookingInsert(data: any) {
+  return {
+    roomId: data.roomId,
+    userId: data.userId,
+    keperluan: data.keperluan,
+    jumlahPeserta: typeof data.jumlahPeserta === 'number' ? data.jumlahPeserta : parseInt(data.jumlahPeserta) || 1,
+    catatan: data.catatan || null,
+  };
+}
+
+// Create as Disetujui
+  const cleanData = sanitizeRoomBookingInsert(data);
   const [created] = await db
     .insert(roomBooking)
-    .values({ ...data, startTime, endTime, status: 'Disetujui' })
+    .values({ ...cleanData, startTime, endTime, status: 'Disetujui' })
     .returning();
 
   const fullBooking = await getRoomBookingById(created.id);
@@ -245,6 +256,21 @@ export async function createRoomBooking(data: RoomBookingInsert, isAdmin: boolea
         console.error('[RoomBookingService] Failed to send push notifications:', err);
       }
     })();
+  } else {
+    (async () => {
+      try {
+        const formattedStart = formatDateTime(startTime);
+        const payload = {
+          title: 'Penugasan Ruangan Baru',
+          body: `Admin telah menugaskan peminjaman ${fullBooking.roomName} untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
+          url: '/user/room/my-bookings',
+        };
+        const { sendPushNotification } = await import('./push.service.js');
+        await sendPushNotification(fullBooking.userId, payload);
+      } catch (err) {
+        console.error('[RoomBookingService] Failed to send push notification for mandatory room booking:', err);
+      }
+    })();
   }
 
   return fullBooking;
@@ -264,6 +290,10 @@ export async function cancelRoomBooking(bookingId: string, userId: string, isAdm
   
   if (target.status !== 'Disetujui' && target.status !== 'Berlangsung') {
     throw new ValidationError('Hanya peminjaman aktif yang bisa dibatalkan.');
+  }
+
+  if (new Date() >= new Date(target.endTime)) {
+    throw new ValidationError('Peminjaman yang waktunya sudah terlewat tidak dapat dibatalkan.');
   }
 
   const [cancelled] = await db

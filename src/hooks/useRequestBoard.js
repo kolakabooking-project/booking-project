@@ -6,7 +6,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import { BOOKING_STATUS } from '../utils/constants';
 
 export default function useRequestBoard(itemsPerPage = 10) {
-  const { bookings, approveBooking, rejectBooking } = useBooking();
+  const { bookings, approveBooking, rejectBooking, cancelBooking } = useBooking();
   const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,6 +21,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
   const [modal, setModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [cancelApprovedReason, setCancelApprovedReason] = useState('');
+  const [showCancelApproved, setShowCancelApproved] = useState(false);
 
   useEffect(() => {
     if (location.state?.openBookingId) {
@@ -29,6 +31,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
         setModal(b);
         setRejectReason('');
         setShowReject(false);
+        setCancelApprovedReason('');
+        setShowCancelApproved(false);
         if ([BOOKING_STATUS.COMPLETED, BOOKING_STATUS.REJECTED].includes(b.status)) {
           setActiveTab('riwayat');
         } else {
@@ -49,7 +53,7 @@ export default function useRequestBoard(itemsPerPage = 10) {
       );
     } else {
       list = list.filter((b) =>
-        [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.COMPLETED_WITH_NOTES, BOOKING_STATUS.REJECTED].includes(b.status)
+        [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.COMPLETED_WITH_NOTES, BOOKING_STATUS.REJECTED, BOOKING_STATUS.CANCELLED].includes(b.status)
       );
     }
 
@@ -86,6 +90,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
     setModal(booking);
     setRejectReason('');
     setShowReject(false);
+    setCancelApprovedReason('');
+    setShowCancelApproved(false);
   }, []);
 
   const handleApprove = async () => {
@@ -126,6 +132,25 @@ export default function useRequestBoard(itemsPerPage = 10) {
     }
   };
 
+  const handleCancelApproved = async () => {
+    if (!modal) return;
+    if (!cancelApprovedReason.trim()) {
+      toast.error('Masukkan alasan pembatalan');
+      return;
+    }
+
+    showLoading('Membatalkan peminjaman yang disetujui...');
+    try {
+      await cancelBooking(modal.id, cancelApprovedReason);
+      toast.success(`Peminjaman ${modal.userName} dibatalkan`);
+      setModal(null);
+    } catch (err) {
+      toast.error(err.message || 'Gagal membatalkan peminjaman');
+    } finally {
+      hideLoading();
+    }
+  };
+
   return {
     state: {
       activeTab,
@@ -135,6 +160,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
       modal,
       rejectReason,
       showReject,
+      cancelApprovedReason,
+      showCancelApproved,
       filteredBookings,
       currentData,
       totalPages
@@ -147,9 +174,12 @@ export default function useRequestBoard(itemsPerPage = 10) {
       setModal,
       setRejectReason,
       setShowReject,
+      setCancelApprovedReason,
+      setShowCancelApproved,
       openModal,
       handleApprove,
-      handleReject
+      handleReject,
+      handleCancelApproved
     }
   };
 }

@@ -123,9 +123,11 @@ router.post('/', async (req: Request, res: Response) => {
 router.post('/mandatory', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
+    const { targetUserId, targetUserName, ...restBody } = req.body;
     const booking = await roomBookingService.createRoomBooking({
-      ...req.body,
-      userId: admin.id,
+      ...restBody,
+      userId: targetUserId || restBody.userId || admin.id,
+      userName: targetUserName || restBody.userName || admin.name,
     }, true);
     res.status(201).json({ data: booking });
 

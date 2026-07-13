@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { useRoomBooking } from '../../../contexts/RoomBookingContext';
 import Card from '../../../components/ui/Card';
 import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
 import { ROOM_STATUS } from '../../../utils/constants';
 import { isToday, formatTime } from '../../../utils/helpers';
 import Badge from '../../../components/ui/Badge';
-import { Building2, Clock, User } from 'lucide-react';
+import { Building2, Clock, User, Plus } from 'lucide-react';
 import RoomStatsCards from '../../../components/dashboard/RoomStatsCards';
 
 export default function AdminDashboardPage() {
   const { rooms, roomBookings } = useRoomBooking();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const availableRooms = rooms.filter(r => r.status === ROOM_STATUS.AVAILABLE).length;
 
@@ -22,6 +25,12 @@ export default function AdminDashboardPage() {
       <PageHeader
         title="Ringkasan Operasional Ruangan"
         subtitle="Awasi antrean booking ruangan dan penggunaan ruangan."
+        actions={
+          <Button onClick={() => setIsModalOpen(true)} variant="primary" size="md">
+            <Plus size={16} className="mr-1.5" />
+            <span>Buat Peminjaman (Mandatory)</span>
+          </Button>
+        }
       />
 
       <RoomStatsCards />
@@ -76,6 +85,12 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </Card>
+
+      <RoomBookingModalFlow
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isAdmin={true}
+      />
     </div>
   );
 }

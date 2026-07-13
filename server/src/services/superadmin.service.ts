@@ -547,7 +547,7 @@ export async function toggleService(
   // Invalidate the cached service status (shared cache)
   invalidateServiceStatusCache();
   
-  let detailMessage = [];
+  const detailMessage: string[] = [];
   if (kdoActive !== undefined) detailMessage.push(`Layanan Booking KDO ${kdoActive ? 'diaktifkan' : 'dinonaktifkan'}`);
   if (roomActive !== undefined) detailMessage.push(`Layanan Booking Ruangan ${roomActive ? 'diaktifkan' : 'dinonaktifkan'}`);
   if (spdActive !== undefined) detailMessage.push(`Layanan Track SPD ${spdActive ? 'diaktifkan' : 'dinonaktifkan'}`);

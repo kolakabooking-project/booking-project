@@ -22,6 +22,8 @@ export default function RequestBoardPage() {
     modal,
     rejectReason,
     showReject,
+    cancelApprovedReason,
+    showCancelApproved,
     filteredBookings,
     currentData,
     totalPages
@@ -35,9 +37,12 @@ export default function RequestBoardPage() {
     setModal,
     setRejectReason,
     setShowReject,
+    setCancelApprovedReason,
+    setShowCancelApproved,
     openModal,
     handleApprove,
-    handleReject
+    handleReject,
+    handleCancelApproved
   } = actions;
 
   const columns = [
@@ -233,6 +238,47 @@ export default function RequestBoardPage() {
                     </div>
                   </>
                 )}
+              </div>
+            )}
+
+            {modal.status === BOOKING_STATUS.APPROVED && new Date() < new Date(modal.endTime) && (
+              <div className="border-t pt-4 space-y-4" style={{ borderColor: 'var(--color-border)' }}>
+                {!showCancelApproved ? (
+                  <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-200 dark:border-red-900/30">
+                    <p className="text-xs text-red-700 dark:text-red-300">
+                      Peminjaman ini sudah disetujui namun waktunya belum terlewat. Anda dapat membatalkannya jika ada kondisi darurat.
+                    </p>
+                    <Button variant="danger" onClick={() => setShowCancelApproved(true)} className="flex-shrink-0">
+                      <XCircle size={16} /> Batalkan Peminjaman
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-200 dark:border-red-900/30 space-y-3">
+                    <FormInput
+                      label="Alasan Pembatalan (Wajib)"
+                      id="cancel-approved-reason"
+                      type="textarea"
+                      value={cancelApprovedReason}
+                      onChange={(e) => setCancelApprovedReason(e.target.value)}
+                      placeholder="Masukkan alasan pembatalan peminjaman yang sudah disetujui..."
+                      required
+                    />
+                    <div className="flex gap-3 justify-end pt-1">
+                      <Button variant="ghost" onClick={() => setShowCancelApproved(false)}>Kembali</Button>
+                      <Button variant="danger" onClick={handleCancelApproved}>
+                        <XCircle size={16} /> Konfirmasi Batalkan
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {modal.status === BOOKING_STATUS.APPROVED && new Date() >= new Date(modal.endTime) && (
+              <div className="border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
+                  Waktu peminjaman sudah terlewat, sehingga peminjaman ini tidak dapat dibatalkan.
+                </div>
               </div>
             )}
           </div>

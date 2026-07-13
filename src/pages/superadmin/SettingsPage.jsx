@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, LayoutDashboard, Bell, Loader2, Megaphone } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, LayoutDashboard, Bell, Loader2, Megaphone, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import usePushNotification from '../../hooks/usePushNotification';
@@ -188,6 +188,14 @@ export default function SuperadminSettingsPage() {
         <button onClick={handleSwitchToAdmin} className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-yellow/10 font-semibold transition-all hover:bg-djp-yellow hover:text-djp-blue-dark">
           <LayoutDashboard size={18} />
           Masuk Mode Admin
+        </button>
+
+        <button
+          onClick={() => navigate('/select-service')}
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-blue/5 font-semibold transition-all hover:bg-djp-blue hover:text-white"
+        >
+          <ArrowLeft size={18} />
+          Ganti Layanan
         </button>
 
         <button 

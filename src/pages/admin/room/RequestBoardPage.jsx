@@ -9,10 +9,11 @@ import FormInput from '../../../components/ui/FormInput';
 import DataTable from '../../../components/ui/DataTable';
 import Pagination from '../../../components/ui/Pagination';
 import PageHeader from '../../../components/ui/PageHeader';
+import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
 import { ROOM_STATUS } from '../../../utils/constants';
 import { formatDateShort, formatTime } from '../../../utils/helpers';
 import { toast } from 'sonner';
-import { XCircle, Eye, Search, Filter } from 'lucide-react';
+import { XCircle, Eye, Search, Filter, Plus } from 'lucide-react';
 
 export default function RequestBoardPage() {
   const { roomBookings, cancelRoomBooking } = useRoomBooking();
@@ -25,6 +26,7 @@ export default function RequestBoardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const itemsPerPage = 10;
 
   // Modal States
@@ -124,6 +126,12 @@ export default function RequestBoardPage() {
       <PageHeader
         title="Monitoring Booking Ruangan"
         subtitle="Sistem ruangan bersifat First-Come-First-Serve. Anda dapat memantau dan membatalkan booking jika diperlukan."
+        actions={
+          <Button onClick={() => setIsBookingModalOpen(true)} variant="primary" size="md">
+            <Plus size={16} className="mr-1.5" />
+            <span>Buat Peminjaman (Mandatory)</span>
+          </Button>
+        }
       />
 
       <div className="toolbar-shell mb-6">
@@ -276,7 +284,7 @@ export default function RequestBoardPage() {
               )}
             </div>
 
-            {(modal.status === 'Disetujui' || modal.status === 'Berlangsung') && (
+            {(modal.status === 'Disetujui' || modal.status === 'Berlangsung') && new Date() < new Date(modal.endTime) && (
               <div className="pt-2">
                 {!showReject ? (
                   <div className="flex gap-3 justify-end bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
@@ -295,9 +303,23 @@ export default function RequestBoardPage() {
                 )}
               </div>
             )}
+
+            {(modal.status === 'Disetujui' || modal.status === 'Berlangsung') && new Date() >= new Date(modal.endTime) && (
+              <div className="pt-2">
+                <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
+                  Waktu peminjaman sudah terlewat, sehingga peminjaman ini tidak dapat dibatalkan.
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>
+
+      <RoomBookingModalFlow
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        isAdmin={true}
+      />
     </div>
   );
 }

@@ -260,7 +260,7 @@ export default function AdminSettingsPage() {
 
         <button
           onClick={() => navigate('/select-service')}
-          className="md:hidden w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-blue/5 font-semibold transition-all hover:bg-djp-blue hover:text-white"
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-blue/5 font-semibold transition-all hover:bg-djp-blue hover:text-white"
         >
           <ArrowLeft size={18} />
           Ganti Layanan

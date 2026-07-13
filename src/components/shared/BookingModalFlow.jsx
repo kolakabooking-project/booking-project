@@ -11,6 +11,7 @@ import CounterInput from '../ui/CounterInput';
 import { Plus, ArrowLeft, Car, Info, Send, Search, CheckCircle } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
 import { toast } from 'sonner';
+import { bookingApi } from '../../lib/api';
 
 export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBookings, isAdmin = false }) {
   const { user } = useAuth();
@@ -22,6 +23,28 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
   const [availChecked, setAvailChecked] = useState(false);
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [vehicleDetailModal, setVehicleDetailModal] = useState(null);
+
+  const [pegawaiList, setPegawaiList] = useState([]);
+  const [pegawaiSearch, setPegawaiSearch] = useState('');
+  const [showPegawaiDropdown, setShowPegawaiDropdown] = useState(false);
+  const [selectedPegawai, setSelectedPegawai] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && isAdmin) {
+      bookingApi.getPegawaiList()
+        .then(res => setPegawaiList(res.data || []))
+        .catch(() => setPegawaiList([]));
+    }
+  }, [isOpen, isAdmin]);
+
+  const filteredPegawaiList = useMemo(() => {
+    if (!pegawaiSearch.trim()) return pegawaiList.slice(0, 10);
+    const term = pegawaiSearch.toLowerCase().trim();
+    return pegawaiList.filter(p =>
+      (p.name && p.name.toLowerCase().includes(term)) ||
+      (p.nip && p.nip.toLowerCase().includes(term))
+    ).slice(0, 10);
+  }, [pegawaiList, pegawaiSearch]);
 
   const [form, setForm] = useState({
     startTime: '',
@@ -56,6 +79,8 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
       setAvailChecked(false);
       setAvailableVehicles([]);
       setVehicleDetailModal(null);
+      setSelectedPegawai(null);
+      setPegawaiSearch('');
       
       const targetDate = selectedDate || new Date();
       const yyyy = targetDate.getFullYear();
@@ -123,6 +148,14 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
       toast.error('Pilih kendaraan terlebih dahulu');
       return;
     }
+    if (!form.keperluan || !form.keperluan.trim()) {
+      toast.error('Keperluan / Tujuan wajib diisi');
+      return;
+    }
+    if (isAdmin && !selectedPegawai && !form.adminUserName) {
+      toast.error('Pilih pegawai untuk Booking Untuk terlebih dahulu');
+      return;
+    }
 
     setLoading(true);
     showLoading(isAdmin ? 'Membuat booking mandatory...' : 'Mengirim pengajuan peminjaman...');
@@ -139,8 +172,10 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
     const selectedVehicle = availableVehicles.find(v => v.id === form.vehicleId);
 
     const bookingPayload = {
-      userId: user.id,
-      userName: isAdmin ? form.adminUserName : user.name,
+      userId: isAdmin && selectedPegawai ? selectedPegawai.id : user.id,
+      targetUserId: isAdmin && selectedPegawai ? selectedPegawai.id : undefined,
+      targetUserName: isAdmin ? (selectedPegawai?.name || form.adminUserName) : undefined,
+      userName: isAdmin ? (selectedPegawai?.name || form.adminUserName) : user.name,
       startTime: startIso,
       endTime: endIso,
       keperluan: form.keperluan,
@@ -253,15 +288,77 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
 
       {/* Date and Time Inputs */}
       {isAdmin && (
-        <FormInput
-          label="Nama Peminjam (Mandatory)"
-          id="adminUserName"
-          type="text"
-          required
-          value={form.adminUserName}
-          onChange={(e) => setForm({...form, adminUserName: e.target.value})}
-          placeholder="Nama Peminjam / Acara"
-        />
+        <div className="space-y-2 relative">
+          <label className="block text-sm font-semibold text-[color:var(--color-heading)]">
+            Booking Untuk (Pilih Pegawai) <span className="text-danger">*</span>
+          </label>
+          
+          {selectedPegawai ? (
+            <div className="flex items-center justify-between p-3.5 rounded-2xl border-2 border-djp-blue bg-djp-blue/5">
+              <div>
+                <p className="font-heading font-bold text-sm text-[color:var(--color-heading)]">{selectedPegawai.name}</p>
+                <p className="text-xs text-[color:var(--color-text-soft)]">NIP: {selectedPegawai.nip} {selectedPegawai.jabatan ? `• ${selectedPegawai.jabatan}` : ''}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPegawai(null);
+                  setPegawaiSearch('');
+                }}
+                className="text-xs font-semibold text-danger hover:underline px-2 py-1"
+              >
+                Ganti
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="relative">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--color-text-soft)]" />
+                <input
+                  type="text"
+                  placeholder="Cari Nama atau NIP Pegawai..."
+                  value={pegawaiSearch}
+                  onChange={(e) => {
+                    setPegawaiSearch(e.target.value);
+                    setShowPegawaiDropdown(true);
+                  }}
+                  onFocus={() => setShowPegawaiDropdown(true)}
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl border bg-[color:var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-djp-blue/30 focus:border-djp-blue transition-all"
+                  style={{ borderColor: 'var(--color-border)' }}
+                />
+              </div>
+
+              {showPegawaiDropdown && (
+                <div className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto z-50 rounded-2xl border shadow-xl bg-[color:var(--color-surface)] divide-y divide-[color:var(--color-border)]" style={{ borderColor: 'var(--color-border)' }}>
+                  {filteredPegawaiList.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-[color:var(--color-text-soft)]">
+                      Pegawai tidak ditemukan
+                    </div>
+                  ) : (
+                    filteredPegawaiList.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPegawai(p);
+                          setShowPegawaiDropdown(false);
+                          setForm({ ...form, adminUserName: p.name });
+                        }}
+                        className="w-full text-left p-3 hover:bg-djp-blue/5 transition-colors flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-semibold text-sm text-[color:var(--color-heading)]">{p.name}</p>
+                          <p className="text-xs text-[color:var(--color-text-soft)]">NIP: {p.nip} {p.jabatan ? `• ${p.jabatan}` : ''}</p>
+                        </div>
+                        <CheckCircle size={16} className="text-djp-blue" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
       {mode === 'form_single' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">

@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
       <PageHeader
         title="Ringkasan operasional kendaraan"
         subtitle="Awasi antrean booking, pemakaian kendaraan, dan kalender."
-        actions={<div className="hidden"><Button onClick={() => setIsBookingModalOpen(true)} variant="primary" size="md"><span className="hidden sm:inline">Buat Peminjaman (Mandatory)</span><span className="sm:hidden">+ Mandatory</span></Button></div>}
+        actions={<Button onClick={() => setIsBookingModalOpen(true)} variant="primary" size="md"><span className="hidden sm:inline">Buat Peminjaman (Mandatory)</span><span className="sm:hidden">+ Mandatory</span></Button>}
       />
 
       {/* Interactive Fleet Command Center */}

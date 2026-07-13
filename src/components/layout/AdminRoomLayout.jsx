@@ -371,7 +371,7 @@ export default function AdminRoomLayout({ children }) {
             <div className="grid grid-cols-2 gap-4">
               <button onClick={() => { setActionModalOpen(false); setBookingModalOpen(true); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><Building2 size={24} /></div>
-                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Booking<br/>Ruangan</span>
+                <span className="text-sm font-semibold text-center text-[color:var(--color-heading)]">Booking Ruangan<br/>(Mandatory)</span>
               </button>
               <button onClick={() => { setActionModalOpen(false); navigate('/admin/room/requests'); }} className="flex flex-col items-center gap-3 p-4 rounded-[1.25rem] border border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)] hover:bg-blue-500/5 hover:border-blue-500/30 transition-all active:scale-95">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"><CalendarCheck size={24} /></div>
