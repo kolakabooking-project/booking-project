@@ -143,7 +143,7 @@ export default function LoginPage() {
               {/* NIP Input */}
               <div className="flex flex-col">
                 <label htmlFor="nip" className="form-label text-slate-600 dark:text-white/70">
-                  NIP
+                  NIP Pendek
                 </label>
                 <div className="group/input relative transition-transform duration-200 focus-within:scale-[1.01]">
                   <div className="absolute -inset-[0.5px] bg-gradient-to-r from-blue-500/20 via-blue-400/35 to-blue-500/20 dark:from-white/15 dark:via-blue-400/25 dark:to-white/15 rounded-xl opacity-0 group-focus-within/input:opacity-100 transition-all duration-300 pointer-events-none" />
@@ -155,7 +155,7 @@ export default function LoginPage() {
                       required
                       value={nip}
                       onChange={(e) => setNip(e.target.value)}
-                      placeholder="Masukkan NIP"
+                      placeholder="Masukkan NIP Pendek"
                       autoComplete="username"
                       className="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 h-11 transition-all duration-500 pl-10 pr-4 text-sm font-medium outline-none"
                     />
