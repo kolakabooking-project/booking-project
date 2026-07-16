@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { user, account, session, systemSettings, booking, driver, vehicle, room, roomBooking } from '../db/schema.js';
-import { eq, ne, desc, count, ilike, or, and } from 'drizzle-orm';
+import { eq, ne, desc, count, ilike, or, and, inArray } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors.js';
 import { logActivity } from './activity.service.js';
@@ -582,7 +582,7 @@ export async function toggleService(
  * Securely reset bookings, vehicles, or drivers with password verification.
  */
 export async function resetData(
-  type: 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking',
+  type: 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking' | 'users',
   superadminPasswordConfirm: string,
   superadminId: string,
   actorName: string,
@@ -659,6 +659,26 @@ export async function resetData(
       userName: actorName,
       action: 'SERVICE_TOGGLED',
       detail: 'Reset data ruangan (rooms) berhasil dilakukan oleh Superadmin.',
+      ipAddress,
+    });
+  } else if (type === 'users') {
+    const targetUsers = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.role, 'user'));
+    
+    const userIds = targetUsers.map(u => u.id);
+    if (userIds.length > 0) {
+      await db.delete(session).where(inArray(session.userId, userIds));
+      await db.delete(account).where(inArray(account.userId, userIds));
+      await db.delete(user).where(eq(user.role, 'user'));
+    }
+
+    await logActivity({
+      userId: superadminId,
+      userName: actorName,
+      action: 'SERVICE_TOGGLED',
+      detail: `Reset data pegawai (menghapus ${userIds.length} akun dengan role 'user') berhasil dilakukan oleh Superadmin.`,
       ipAddress,
     });
   }

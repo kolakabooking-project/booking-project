@@ -117,6 +117,7 @@ export default function SuperadminDashboard() {
         case 'vehicle': typeLabel = 'kendaraan'; break;
         case 'room_booking': typeLabel = 'peminjaman ruangan'; break;
         case 'room': typeLabel = 'ruangan'; break;
+        case 'users': typeLabel = 'pegawai (role user)'; break;
       }
       toast.success(`Reset data ${typeLabel} berhasil dilakukan!`);
       setResetType(null);
@@ -525,6 +526,17 @@ export default function SuperadminDashboard() {
                 </span>
                 <ChevronRight size={14} />
               </button>
+
+              <button
+                onClick={() => setResetType('users')}
+                className="w-full flex items-center justify-between p-3 rounded-2xl border border-pink-500/20 bg-pink-500/5 hover:bg-pink-500/10 transition-colors text-xs font-semibold text-pink-600 dark:text-pink-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Trash2 size={14} />
+                  Reset Semua Pegawai (Role User)
+                </span>
+                <ChevronRight size={14} />
+              </button>
             </div>
           </div>
         </div>
@@ -547,7 +559,8 @@ export default function SuperadminDashboard() {
                  : resetType === 'driver' ? 'Pengemudi' 
                  : resetType === 'vehicle' ? 'Kendaraan' 
                  : resetType === 'room_booking' ? 'Booking / Peminjaman Ruangan' 
-                 : 'Ruangan'}
+                 : resetType === 'room' ? 'Ruangan'
+                 : 'Pegawai (Role User)'}
               </span> pada database secara permanen. Tindakan ini TIDAK DAPAT DIBATALKAN.
             </div>
           </div>

@@ -365,8 +365,8 @@ router.post('/reset', async (req: Request, res: Response) => {
     const actor = (req as any).user;
     const { type, password } = req.body;
 
-    if (!type || !['booking', 'driver', 'vehicle', 'room', 'room_booking'].includes(type)) {
-      res.status(400).json({ error: 'Tipe reset tidak valid (booking, driver, vehicle, room, room_booking).' });
+    if (!type || !['booking', 'driver', 'vehicle', 'room', 'room_booking', 'users'].includes(type)) {
+      res.status(400).json({ error: 'Tipe reset tidak valid (booking, driver, vehicle, room, room_booking, users).' });
       return;
     }
 
@@ -376,7 +376,7 @@ router.post('/reset', async (req: Request, res: Response) => {
     }
 
     const result = await superadminService.resetData(
-      type as 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking',
+      type as 'booking' | 'driver' | 'vehicle' | 'room' | 'room_booking' | 'users',
       password,
       actor.id,
       actor.name,
