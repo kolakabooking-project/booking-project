@@ -29,6 +29,11 @@ export const auth: any = betterAuth({
         required: true,
         input: true,
       },
+      nipPanjang: {
+        type: 'string',
+        required: false,
+        input: true,
+      },
       role: {
         type: 'string',
         required: false,

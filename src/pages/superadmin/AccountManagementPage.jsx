@@ -2,8 +2,9 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, Edit } from 'lucide-react';
+import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, Edit, Upload } from 'lucide-react';
 import useAccountManagement from '../../hooks/useAccountManagement';
+import ImportUsersModal from '../../components/admin/ImportUsersModal';
 
 const ROLE_BADGES = {
   user: { label: 'User', className: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' },
@@ -15,15 +16,15 @@ export default function AccountManagementPage() {
   const { state, actions } = useAccountManagement();
   const {
     users, loading, search, filterRole,
-    createOpen, editOpen, deleteTarget, resetTarget, roleTarget,
+    createOpen, editOpen, importOpen, deleteTarget, resetTarget, roleTarget,
     createForm, editForm, submitting,
     currentPage, totalUsers, totalPages,
   } = state;
   const {
-    setSearch, setFilterRole, setCreateOpen, setEditOpen,
+    setSearch, setFilterRole, setCreateOpen, setEditOpen, setImportOpen,
     setDeleteTarget, setResetTarget, setRoleTarget,
     setCreateForm, setEditForm, handleCreate, handleEditOpen, handleEditSubmit, handleDelete,
-    handleReset, handleRoleChange, handlePageChange
+    handleReset, handleRoleChange, handlePageChange, refresh
   } = actions;
 
   const itemsPerPage = 10;
@@ -55,10 +56,16 @@ export default function AccountManagementPage() {
           <option value="admin">Admin</option>
           <option value="superadmin">Superadmin</option>
         </select>
-        <Button onClick={() => setCreateOpen(true)} className="flex items-center gap-2">
-          <Plus size={16} />
-          Buat Akun
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="flex items-center gap-2 flex-1 sm:flex-initial">
+            <Upload size={16} />
+            Import CSV
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 flex-1 sm:flex-initial">
+            <Plus size={16} />
+            Buat Akun
+          </Button>
+        </div>
       </div>
 
       {/* Users Table */}
@@ -68,6 +75,7 @@ export default function AccountManagementPage() {
             <thead>
               <tr className="border-b text-left" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
                 <th className="px-4 py-3 font-heading font-bold text-[color:var(--color-text-soft)] text-xs uppercase tracking-wider">NIP</th>
+                <th className="px-4 py-3 font-heading font-bold text-[color:var(--color-text-soft)] text-xs uppercase tracking-wider hidden sm:table-cell">NIP Panjang</th>
                 <th className="px-4 py-3 font-heading font-bold text-[color:var(--color-text-soft)] text-xs uppercase tracking-wider">Nama</th>
                 <th className="px-4 py-3 font-heading font-bold text-[color:var(--color-text-soft)] text-xs uppercase tracking-wider hidden md:table-cell">Jabatan</th>
                 <th className="px-4 py-3 font-heading font-bold text-[color:var(--color-text-soft)] text-xs uppercase tracking-wider">Role</th>
@@ -77,7 +85,7 @@ export default function AccountManagementPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center">
+                  <td colSpan={6} className="px-4 py-12 text-center">
                     <div className="flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-djp-blue border-t-transparent rounded-full animate-spin" />
                     </div>
@@ -85,7 +93,7 @@ export default function AccountManagementPage() {
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-[color:var(--color-text-soft)]">
+                  <td colSpan={6} className="px-4 py-12 text-center text-[color:var(--color-text-soft)]">
                     {search || filterRole ? 'Tidak ada akun yang cocok dengan filter' : 'Belum ada akun terdaftar'}
                   </td>
                 </tr>
@@ -93,6 +101,7 @@ export default function AccountManagementPage() {
                 currentItems.map((u) => (
                   <tr key={u.id} className="border-b last:border-0 hover:bg-[color:var(--color-surface-muted)] transition-colors" style={{ borderColor: 'var(--color-border)' }}>
                     <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-heading)]">{u.nip}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-text-soft)] hidden sm:table-cell">{u.nipPanjang || '-'}</td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-[color:var(--color-heading)] truncate max-w-[200px]">{u.name}</p>
                     </td>
@@ -192,8 +201,12 @@ export default function AccountManagementPage() {
             </p>
           </div>
           <div>
-            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP <span className="text-danger">*</span></label>
-            <input type="text" value={createForm.nip} onChange={(e) => setCreateForm({ ...createForm, nip: e.target.value })} className="form-control" placeholder="Masukkan NIP" required />
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP (Pendek) <span className="text-danger">*</span></label>
+            <input type="text" value={createForm.nip} onChange={(e) => setCreateForm({ ...createForm, nip: e.target.value })} className="form-control" placeholder="Masukkan NIP pendek (9 digit)" required />
+          </div>
+          <div>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP Panjang (18 Digit / Opsional)</label>
+            <input type="text" value={createForm.nipPanjang || ''} onChange={(e) => setCreateForm({ ...createForm, nipPanjang: e.target.value })} className="form-control" placeholder="Contoh: 198001012005011001" />
           </div>
           <div>
             <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">Nama Lengkap <span className="text-danger">*</span></label>
@@ -221,8 +234,12 @@ export default function AccountManagementPage() {
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Akun" size="sm">
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP <span className="text-danger">*</span></label>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP (Pendek) <span className="text-danger">*</span></label>
             <input type="text" value={editForm.nip} onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })} className="form-control" placeholder="Masukkan NIP" required />
+          </div>
+          <div>
+            <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">NIP Panjang (18 Digit / Opsional)</label>
+            <input type="text" value={editForm.nipPanjang || ''} onChange={(e) => setEditForm({ ...editForm, nipPanjang: e.target.value })} className="form-control" placeholder="Contoh: 198001012005011001" />
           </div>
           <div>
             <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">Nama Lengkap <span className="text-danger">*</span></label>
@@ -295,6 +312,13 @@ export default function AccountManagementPage() {
         message={`Password akun ${resetTarget?.name} (NIP: ${resetTarget?.nip}) akan direset ke default (Kolaka2026!). User akan di-logout dan harus login ulang.`}
         confirmText="Ya, Reset"
         variant="warning"
+      />
+
+      {/* Import CSV Modal */}
+      <ImportUsersModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={refresh}
       />
     </div>
   );

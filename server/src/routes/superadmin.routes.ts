@@ -4,7 +4,9 @@ import * as superadminService from '../services/superadmin.service.js';
 import * as activityService from '../services/activity.service.js';
 import * as announcementService from '../services/announcement.service.js';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
 
+const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
 // Export limiter — very strict to prevent CU spikes from data exports
@@ -119,7 +121,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
 router.post('/users', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
-    const { nip, name, jabatan, role } = req.body;
+    const { nip, nipPanjang, name, jabatan, role } = req.body;
 
     if (!nip || !name) {
       res.status(400).json({ error: 'NIP dan nama wajib diisi.' });
@@ -127,7 +129,7 @@ router.post('/users', async (req: Request, res: Response) => {
     }
 
     const created = await superadminService.createUser(
-      { nip, name, jabatan, role: role || 'user' },
+      { nip, nipPanjang, name, jabatan, role: role || 'user' },
       actor.id,
       actor.name,
       getClientIp(req)
@@ -145,16 +147,55 @@ router.post('/users', async (req: Request, res: Response) => {
 router.put('/users/:id', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
-    const { nip, name, jabatan } = req.body;
+    const { nip, nipPanjang, name, jabatan } = req.body;
 
     const result = await superadminService.updateUser(
       req.params.id as string,
-      { nip, name, jabatan },
+      { nip, nipPanjang, name, jabatan },
       actor.id,
       actor.name,
       getClientIp(req)
     );
 
+    res.json({ data: result });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * POST /api/superadmin/users/import-preview — Preview CSV employees
+ */
+router.post('/users/import-preview', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    let fileBuffer: Buffer | string | undefined = req.file?.buffer;
+    if (!fileBuffer && req.body?.csvText) {
+      fileBuffer = req.body.csvText;
+    }
+    if (!fileBuffer) {
+      res.status(400).json({ error: 'File CSV tidak ditemukan.' });
+      return;
+    }
+    const preview = await superadminService.previewCsvUsers(fileBuffer);
+    res.json({ data: preview });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
+ * POST /api/superadmin/users/import-commit — Commit CSV employees
+ */
+router.post('/users/import-commit', async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const { newRows, updateRows } = req.body;
+    const result = await superadminService.commitCsvUsers(
+      { newRows, updateRows },
+      actor?.id || 'system',
+      actor?.name || 'System',
+      getClientIp(req)
+    );
     res.json({ data: result });
   } catch (err: any) {
     handleError(err, res);

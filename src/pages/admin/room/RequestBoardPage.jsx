@@ -207,7 +207,7 @@ export default function RequestBoardPage() {
                 <p className="mt-1 text-xs text-gray-500 font-mono">#{b.id.slice(-6)}</p>
               </td>
               <td>
-                <div className="font-medium text-gray-700 dark:text-gray-300">{formatDateShort(b.startTime)}</div>
+                <div className="font-medium text-gray-700 dark:text-gray-300">{formatDateShort(b.startTime)} - {formatDateShort(b.endTime)}</div>
                 <div className="mt-1 text-xs text-gray-500">{formatTime(b.startTime)} - {formatTime(b.endTime)}</div>
               </td>
               <td className="max-w-[200px]">
@@ -244,7 +244,7 @@ export default function RequestBoardPage() {
               <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-2">{b.keperluan}</p>
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                 <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {formatDateShort(b.startTime)} • {formatTime(b.startTime)}-{formatTime(b.endTime)}
+                  {formatDateShort(b.startTime)} - {formatDateShort(b.endTime)} • {formatTime(b.startTime)}-{formatTime(b.endTime)}
                 </div>
                 <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 truncate ml-2 max-w-[120px]">{b.roomName}</span>
               </div>
@@ -265,7 +265,7 @@ export default function RequestBoardPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
               <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Pegawai</span><p className="font-medium text-gray-900 dark:text-white">{modal.userName}</p></div>
               <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Status</span><div className="mt-1"><Badge status={modal.status} /></div></div>
-              <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Waktu</span><p className="font-medium text-gray-900 dark:text-white">{formatDateShort(modal.startTime)} {formatTime(modal.startTime)}-{formatTime(modal.endTime)}</p></div>
+              <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Waktu</span><p className="font-medium text-gray-900 dark:text-white">{formatDateShort(modal.startTime)} - {formatDateShort(modal.endTime)} ({formatTime(modal.startTime)}-{formatTime(modal.endTime)})</p></div>
               <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Ruangan</span><p className="font-bold text-blue-600">{modal.roomName}</p></div>
               <div><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Peserta</span><p className="font-medium text-gray-900 dark:text-white">{modal.jumlahPeserta} orang</p></div>
               <div className="col-span-2"><span className="text-xs font-semibold uppercase tracking-wider text-gray-500 block mb-1">Keperluan</span><p className="font-medium text-gray-900 dark:text-white">{modal.keperluan}</p></div>

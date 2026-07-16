@@ -13,11 +13,12 @@ export default function useAccountManagement() {
   
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [roleTarget, setRoleTarget] = useState(null);
-  const [createForm, setCreateForm] = useState({ nip: '', name: '', jabatan: '', role: 'user' });
-  const [editForm, setEditForm] = useState({ id: '', nip: '', name: '', jabatan: '' });
+  const [createForm, setCreateForm] = useState({ nip: '', nipPanjang: '', name: '', jabatan: '', role: 'user' });
+  const [editForm, setEditForm] = useState({ id: '', nip: '', nipPanjang: '', name: '', jabatan: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -66,6 +67,7 @@ export default function useAccountManagement() {
     e.preventDefault();
     
     const cleanNip = createForm.nip.trim();
+    const cleanNipPanjang = createForm.nipPanjang?.trim() || '';
     const cleanName = createForm.name.trim().toUpperCase();
     const cleanJabatan = createForm.jabatan.trim();
 
@@ -85,13 +87,14 @@ export default function useAccountManagement() {
     try {
       await superadminApi.createUser({
         nip: cleanNip,
+        nipPanjang: cleanNipPanjang,
         name: cleanName,
         jabatan: cleanJabatan,
         role: createForm.role
       });
       toast.success(`Akun ${cleanName} berhasil dibuat`);
       setCreateOpen(false);
-      setCreateForm({ nip: '', name: '', jabatan: '', role: 'user' });
+      setCreateForm({ nip: '', nipPanjang: '', name: '', jabatan: '', role: 'user' });
       refresh();
     } catch (err) {
       toast.error(err.message || 'Gagal membuat akun');
@@ -106,6 +109,7 @@ export default function useAccountManagement() {
     setEditForm({
       id: user.id,
       nip: user.nip || '',
+      nipPanjang: user.nipPanjang || '',
       name: user.name || '',
       jabatan: user.jabatan || '',
     });
@@ -117,6 +121,7 @@ export default function useAccountManagement() {
     e.preventDefault();
     
     const cleanNip = editForm.nip.trim();
+    const cleanNipPanjang = editForm.nipPanjang?.trim() || '';
     const cleanName = editForm.name.trim().toUpperCase();
     const cleanJabatan = editForm.jabatan.trim();
 
@@ -135,6 +140,7 @@ export default function useAccountManagement() {
     try {
       await superadminApi.updateUser(editForm.id, {
         nip: cleanNip,
+        nipPanjang: cleanNipPanjang,
         name: cleanName,
         jabatan: cleanJabatan,
       });
@@ -199,7 +205,7 @@ export default function useAccountManagement() {
   return {
     state: {
       users, loading, search, filterRole,
-      createOpen, editOpen, deleteTarget, resetTarget, roleTarget,
+      createOpen, editOpen, importOpen, deleteTarget, resetTarget, roleTarget,
       createForm, editForm, submitting,
       currentPage, totalUsers, totalPages,
     },
@@ -208,6 +214,7 @@ export default function useAccountManagement() {
       setFilterRole,
       setCreateOpen,
       setEditOpen,
+      setImportOpen,
       setDeleteTarget,
       setResetTarget,
       setRoleTarget,
@@ -220,7 +227,8 @@ export default function useAccountManagement() {
       handleReset,
       handleRoleChange,
       handlePageChange,
-      applyFilters
+      applyFilters,
+      refresh
     }
   };
 }

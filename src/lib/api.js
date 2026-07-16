@@ -313,6 +313,8 @@ export const superadminApi = {
   deleteUser: (id) => request(`/superadmin/users/${id}`, { method: 'DELETE' }),
   changeRole: (id, role) => request(`/superadmin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   resetPassword: (id) => request(`/superadmin/users/${id}/reset-password`, { method: 'PATCH' }),
+  previewImportUsers: (formData) => request('/superadmin/users/import-preview', { method: 'POST', body: formData }),
+  commitImportUsers: (payload) => request('/superadmin/users/import-commit', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Service Control
   getServiceStatus: () => request('/superadmin/settings/service-status'),

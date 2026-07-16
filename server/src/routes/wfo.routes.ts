@@ -116,50 +116,83 @@ router.post('/import-pdf', roleGuard('admin'), upload.single('file'), async (req
     // Process text
     const lines = text.split('\n').map((line: string) => line.trim()).filter((line: string) => line);
     
-    let currentSection: string | null = null;
-    const wfoNames: string[] = [];
-    
-    // Regex for NIP (18 digits)
-    const nipRegex = /'?(\d{18})/;
+    let currentSection: 'WFO' | 'WFH' | null = null;
+    const wfoLines: string[] = [];
+    const wfhLines: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.includes('Daftar Pegawai WFO')) {
+      const lower = line.toLowerCase();
+
+      // Case-insensitive & robust detection of section headers
+      if (lower.includes('daftar pegawai wfo') || (lower.includes('pegawai wfo') && lower.includes('tanggal'))) {
         currentSection = 'WFO';
         continue;
-      } else if (line.includes('Daftar Pegawai WFH')) {
+      } else if (lower.includes('daftar pegawai wfh') || (lower.includes('pegawai wfh') && lower.includes('tanggal'))) {
         currentSection = 'WFH';
         continue;
       }
       
       if (currentSection === 'WFO') {
-        const nipMatch = line.match(nipRegex);
-        if (nipMatch) {
-          // line format is roughly: "1 Nama Pegawai '197..."
-          // Let's extract the name by taking everything before the NIP and stripping the leading number.
-          const beforeNip = line.split(nipMatch[0])[0].trim();
-          // Remove the leading number (e.g., "1 ")
-          const nameMatch = beforeNip.match(/^\d+\s+(.*)$/);
-          if (nameMatch && nameMatch[1]) {
-            wfoNames.push(nameMatch[1].trim());
-          }
-        }
+        wfoLines.push(line);
+      } else if (currentSection === 'WFH') {
+        wfhLines.push(line);
       }
     }
 
     // Now find the users in the DB
     const allUsers = await listAllUsers();
-    const wfoIds: string[] = [];
-    const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const dbUsers = allUsers.map((u: any) => ({ ...u, normalized: normalizeName(u.name) }));
+    const wfoIdsSet = new Set<string>();
 
-    for (const pdfName of wfoNames) {
-      const normalized = normalizeName(pdfName);
-      const match = dbUsers.find((u: any) => u.normalized === normalized);
-      if (match) {
-        wfoIds.push(match.id);
+    // Helper for normalizing string for comparison
+    const cleanDigits = (s: string) => s.replace(/[^0-9]/g, '');
+    const cleanNameForMatch = (name: string) => {
+      // Take base name before comma (e.g. "Budi Santoso, S.Kom" -> "Budi Santoso")
+      return name.split(',')[0].toLowerCase().replace(/[^a-z]/g, '');
+    };
+
+    // 1. Primary & most accurate match: by 18-digit NIP extracted from WFO lines
+    const combinedWfoText = wfoLines.join('\n');
+    const extractedNips = combinedWfoText.match(/\b\d{18}\b/g) || [];
+    const wfoNipsSet = new Set(extractedNips);
+
+    for (const user of allUsers) {
+      if (user.nip) {
+        const userNipClean = cleanDigits(user.nip);
+        if (userNipClean.length === 18 && wfoNipsSet.has(userNipClean)) {
+          wfoIdsSet.add(user.id);
+        }
       }
     }
+
+    // 2. Secondary fallback match: by normalized Name for rows/users missed by NIP
+    for (const user of allUsers) {
+      if (wfoIdsSet.has(user.id)) continue;
+
+      const userCleanName = cleanNameForMatch(user.name);
+      if (userCleanName.length < 3) continue;
+
+      for (const line of wfoLines) {
+        // Strip out any NIP numbers and leading row numbering before checking names
+        const lineWithoutNipOrNumber = line
+          .replace(/\d{18}/g, '')
+          .replace(/^\d+[\.\)\s]*/, '')
+          .trim();
+        const lineCleanName = cleanNameForMatch(lineWithoutNipOrNumber);
+
+        if (lineCleanName && (
+          lineCleanName === userCleanName ||
+          (userCleanName.length >= 5 && lineCleanName.includes(userCleanName)) ||
+          (lineCleanName.length >= 5 && userCleanName.includes(lineCleanName))
+        )) {
+          wfoIdsSet.add(user.id);
+          break;
+        }
+      }
+    }
+
+    const wfoIds = Array.from(wfoIdsSet);
+    console.log(`[WFO Import] Found WFO section: ${wfoLines.length > 0}, Extracted NIPs: ${wfoNipsSet.size}, Total matched DB users: ${wfoIds.length}`);
 
     res.json({ data: { wfoIds } });
   } catch (err: any) {

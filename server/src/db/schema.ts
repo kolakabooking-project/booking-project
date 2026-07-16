@@ -15,6 +15,7 @@ export const user = pgTable('user', {
 
   // ── Custom fields ──
   nip: text('nip').notNull().unique(),
+  nipPanjang: text('nip_panjang'),
   role: text('role', { enum: ['user', 'admin', 'superadmin'] }).notNull().default('user'),
   jabatan: text('jabatan'),
   username: text('username').unique(),

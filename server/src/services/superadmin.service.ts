@@ -88,6 +88,7 @@ export async function listAllUsers() {
       id: user.id,
       name: user.name,
       nip: user.nip,
+      nipPanjang: user.nipPanjang,
       email: user.email,
       role: user.role,
       jabatan: user.jabatan,
@@ -109,6 +110,7 @@ export async function listRecentUsers(limit: number = 6) {
       id: user.id,
       name: user.name,
       nip: user.nip,
+      nipPanjang: user.nipPanjang,
       role: user.role,
       jabatan: user.jabatan,
     })
@@ -138,6 +140,7 @@ export async function listUsers(filters?: {
       or(
         ilike(user.name, term),
         ilike(user.nip, term),
+        ilike(user.nipPanjang, term),
         ilike(user.jabatan, term),
       )
     );
@@ -155,6 +158,7 @@ export async function listUsers(filters?: {
         id: user.id,
         name: user.name,
         nip: user.nip,
+        nipPanjang: user.nipPanjang,
         email: user.email,
         role: user.role,
         jabatan: user.jabatan,
@@ -223,6 +227,7 @@ export async function getUserStats() {
  */
 export async function createUser(data: {
   nip: string;
+  nipPanjang?: string;
   name: string;
   jabatan?: string;
   role: 'user' | 'admin';
@@ -248,6 +253,7 @@ export async function createUser(data: {
         password: DEFAULT_PASSWORD,
         username: data.nip,
         nip: data.nip,
+        nipPanjang: data.nipPanjang || null,
         role: data.role,
         jabatan: data.jabatan || null,
       },
@@ -255,6 +261,10 @@ export async function createUser(data: {
 
     if (!result?.user) {
       throw new Error('Gagal membuat akun.');
+    }
+
+    if (data.nipPanjang && result.user.id) {
+      await db.update(user).set({ nipPanjang: data.nipPanjang }).where(eq(user.id, result.user.id));
     }
 
     await logActivity({
@@ -285,6 +295,7 @@ export async function updateUser(
   data: {
     name?: string;
     nip?: string;
+    nipPanjang?: string;
     jabatan?: string;
   },
   actorId: string,
@@ -310,6 +321,7 @@ export async function updateUser(
   const updateData: any = { updatedAt: new Date() };
   if (data.name !== undefined) updateData.name = data.name;
   if (data.nip !== undefined) updateData.nip = data.nip;
+  if (data.nipPanjang !== undefined) updateData.nipPanjang = data.nipPanjang;
   if (data.jabatan !== undefined) updateData.jabatan = data.jabatan;
 
   // We should also update the username in the auth system if NIP changes,
@@ -653,3 +665,224 @@ export async function resetData(
 
   return { success: true };
 }
+
+/**
+ * Parse & preview CSV employees (`NIP PENDEK, NAMA, NIP PANJANG, JABATAN`).
+ */
+export async function previewCsvUsers(fileBuffer: Buffer | string) {
+  const csvText = Buffer.isBuffer(fileBuffer) ? fileBuffer.toString('utf-8') : fileBuffer;
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+  if (lines.length === 0) {
+    throw new ValidationError('File CSV kosong.');
+  }
+
+  // Remove BOM if present
+  let firstLine = lines[0];
+  if (firstLine.charCodeAt(0) === 0xFEFF) {
+    firstLine = firstLine.slice(1);
+  }
+  lines[0] = firstLine;
+
+  // Auto-detect delimiter based on first row
+  let delimiter = ',';
+  const headerOrFirst = lines[0] || '';
+  const semiCount = (headerOrFirst.match(/;/g) || []).length;
+  const tabCount = (headerOrFirst.match(/\t/g) || []).length;
+  const commaCount = (headerOrFirst.match(/,/g) || []).length;
+
+  if (semiCount >= 2 && semiCount >= commaCount && semiCount >= tabCount) {
+    delimiter = ';';
+  } else if (tabCount >= 2 && tabCount >= commaCount && tabCount >= semiCount) {
+    delimiter = '\t';
+  }
+
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result.map(col => col.replace(/^"+|"+$/g, '').trim());
+  };
+
+  const firstRowCols = parseLine(lines[0]);
+  const isHeader = firstRowCols.some(c => 
+    c.toLowerCase().includes('nip') || 
+    c.toLowerCase().includes('nama') || 
+    c.toLowerCase().includes('jabatan')
+  );
+
+  const dataLines = isHeader ? lines.slice(1) : lines;
+
+  const allUsers = await db
+    .select({
+      id: user.id,
+      nip: user.nip,
+      nipPanjang: user.nipPanjang,
+      name: user.name,
+      jabatan: user.jabatan,
+      role: user.role
+    })
+    .from(user);
+
+  const newRows: any[] = [];
+  const updateRows: any[] = [];
+  let unchangedCount = 0;
+
+  for (const line of dataLines) {
+    const cols = parseLine(line);
+    if (cols.length < 2) continue;
+
+    const nipPendek = (cols[0] || '').trim();
+    const nama = (cols[1] || '').trim().toUpperCase();
+    const nipPanjang = (cols[2] || '').trim();
+    const jabatan = (cols[3] || '').trim();
+
+    if (!nipPendek || !nama) continue;
+
+    const matchUser = allUsers.find(u => 
+      (u.nip && u.nip.trim() === nipPendek) || 
+      (nipPanjang && u.nipPanjang && u.nipPanjang.trim() === nipPanjang) ||
+      (nipPanjang && u.nip && u.nip.trim() === nipPanjang) ||
+      (u.nipPanjang && u.nipPanjang.trim() === nipPendek)
+    );
+
+    if (matchUser) {
+      const currentName = matchUser.name || '';
+      const currentNipPanjang = matchUser.nipPanjang || '';
+      const currentJabatan = matchUser.jabatan || '';
+
+      const nameChanged = currentName.trim().toUpperCase() !== nama.trim().toUpperCase();
+      const nipPanjangChanged = (nipPanjang || '') !== currentNipPanjang;
+      const jabatanChanged = (jabatan || '') !== currentJabatan;
+
+      if (nameChanged || nipPanjangChanged || jabatanChanged) {
+        updateRows.push({
+          status: 'UPDATE',
+          userId: matchUser.id,
+          nipPendek: matchUser.nip,
+          nama,
+          nipPanjang,
+          jabatan,
+          before: {
+            name: currentName,
+            nipPanjang: currentNipPanjang || '-',
+            jabatan: currentJabatan || '-'
+          },
+          after: {
+            name: nama,
+            nipPanjang: nipPanjang || '-',
+            jabatan: jabatan || '-'
+          }
+        });
+      } else {
+        unchangedCount++;
+      }
+    } else {
+      newRows.push({
+        status: 'NEW',
+        nipPendek,
+        nama,
+        nipPanjang,
+        jabatan
+      });
+    }
+  }
+
+  return {
+    newRows,
+    updateRows,
+    unchangedCount,
+    totalParsed: newRows.length + updateRows.length + unchangedCount
+  };
+}
+
+/**
+ * Commit CSV imported employees with guaranteed relational data safety.
+ */
+export async function commitCsvUsers(
+  payload: { newRows: any[]; updateRows: any[] },
+  actorId: string,
+  actorName: string,
+  ipAddress?: string
+) {
+  const { newRows = [], updateRows = [] } = payload;
+  let createdCount = 0;
+  let updatedCount = 0;
+  const errors: string[] = [];
+
+  for (const row of newRows) {
+    try {
+      await createUser(
+        {
+          nip: row.nipPendek,
+          name: row.nama,
+          nipPanjang: row.nipPanjang || undefined,
+          jabatan: row.jabatan || undefined,
+          role: 'user'
+        },
+        actorId,
+        actorName,
+        ipAddress
+      );
+      createdCount++;
+    } catch (err: any) {
+      errors.push(`Gagal buat akun NIP ${row.nipPendek} (${row.nama}): ${err.message}`);
+    }
+  }
+
+  for (const row of updateRows) {
+    if (!row.userId) continue;
+    try {
+      const updateData: any = {
+        name: row.nama,
+        updatedAt: new Date()
+      };
+      if (row.nipPanjang !== undefined) updateData.nipPanjang = row.nipPanjang || null;
+      if (row.jabatan !== undefined) updateData.jabatan = row.jabatan || null;
+
+      await db
+        .update(user)
+        .set(updateData)
+        .where(eq(user.id, row.userId));
+
+      invalidateUserSessions(row.userId);
+      updatedCount++;
+    } catch (err: any) {
+      errors.push(`Gagal update akun NIP ${row.nipPendek} (${row.nama}): ${err.message}`);
+    }
+  }
+
+  await logActivity({
+    userId: actorId,
+    userName: actorName,
+    action: 'ACCOUNT_ROLE_CHANGED',
+    targetId: actorId,
+    targetName: 'Import CSV',
+    detail: `Import CSV Pegawai: ${createdCount} baru dibuat, ${updatedCount} diperbarui.`,
+    ipAddress,
+  });
+
+  return {
+    createdCount,
+    updatedCount,
+    errors
+  };
+}
+
