@@ -35,15 +35,18 @@ export default function ReportsPage() {
     const { utils, writeFile } = await import('xlsx');
 
     const data = filtered.map((b) => ({
-      'Nama Pegawai': b.userName,
-      'Tanggal': formatDateShort(b.startTime),
+      'Nama Pegawai': b.userName || '-',
+      'Tanggal Mulai': formatDateShort(b.startTime),
+      'Tanggal Selesai': formatDateShort(b.endTime),
       'Waktu Mulai': formatTime(b.startTime),
       'Waktu Selesai': formatTime(b.endTime),
-      'Keperluan': b.keperluan,
+      'Keperluan': b.keperluan || '-',
       'Ruangan': b.roomName || '-',
-      'Jumlah Peserta': b.jumlahPeserta,
-      'Status': b.status,
+      'Jumlah Peserta': b.jumlahPeserta ?? 1,
+      'Status': b.status || '-',
       'Catatan': b.catatan || '-',
+      'Alasan Pembatalan': b.alasanPembatalan || '-',
+      'Waktu Pengajuan': b.createdAt ? new Date(b.createdAt).toLocaleString('id-ID') : '-',
     }));
 
     const ws = utils.json_to_sheet(data);
@@ -67,7 +70,7 @@ export default function ReportsPage() {
 
   const columns = [
     { key: 'pegawai', label: 'Pegawai' },
-    { key: 'tanggal', label: 'Tanggal' },
+    { key: 'tanggal', label: 'Tanggal Mulai - Tanggal Selesai' },
     { key: 'waktu', label: 'Waktu' },
     { key: 'keperluan', label: 'Keperluan' },
     { key: 'ruangan', label: 'Ruangan' },
@@ -113,7 +116,7 @@ export default function ReportsPage() {
         {filtered.slice(0, 10).map((b) => (
           <tr key={b.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
             <td className="font-medium text-gray-900 dark:text-gray-100">{b.userName}</td>
-            <td className="text-gray-600 dark:text-gray-400">{formatDateShort(b.startTime)}</td>
+            <td className="text-xs text-gray-600 dark:text-gray-400">{formatDateShort(b.startTime)} - {formatDateShort(b.endTime)}</td>
             <td className="text-xs text-gray-500 font-mono">{formatTime(b.startTime)} - {formatTime(b.endTime)}</td>
             <td className="max-w-[220px]"><p className="line-clamp-2 text-gray-700 dark:text-gray-300">{b.keperluan}</p></td>
             <td className="text-sm font-semibold text-blue-600">{b.roomName || '-'}</td>

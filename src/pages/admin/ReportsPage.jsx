@@ -36,16 +36,25 @@ export default function ReportsPage() {
     const { utils, writeFile } = await import('xlsx');
 
     const data = filtered.map((b) => ({
-      'Nama Pegawai': b.userName,
-      'Tanggal': formatDateShort(b.startTime),
+      'Nama Pegawai': b.userName || '-',
+      'Tanggal Mulai': formatDateShort(b.startTime),
+      'Tanggal Selesai': formatDateShort(b.endTime),
       'Waktu Mulai': formatTime(b.startTime),
       'Waktu Selesai': formatTime(b.endTime),
-      'Keperluan': b.keperluan,
+      'Keperluan': b.keperluan || '-',
+      'Jenis Kendaraan': b.jenisKendaraan || 'Mobil',
       'Kendaraan': b.vehicleName || '-',
       'Pengemudi': b.driverName || '-',
-      'Penumpang': b.jumlahPenumpang,
-      'Status': b.status,
+      'Jumlah Penumpang': b.jumlahPenumpang ?? 1,
+      'Perlu Sopir': b.perluSopir ? 'Ya' : 'Tidak',
+      'Status': b.status || '-',
       'Catatan': b.catatan || '-',
+      'Alasan Penolakan': b.alasanPenolakan || '-',
+      'Odometer Mulai (km)': b.odometerStart != null ? b.odometerStart : '-',
+      'Odometer Selesai (km)': b.odometerEnd != null ? b.odometerEnd : '-',
+      'Kondisi BBM': b.kondisiBBM || '-',
+      'Kondisi Kebersihan': b.kondisiKebersihan || '-',
+      'Waktu Pengajuan': b.createdAt ? new Date(b.createdAt).toLocaleString('id-ID') : '-',
     }));
 
     const ws = utils.json_to_sheet(data);
@@ -69,7 +78,7 @@ export default function ReportsPage() {
 
   const columns = [
     { key: 'pegawai', label: 'Pegawai' },
-    { key: 'tanggal', label: 'Tanggal' },
+    { key: 'tanggal', label: 'Tanggal Mulai - Tanggal Selesai' },
     { key: 'waktu', label: 'Waktu' },
     { key: 'keperluan', label: 'Keperluan' },
     { key: 'kendaraan', label: 'Kendaraan' },
@@ -115,7 +124,7 @@ export default function ReportsPage() {
         {filtered.slice(0, 10).map((b) => (
           <tr key={b.id}>
             <td>{b.userName}</td>
-            <td>{formatDateShort(b.startTime)}</td>
+            <td className="text-xs">{formatDateShort(b.startTime)} - {formatDateShort(b.endTime)}</td>
             <td className="text-xs">{formatTime(b.startTime)} - {formatTime(b.endTime)}</td>
             <td className="max-w-[220px]"><p className="line-clamp-2">{b.keperluan}</p></td>
             <td className="text-xs">{b.vehicleName || '-'}</td>
