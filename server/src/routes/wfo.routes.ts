@@ -151,17 +151,20 @@ router.post('/import-pdf', roleGuard('admin'), upload.single('file'), async (req
       return name.split(',')[0].toLowerCase().replace(/[^a-z]/g, '');
     };
 
-    // 1. Primary & most accurate match: by 18-digit NIP extracted from WFO lines
+    // 1. Primary & most accurate match: by 18-digit NIP (nipPanjang) or 9-digit NIP (nip) extracted from WFO lines
     const combinedWfoText = wfoLines.join('\n');
-    const extractedNips = combinedWfoText.match(/\b\d{18}\b/g) || [];
-    const wfoNipsSet = new Set(extractedNips);
+    const extracted18Nips = combinedWfoText.match(/\b\d{18}\b/g) || [];
+    const extracted9Nips = combinedWfoText.match(/\b\d{9}\b/g) || [];
+    const wfoNipsSet = new Set([...extracted18Nips, ...extracted9Nips]);
 
     for (const user of allUsers) {
-      if (user.nip) {
-        const userNipClean = cleanDigits(user.nip);
-        if (userNipClean.length === 18 && wfoNipsSet.has(userNipClean)) {
-          wfoIdsSet.add(user.id);
-        }
+      const nipPendekClean = user.nip ? cleanDigits(user.nip) : '';
+      const nipPanjangClean = user.nipPanjang ? cleanDigits(user.nipPanjang) : '';
+
+      if ((nipPanjangClean && nipPanjangClean.length === 18 && wfoNipsSet.has(nipPanjangClean)) ||
+          (nipPendekClean && nipPendekClean.length === 9 && wfoNipsSet.has(nipPendekClean)) ||
+          (nipPendekClean && nipPendekClean.length === 18 && wfoNipsSet.has(nipPendekClean))) {
+        wfoIdsSet.add(user.id);
       }
     }
 
@@ -173,9 +176,10 @@ router.post('/import-pdf', roleGuard('admin'), upload.single('file'), async (req
       if (userCleanName.length < 3) continue;
 
       for (const line of wfoLines) {
-        // Strip out any NIP numbers and leading row numbering before checking names
+        // Strip out any NIP numbers (18 or 9 digits) and leading row numbering before checking names
         const lineWithoutNipOrNumber = line
-          .replace(/\d{18}/g, '')
+          .replace(/\b\d{18}\b/g, '')
+          .replace(/\b\d{9}\b/g, '')
           .replace(/^\d+[\.\)\s]*/, '')
           .trim();
         const lineCleanName = cleanNameForMatch(lineWithoutNipOrNumber);
