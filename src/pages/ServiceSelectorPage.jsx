@@ -69,6 +69,13 @@ export default function ServiceSelectorPage() {
 
   const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
+  const getAccountSettingPath = () => {
+    const role = activeRole || user?.role || 'user';
+    if (role === 'superadmin') return '/superadmin/settings';
+    if (role === 'admin') return '/admin/settings';
+    return '/user/account';
+  };
+
   return (
     <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 pt-32 md:pt-20">
       <LoginAnnouncementPopup />
@@ -78,19 +85,27 @@ export default function ServiceSelectorPage() {
           <ThemeLogo className="h-8 md:h-10" />
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 pr-4 border-r border-gray-200 dark:border-gray-700">
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.jabatan || 'Seksi Umum'}</p>
+          <button
+            onClick={() => navigate(getAccountSettingPath())}
+            title="Klik untuk ke Halaman Pengaturan / Akun Anda"
+            className="group flex items-center gap-2 md:gap-3 pr-3 md:pr-4 border-r border-gray-200 dark:border-gray-700 hover:opacity-80 transition-all cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900 rounded-xl py-1"
+          >
+            <div className="text-right max-w-[130px] sm:max-w-[180px] md:max-w-[260px]">
+              <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                {user?.name || 'Pengguna'}
+              </p>
+              <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 capitalize truncate">
+                {user?.jabatan || 'Seksi Umum'}
+              </p>
             </div>
             {user?.image ? (
-              <img src={user.image} alt={user.name} className="h-10 w-10 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-sm" />
+              <img src={user.image} alt={user.name} className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform" />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-sm">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-sm flex-shrink-0 text-xs md:text-base group-hover:scale-105 transition-transform">
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
-          </div>
+          </button>
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
