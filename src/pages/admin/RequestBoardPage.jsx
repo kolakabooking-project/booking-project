@@ -267,10 +267,15 @@ export default function RequestBoardPage() {
 
                     {/* Kartu Batalkan Peminjaman */}
                     {new Date() < new Date(modal.endTime) && (
-                      <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-200 dark:border-red-900/30">
-                        <p className="text-xs text-red-700 dark:text-red-300">
-                          Peminjaman ini dapat dibatalkan apabila ada kendala darurat atau pembatalan perjalanan dinas.
-                        </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-200 dark:border-red-900/30">
+                        <div>
+                          <p className="text-sm font-bold text-red-800 dark:text-red-300 flex items-center gap-1.5">
+                            <XCircle size={16} /> Batalkan Peminjaman?
+                          </p>
+                          <p className="text-xs text-red-700 dark:text-red-400 mt-1">
+                            Peminjaman ini dapat dibatalkan apabila ada kendala darurat atau pembatalan perjalanan dinas.
+                          </p>
+                        </div>
                         <Button variant="danger" onClick={() => setShowCancelApproved(true)} className="flex-shrink-0">
                           <XCircle size={16} /> Batalkan Peminjaman
                         </Button>

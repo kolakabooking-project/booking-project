@@ -321,7 +321,7 @@ export default function Calendar({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari peminjam, atas nama, kendaraan, tujuan..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm border bg-[color:var(--color-surface-card)] text-[color:var(--color-heading)] placeholder:text-[color:var(--color-text-soft)] focus:outline-none focus:ring-2 focus:ring-djp-blue/30 focus:border-djp-blue transition-all"
+                className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm border bg-[color:var(--color-surface-strong)] text-[color:var(--color-heading)] placeholder:text-[color:var(--color-text-soft)] focus:outline-none focus:ring-2 focus:ring-djp-blue/30 focus:border-djp-blue transition-all"
                 style={{ borderColor: 'var(--color-border)' }}
               />
             </div>
@@ -341,7 +341,7 @@ export default function Calendar({
                     className={`px-2.5 py-1 rounded-lg text-xs font-heading font-semibold whitespace-nowrap transition-all ${
                       statusFilter === chip.id
                         ? 'bg-djp-blue text-white shadow-sm'
-                        : 'bg-[color:var(--color-surface-card)] text-[color:var(--color-text-soft)] border hover:text-[color:var(--color-heading)]'
+                        : 'bg-[color:var(--color-surface-strong)] text-[color:var(--color-text-soft)] border hover:text-[color:var(--color-heading)]'
                     }`}
                     style={{ borderColor: statusFilter === chip.id ? 'transparent' : 'var(--color-border)' }}
                   >
@@ -363,16 +363,19 @@ export default function Calendar({
           </div>
 
           {/* Table Container */}
-          <div className="overflow-x-auto max-h-[600px]">
+          <div className="overflow-x-auto max-h-[600px] border-t" style={{ borderColor: 'var(--color-border)' }}>
             <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="sticky top-0 bg-[color:var(--color-surface-card)] z-10 border-b text-[11px] uppercase tracking-[0.15em] font-heading font-bold text-[color:var(--color-text-soft)]" style={{ borderColor: 'var(--color-border)' }}>
+              <thead
+                className="sticky top-0 z-20 border-b text-[11px] uppercase tracking-[0.15em] font-heading font-bold text-[color:var(--color-text-soft)] shadow-sm bg-[color:var(--color-surface-strong)]"
+                style={{ backgroundColor: 'var(--color-surface-strong)', borderColor: 'var(--color-border)' }}
+              >
                 <tr>
-                  <th className="py-3 px-4 w-40">Tanggal & Waktu</th>
-                  <th className="py-3 px-4 w-52">Peminjam</th>
-                  <th className="py-3 px-4 w-48">Kendaraan & Plat</th>
-                  <th className="py-3 px-4 w-40">Pengemudi</th>
-                  <th className="py-3 px-4">Keperluan / Tujuan</th>
-                  <th className="py-3 px-4 w-32 text-center">Status</th>
+                  <th className="py-3.5 px-4 w-40 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Tanggal & Waktu</th>
+                  <th className="py-3.5 px-4 w-52 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Peminjam</th>
+                  <th className="py-3.5 px-4 w-48 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Kendaraan & Plat</th>
+                  <th className="py-3.5 px-4 w-40 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Pengemudi</th>
+                  <th className="py-3.5 px-4 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Keperluan / Tujuan</th>
+                  <th className="py-3.5 px-4 w-32 text-center sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-xs sm:text-sm font-body text-[color:var(--color-text)]" style={{ borderColor: 'var(--color-border)' }}>
