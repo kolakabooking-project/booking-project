@@ -6,7 +6,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import { BOOKING_STATUS } from '../utils/constants';
 
 export default function useRequestBoard(itemsPerPage = 10) {
-  const { bookings, approveBooking, rejectBooking, cancelBooking } = useBooking();
+  const { bookings, approveBooking, rejectBooking, cancelBooking, completeBookingEarly } = useBooking();
   const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,6 +23,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
   const [showReject, setShowReject] = useState(false);
   const [cancelApprovedReason, setCancelApprovedReason] = useState('');
   const [showCancelApproved, setShowCancelApproved] = useState(false);
+  const [completeEarlyNotes, setCompleteEarlyNotes] = useState('');
+  const [showCompleteEarly, setShowCompleteEarly] = useState(false);
 
   useEffect(() => {
     if (location.state?.openBookingId) {
@@ -33,6 +35,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
         setShowReject(false);
         setCancelApprovedReason('');
         setShowCancelApproved(false);
+        setCompleteEarlyNotes('');
+        setShowCompleteEarly(false);
         if ([BOOKING_STATUS.COMPLETED, BOOKING_STATUS.REJECTED].includes(b.status)) {
           setActiveTab('riwayat');
         } else {
@@ -92,6 +96,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
     setShowReject(false);
     setCancelApprovedReason('');
     setShowCancelApproved(false);
+    setCompleteEarlyNotes('');
+    setShowCompleteEarly(false);
   }, []);
 
   const handleApprove = async () => {
@@ -151,6 +157,20 @@ export default function useRequestBoard(itemsPerPage = 10) {
     }
   };
 
+  const handleCompleteEarly = async () => {
+    if (!modal) return;
+    showLoading('Menyelesaikan peminjaman sebelum waktunya...');
+    try {
+      await completeBookingEarly(modal.id, completeEarlyNotes);
+      toast.success(`Peminjaman ${modal.userName} telah diselesaikan`);
+      setModal(null);
+    } catch (err) {
+      toast.error(err.message || 'Gagal menyelesaikan peminjaman');
+    } finally {
+      hideLoading();
+    }
+  };
+
   return {
     state: {
       activeTab,
@@ -162,6 +182,8 @@ export default function useRequestBoard(itemsPerPage = 10) {
       showReject,
       cancelApprovedReason,
       showCancelApproved,
+      completeEarlyNotes,
+      showCompleteEarly,
       filteredBookings,
       currentData,
       totalPages
@@ -176,10 +198,13 @@ export default function useRequestBoard(itemsPerPage = 10) {
       setShowReject,
       setCancelApprovedReason,
       setShowCancelApproved,
+      setCompleteEarlyNotes,
+      setShowCompleteEarly,
       openModal,
       handleApprove,
       handleReject,
-      handleCancelApproved
+      handleCancelApproved,
+      handleCompleteEarly
     }
   };
 }

@@ -236,6 +236,31 @@ router.patch('/:id/reject', roleGuard('admin'), async (req: Request, res: Respon
 });
 
 /**
+ * PATCH /api/bookings/:id/complete — Complete booking early / finish trip (admin)
+ */
+router.patch('/:id/complete', roleGuard('admin'), async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const { catatan } = req.body || {};
+    const booking = await bookingService.completeBookingEarly(req.params.id as string, catatan);
+    res.json({ data: booking });
+
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'BOOKING_COMPLETED',
+      targetId: booking.id,
+      targetName: booking.userName || undefined,
+      detail: `Peminjaman diselesaikan lebih awal / kendaraan kembali: ${booking.keperluan || '-'}${catatan ? ` (Catatan: ${catatan})` : ''}`,
+      ipAddress: getIp(req),
+    });
+  } catch (err: any) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
  * PATCH /api/bookings/:id/cancel — Cancel own booking
  */
 router.patch('/:id/cancel', async (req: Request, res: Response) => {

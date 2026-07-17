@@ -11,7 +11,7 @@ import { VEHICLE_STATUS } from '../../utils/constants';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { vehicles, getBookingsForDate } = useBooking();
+  const { vehicles, bookings, getBookingsForDate } = useBooking();
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -67,6 +67,7 @@ export default function DashboardPage() {
           <Calendar 
             onDateClick={handleDateClick} 
             getBookingsForDate={getBookingsForDate}
+            bookings={bookings}
             totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}
           />
         </div>

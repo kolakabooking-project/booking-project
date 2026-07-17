@@ -1,18 +1,42 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
-import { CalendarRange, ChevronLeft, ChevronRight, Clock, User, MapPin, Warehouse, Wrench, Info, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { CalendarRange, ChevronLeft, ChevronRight, Clock, User, MapPin, Wrench, Info, ChevronDown, FlagTriangleRight, AlertTriangle } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../utils/helpers';
 import Modal from '../ui/Modal';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import FormInput from '../ui/FormInput';
+import { toast } from 'sonner';
+import { useLoading } from '../../contexts/LoadingContext';
+import { BOOKING_STATUS } from '../../utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import './FleetTimetableBoard.css';
 
 export default function FleetTimetableBoard() {
-  const { vehicles, bookings } = useBooking();
+  const { user } = useAuth();
+  const { vehicles, bookings, completeBookingEarly } = useBooking();
+  const { showLoading, hideLoading } = useLoading();
   const [targetDate, setTargetDate] = useState(new Date());
   const [detailBooking, setDetailBooking] = useState(null);
+  const [completeEarlyNotes, setCompleteEarlyNotes] = useState('');
+  const [showCompleteEarly, setShowCompleteEarly] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+
+  const handleCompleteEarly = async () => {
+    if (!detailBooking) return;
+    showLoading('Menyelesaikan peminjaman sebelum waktunya...');
+    try {
+      await completeBookingEarly(detailBooking.id, completeEarlyNotes);
+      toast.success(`Peminjaman ${detailBooking.userName} telah diselesaikan`);
+      setDetailBooking(null);
+      setShowCompleteEarly(false);
+    } catch (err) {
+      toast.error(err.message || 'Gagal menyelesaikan peminjaman');
+    } finally {
+      hideLoading();
+    }
+  };
 
   // Date Navigation Helpers
   const handlePrevDay = () => {
@@ -103,11 +127,15 @@ export default function FleetTimetableBoard() {
     return vehicles.map((v) => {
       // Filter active / approved bookings for this vehicle on this targetDate
       const activeBookings = bookings
-        .filter(
-          (b) =>
-            b.vehicleId === v.id &&
-            !['Ditolak', 'Dibatalkan'].includes(b.status)
-        )
+        .filter((b) => {
+          if (b.vehicleId !== v.id || b.status === 'Dibatalkan') return false;
+          if (b.status === 'Ditolak') {
+            const isMyBooking = b.userId === user?.id;
+            const isAdminOrSuper = user?.role === 'admin' || user?.role === 'superadmin';
+            if (!isMyBooking && !isAdminOrSuper) return false;
+          }
+          return true;
+        })
         .map((b) => getBookingOverlapOnDate(b, targetDate))
         .filter(Boolean);
 
@@ -116,7 +144,7 @@ export default function FleetTimetableBoard() {
         dayBookings: activeBookings,
       };
     });
-  }, [vehicles, bookings, targetDate, getBookingOverlapOnDate]);
+  }, [vehicles, bookings, targetDate, getBookingOverlapOnDate, user?.id, user?.role]);
 
   // Generate ticks for 6:00 to 22:00
   const hourTicks = useMemo(() => {
@@ -130,7 +158,6 @@ export default function FleetTimetableBoard() {
   // Determine booking class suffix based on status
   const getBarClassSuffix = (status) => {
     if (status === 'Sedang Digunakan' || status === 'Disetujui') {
-      const now = new Date();
       return 'approved';
     }
     if (status === 'Pending') return 'pending';
@@ -311,7 +338,11 @@ export default function FleetTimetableBoard() {
       {/* DETAIL BOOKING DIALOG MODAL */}
       <Modal
         isOpen={!!detailBooking}
-        onClose={() => setDetailBooking(null)}
+        onClose={() => {
+          setDetailBooking(null);
+          setShowCompleteEarly(false);
+          setCompleteEarlyNotes('');
+        }}
         title="Detail Jadwal Okupansi"
         size="md"
       >
@@ -364,8 +395,55 @@ export default function FleetTimetableBoard() {
               </div>
             </div>
 
+            {(user?.role === 'admin' || user?.role === 'superadmin') &&
+              (detailBooking.status === BOOKING_STATUS.APPROVED || detailBooking.status === BOOKING_STATUS.ONGOING) && (
+              <div className="border-t pt-4 space-y-4" style={{ borderColor: 'var(--color-border)' }}>
+                {!showCompleteEarly ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/30">
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                        <FlagTriangleRight size={16} /> Kendaraan Sudah Kembali?
+                      </p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                        Jika kendaraan sudah kembali ke kantor sebelum jadwal selesai, Anda dapat mengakhiri booking ini lebih awal.
+                      </p>
+                    </div>
+                    <Button variant="success" onClick={() => setShowCompleteEarly(true)} className="flex-shrink-0">
+                      <FlagTriangleRight size={16} /> Selesaikan Lebih Awal
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-900/30 space-y-4">
+                    <div className="flex items-start gap-3 bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 p-3.5 rounded-xl border border-amber-300 dark:border-amber-800/40">
+                      <AlertTriangle size={20} className="flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="text-xs space-y-1">
+                        <p className="font-bold text-sm">Pastikan Kendaraan Sudah Balik ke Kantor!</p>
+                        <p>
+                          Sebelum menyelesaikan dan mengakhiri booking ini lebih awal, pastikan fisik kendaraan dinas telah kembali berada di kantor dan kunci kendaraan beserta STNK telah diserahkan.
+                        </p>
+                      </div>
+                    </div>
+                    <FormInput
+                      label="Catatan Penyelesaian Lebih Awal (Opsional)"
+                      id="ftb-complete-early-notes"
+                      type="textarea"
+                      value={completeEarlyNotes}
+                      onChange={(e) => setCompleteEarlyNotes(e.target.value)}
+                      placeholder="Contoh: Kendaraan dikembalikan tanggal 5 dalam kondisi baik, BBM terisi penuh..."
+                    />
+                    <div className="flex gap-3 justify-end pt-1">
+                      <Button variant="ghost" onClick={() => setShowCompleteEarly(false)}>Kembali</Button>
+                      <Button variant="success" onClick={handleCompleteEarly}>
+                        <FlagTriangleRight size={16} /> Konfirmasi Selesaikan
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              <Button variant="secondary" onClick={() => setDetailBooking(null)}>
+              <Button variant="secondary" onClick={() => { setDetailBooking(null); setShowCompleteEarly(false); }}>
                 Tutup Jadwal
               </Button>
             </div>

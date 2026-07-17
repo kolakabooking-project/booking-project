@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { bookingApi, vehicleApi, driverApi } from '../lib/api';
 import { useAuth } from './AuthContext';
 
-const BookingContext = createContext(null);
+export const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
   const { isAuthenticated, activeRole, user, serviceStatuses } = useAuth();
@@ -161,6 +161,12 @@ export function BookingProvider({ children }) {
     refreshBookings();
   }, [refreshBookings]);
 
+  const completeBookingEarly = useCallback(async (bookingId, catatan) => {
+    await Promise.all([bookingApi.completeEarly(bookingId, catatan), minDelay()]);
+    refreshBookings();
+    refreshVehicles();
+  }, [refreshBookings, refreshVehicles]);
+
   // ─── Vehicle Actions ───
 
   const addVehicle = useCallback(async (vehicleData) => {
@@ -209,13 +215,18 @@ export function BookingProvider({ children }) {
       dayEnd.setHours(23, 59, 59, 999);
 
       return bookings.filter((b) => {
-        if (['Ditolak', 'Dibatalkan'].includes(b.status)) return false;
+        if (b.status === 'Dibatalkan') return false;
+        if (b.status === 'Ditolak') {
+          const isMyBooking = b.userId === user?.id;
+          const isAdminOrSuper = isAdminView || user?.role === 'admin' || user?.role === 'superadmin';
+          if (!isMyBooking && !isAdminOrSuper) return false;
+        }
         const start = new Date(b.startTime);
         const end = new Date(b.endTime);
         return start <= dayEnd && end >= dayStart;
       });
     },
-    [bookings]
+    [bookings, user?.id, user?.role, isAdminView]
   );
 
   const getAvailableVehicles = useCallback(
@@ -293,6 +304,7 @@ export function BookingProvider({ children }) {
         cancelBooking,
         approveBooking,
         rejectBooking,
+        completeBookingEarly,
         submitReview,
         markReviewAsRead,
         addVehicle,

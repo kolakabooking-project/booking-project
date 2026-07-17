@@ -561,6 +561,67 @@ export async function cancelBooking(bookingId: string, userId: string, isAdmin: 
 }
 
 /**
+ * Complete a booking early / finish trip (admin action when vehicle returns before scheduled end time).
+ */
+export async function completeBookingEarly(bookingId: string, catatan?: string) {
+  const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
+  if (!target) throw new NotFoundError('Peminjaman');
+
+  const isApprovedOrOngoing =
+    target.status === BOOKING_STATUS.APPROVED || target.status === BOOKING_STATUS.ONGOING;
+  if (!isApprovedOrOngoing) {
+    throw new ValidationError('Hanya peminjaman aktif (Disetujui / Berlangsung) yang dapat diselesaikan sebelum waktunya.');
+  }
+
+  const now = new Date();
+  const updateFields: any = {
+    status: catatan?.trim() ? BOOKING_STATUS.COMPLETED_WITH_NOTES : BOOKING_STATUS.COMPLETED,
+    updatedAt: now,
+  };
+
+  if (catatan?.trim()) {
+    updateFields.catatan = target.catatan
+      ? `${target.catatan}\n[Penyelesaian Lebih Awal: ${catatan.trim()}]`
+      : `[Penyelesaian Lebih Awal: ${catatan.trim()}]`;
+  }
+
+  // If ended early before scheduled endTime, update endTime so actual schedule duration is accurate
+  if (now < new Date(target.endTime)) {
+    // Ensure endTime is not earlier than startTime
+    updateFields.endTime = now < new Date(target.startTime) ? new Date(target.startTime) : now;
+  }
+
+  const [completed] = await db
+    .update(booking)
+    .set(updateFields)
+    .where(eq(booking.id, bookingId))
+    .returning();
+
+  const fullBooking = await getBookingById(completed.id);
+
+  broadcastBookingUpdate('BOOKING_COMPLETED', { booking: fullBooking }).catch((err) =>
+    console.error('[BookingService] Ably broadcast failed:', err)
+  );
+
+  (async () => {
+    try {
+      const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+      const payload = {
+        title: 'Peminjaman Telah Diselesaikan',
+        body: `Halo ${fullBooking.userName}, peminjaman kendaraan untuk keperluan "${fullBooking.keperluan}" (${formattedStart}) telah diselesaikan oleh Admin karena kendaraan telah dikembalikan ke kantor.`,
+        url: '/user/my-bookings',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await sendPushNotification(fullBooking.userId, payload);
+    } catch (err) {
+      console.error('[BookingService] Failed to send push notification for early completed booking:', err);
+    }
+  })();
+
+  return fullBooking;
+}
+
+/**
  * Submit a post-trip review (user).
  */
 export async function submitReview(bookingId: string, reviewNotes: string, userId: string) {

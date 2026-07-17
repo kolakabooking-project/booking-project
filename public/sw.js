@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v8';
+const CACHE_NAME = 'bookolaka-cache-v9';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -41,6 +41,11 @@ self.addEventListener('fetch', (e) => {
   }
 
   const url = new URL(e.request.url);
+
+  // Lewatkan langsung ke network jika di local development (localhost / 127.0.0.1) agar tidak bentrok dengan Vite dev server & HMR
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return;
+  }
 
   // Network First strategy for HTML navigation requests (to always get the latest chunks)
   if (e.request.mode === 'navigate') {

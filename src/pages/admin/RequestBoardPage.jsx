@@ -7,7 +7,7 @@ import Pagination from '../../components/ui/Pagination';
 import PageHeader from '../../components/ui/PageHeader';
 import { BOOKING_STATUS } from '../../utils/constants';
 import { formatDateShort, formatTime } from '../../utils/helpers';
-import { CheckCircle, XCircle, Eye, Search, Filter } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Search, Filter, FlagTriangleRight, AlertTriangle } from 'lucide-react';
 import useRequestBoard from '../../hooks/useRequestBoard';
 
 export default function RequestBoardPage() {
@@ -24,6 +24,8 @@ export default function RequestBoardPage() {
     showReject,
     cancelApprovedReason,
     showCancelApproved,
+    completeEarlyNotes,
+    showCompleteEarly,
     filteredBookings,
     currentData,
     totalPages
@@ -39,10 +41,13 @@ export default function RequestBoardPage() {
     setShowReject,
     setCancelApprovedReason,
     setShowCancelApproved,
+    setCompleteEarlyNotes,
+    setShowCompleteEarly,
     openModal,
     handleApprove,
     handleReject,
-    handleCancelApproved
+    handleCancelApproved,
+    handleCompleteEarly
   } = actions;
 
   const columns = [
@@ -241,18 +246,40 @@ export default function RequestBoardPage() {
               </div>
             )}
 
-            {modal.status === BOOKING_STATUS.APPROVED && new Date() < new Date(modal.endTime) && (
+            {(modal.status === BOOKING_STATUS.APPROVED || modal.status === BOOKING_STATUS.ONGOING) && (
               <div className="border-t pt-4 space-y-4" style={{ borderColor: 'var(--color-border)' }}>
-                {!showCancelApproved ? (
-                  <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-200 dark:border-red-900/30">
-                    <p className="text-xs text-red-700 dark:text-red-300">
-                      Peminjaman ini sudah disetujui namun waktunya belum terlewat. Anda dapat membatalkannya jika ada kondisi darurat.
-                    </p>
-                    <Button variant="danger" onClick={() => setShowCancelApproved(true)} className="flex-shrink-0">
-                      <XCircle size={16} /> Batalkan Peminjaman
-                    </Button>
+                {!showCancelApproved && !showCompleteEarly && (
+                  <div className="space-y-3">
+                    {/* Kartu Selesaikan Sebelum Waktunya */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/30">
+                      <div>
+                        <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                          <FlagTriangleRight size={16} /> Kendaraan Sudah Kembali?
+                        </p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                          Jika kendaraan sudah kembali ke kantor sebelum jadwal selesai, Anda dapat mengakhiri booking ini lebih awal.
+                        </p>
+                      </div>
+                      <Button variant="success" onClick={() => setShowCompleteEarly(true)} className="flex-shrink-0">
+                        <FlagTriangleRight size={16} /> Selesaikan Lebih Awal
+                      </Button>
+                    </div>
+
+                    {/* Kartu Batalkan Peminjaman */}
+                    {new Date() < new Date(modal.endTime) && (
+                      <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 p-4 rounded-2xl border border-red-200 dark:border-red-900/30">
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          Peminjaman ini dapat dibatalkan apabila ada kendala darurat atau pembatalan perjalanan dinas.
+                        </p>
+                        <Button variant="danger" onClick={() => setShowCancelApproved(true)} className="flex-shrink-0">
+                          <XCircle size={16} /> Batalkan Peminjaman
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ) : (
+                )}
+
+                {showCancelApproved && (
                   <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-200 dark:border-red-900/30 space-y-3">
                     <FormInput
                       label="Alasan Pembatalan (Wajib)"
@@ -271,14 +298,34 @@ export default function RequestBoardPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {modal.status === BOOKING_STATUS.APPROVED && new Date() >= new Date(modal.endTime) && (
-              <div className="border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
-                <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
-                  Waktu peminjaman sudah terlewat, sehingga peminjaman ini tidak dapat dibatalkan.
-                </div>
+                {showCompleteEarly && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-900/30 space-y-4">
+                    <div className="flex items-start gap-3 bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 p-3.5 rounded-xl border border-amber-300 dark:border-amber-800/40">
+                      <AlertTriangle size={20} className="flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="text-xs space-y-1">
+                        <p className="font-bold text-sm">Pastikan Kendaraan Sudah Balik ke Kantor!</p>
+                        <p>
+                          Sebelum menyelesaikan dan mengakhiri booking ini lebih awal, pastikan fisik kendaraan dinas telah kembali berada di kantor dan kunci kendaraan beserta STNK telah diserahkan.
+                        </p>
+                      </div>
+                    </div>
+                    <FormInput
+                      label="Catatan Penyelesaian Lebih Awal (Opsional)"
+                      id="complete-early-notes"
+                      type="textarea"
+                      value={completeEarlyNotes}
+                      onChange={(e) => setCompleteEarlyNotes(e.target.value)}
+                      placeholder="Contoh: Kendaraan dikembalikan tanggal 5 dalam kondisi baik, BBM terisi penuh..."
+                    />
+                    <div className="flex gap-3 justify-end pt-1">
+                      <Button variant="ghost" onClick={() => setShowCompleteEarly(false)}>Kembali</Button>
+                      <Button variant="success" onClick={handleCompleteEarly}>
+                        <FlagTriangleRight size={16} /> Konfirmasi Selesaikan
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useBooking } from '../../contexts/BookingContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { VEHICLE_STATUS, BOOKING_STATUS } from '../../utils/constants';
-import { Warehouse, ShieldAlert, Navigation, Wrench, CarFront, Bike, PackageCheck, CircleDashed, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { Warehouse, ShieldAlert, Navigation, Wrench, CarFront, Bike, PackageCheck, CircleDashed, CheckCircle, XCircle, ChevronDown, FlagTriangleRight, AlertTriangle } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import FormInput from '../ui/FormInput';
@@ -54,12 +55,15 @@ function VehicleSlot({ vehicle, variant = 'available', booking, onClick }) {
 
 export default function FleetCommandCenter() {
   const navigate = useNavigate();
-  const { vehicles, bookings, getPendingBookings, approveBooking, rejectBooking } = useBooking();
+  const { user } = useAuth();
+  const { vehicles, bookings, getPendingBookings, approveBooking, rejectBooking, completeBookingEarly } = useBooking();
   const { showLoading, hideLoading } = useLoading();
 
   const [modal, setModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [completeEarlyNotes, setCompleteEarlyNotes] = useState('');
+  const [showCompleteEarly, setShowCompleteEarly] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
 
   const zoneData = useMemo(() => {
@@ -105,6 +109,8 @@ export default function FleetCommandCenter() {
     setModal(booking);
     setRejectReason('');
     setShowReject(false);
+    setCompleteEarlyNotes('');
+    setShowCompleteEarly(false);
   };
 
   const handleApprove = async () => {
@@ -132,6 +138,20 @@ export default function FleetCommandCenter() {
       setModal(null);
     } catch (err) {
       toast.error(err.message || 'Gagal menolak peminjaman');
+    } finally {
+      hideLoading();
+    }
+  };
+
+  const handleCompleteEarly = async () => {
+    if (!modal) return;
+    showLoading('Menyelesaikan peminjaman sebelum waktunya...');
+    try {
+      await completeBookingEarly(modal.id, completeEarlyNotes);
+      toast.success(`Peminjaman ${modal.userName} telah diselesaikan`);
+      setModal(null);
+    } catch (err) {
+      toast.error(err.message || 'Gagal menyelesaikan peminjaman');
     } finally {
       hideLoading();
     }
@@ -343,6 +363,52 @@ export default function FleetCommandCenter() {
                       <Button variant="danger" onClick={handleReject}><XCircle size={16} />Konfirmasi Tolak</Button>
                     </div>
                   </>
+                )}
+              </div>
+            )}
+            {(user?.role === 'admin' || user?.role === 'superadmin') &&
+              (modal.status === BOOKING_STATUS.APPROVED || modal.status === BOOKING_STATUS.ONGOING) && (
+              <div className="border-t pt-4 space-y-4" style={{ borderColor: 'var(--color-border)' }}>
+                {!showCompleteEarly ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/30">
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                        <FlagTriangleRight size={16} /> Kendaraan Sudah Kembali?
+                      </p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                        Jika kendaraan sudah kembali ke kantor sebelum jadwal selesai, Anda dapat mengakhiri booking ini lebih awal.
+                      </p>
+                    </div>
+                    <Button variant="success" onClick={() => setShowCompleteEarly(true)} className="flex-shrink-0">
+                      <FlagTriangleRight size={16} /> Selesaikan Lebih Awal
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-900/30 space-y-4">
+                    <div className="flex items-start gap-3 bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 p-3.5 rounded-xl border border-amber-300 dark:border-amber-800/40">
+                      <AlertTriangle size={20} className="flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="text-xs space-y-1">
+                        <p className="font-bold text-sm">Pastikan Kendaraan Sudah Balik ke Kantor!</p>
+                        <p>
+                          Sebelum menyelesaikan dan mengakhiri booking ini lebih awal, pastikan fisik kendaraan dinas telah kembali berada di kantor dan kunci kendaraan beserta STNK telah diserahkan.
+                        </p>
+                      </div>
+                    </div>
+                    <FormInput
+                      label="Catatan Penyelesaian Lebih Awal (Opsional)"
+                      id="fcc-complete-early-notes"
+                      type="textarea"
+                      value={completeEarlyNotes}
+                      onChange={(e) => setCompleteEarlyNotes(e.target.value)}
+                      placeholder="Contoh: Kendaraan dikembalikan tanggal 5 dalam kondisi baik, BBM terisi penuh..."
+                    />
+                    <div className="flex gap-3 justify-end pt-1">
+                      <Button variant="ghost" onClick={() => setShowCompleteEarly(false)}>Kembali</Button>
+                      <Button variant="success" onClick={handleCompleteEarly}>
+                        <FlagTriangleRight size={16} /> Konfirmasi Selesaikan
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}

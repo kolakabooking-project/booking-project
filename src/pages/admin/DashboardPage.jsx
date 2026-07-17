@@ -9,7 +9,7 @@ import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import PageHeader from '../../components/ui/PageHeader';
-import { BOOKING_STATUS, VEHICLE_STATUS } from '../../utils/constants';
+import { BOOKING_STATUS } from '../../utils/constants';
 import { isToday, formatDateShort, formatTime } from '../../utils/helpers';
 
 export default function AdminDashboardPage() {
@@ -53,6 +53,7 @@ export default function AdminDashboardPage() {
           }}
           allowPastClick={true} 
           getBookingsForDate={getBookingsForDate}
+          bookings={bookings}
           totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}
         />
         <Card className="p-6">

@@ -150,6 +150,8 @@ export const bookingApi = {
     request(`/bookings/${id}/review`, { method: 'POST', body: JSON.stringify({ reviewNotes }) }),
   markReviewRead: (id) =>
     request(`/bookings/${id}/review/read`, { method: 'PATCH' }),
+  completeEarly: (id, catatan) =>
+    request(`/bookings/${id}/complete`, { method: 'PATCH', body: JSON.stringify({ catatan }) }),
 };
 
 // ─── Vehicles ───
