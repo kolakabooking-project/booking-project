@@ -279,12 +279,12 @@ export default function Calendar({
                     <div className="mt-1 sm:mt-2 flex flex-col gap-1 items-center sm:items-start">
                       {myBookingsCount > 0 && (
                         <span className="inline-block truncate max-w-full rounded-md sm:rounded-full px-1 py-0.5 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-heading font-semibold text-center sm:text-left bg-djp-blue/15 text-djp-blue border border-djp-blue/25">
-                          {myBookingsCount} <span className="hidden sm:inline">Pribadi</span>
-                        </span>
-                      )}
-                      {otherBookingsCount > 0 && (
-                        <span className="inline-block truncate max-w-full rounded-md sm:rounded-full px-1 py-0.5 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-heading font-semibold text-center sm:text-left bg-djp-yellow/15 text-djp-yellow-dark border border-djp-yellow/25">
-                          {otherBookingsCount} <span className="hidden sm:inline">Lainnya</span>
+                          {myBookingsCount === totalBookingsCount ? (
+                            <span className="hidden sm:inline">Pribadi</span>
+                          ) : (
+                            <>{myBookingsCount} <span className="hidden sm:inline">Pribadi</span></>
+                          )}
+                          {myBookingsCount === totalBookingsCount && <span className="sm:hidden">{myBookingsCount}</span>}
                         </span>
                       )}
                     </div>
