@@ -372,7 +372,9 @@ export default function FleetTimetableBoard() {
                   <Clock size={14} /> Waktu Okupansi
                 </span>
                 <p className="mt-1 text-[color:var(--color-heading)]">
-                  {formatDateShort(detailBooking.startTime)} ({formatTime(detailBooking.startTime)} - {formatTime(detailBooking.endTime)})
+                  {new Date(detailBooking.startTime).toDateString() === new Date(detailBooking.endTime).toDateString()
+                    ? `${formatDateShort(detailBooking.startTime)} (${formatTime(detailBooking.startTime)} - ${formatTime(detailBooking.endTime)})`
+                    : `${formatDateShort(detailBooking.startTime)} - ${formatDateShort(detailBooking.endTime)} (${formatTime(detailBooking.startTime)} - ${formatTime(detailBooking.endTime)})`}
                 </p>
               </div>
 

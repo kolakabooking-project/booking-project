@@ -409,7 +409,9 @@ export default function Calendar({
                       >
                         <td className="py-3.5 px-4 whitespace-nowrap align-top">
                           <div className="font-heading font-bold text-[color:var(--color-heading)]">
-                            {formatDateShort(b.startTime)}
+                            {new Date(b.startTime).toDateString() === new Date(b.endTime).toDateString()
+                              ? formatDateShort(b.startTime)
+                              : `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}`}
                           </div>
                           <div className="text-xs text-[color:var(--color-text-soft)] mt-0.5 font-mono">
                             {formatTime(b.startTime)} - {formatTime(b.endTime)}

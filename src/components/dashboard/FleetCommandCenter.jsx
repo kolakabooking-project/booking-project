@@ -332,7 +332,11 @@ export default function FleetCommandCenter() {
             <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div><span className="font-semibold text-[color:var(--color-text-soft)]">Pegawai:</span><p className="text-[color:var(--color-heading)]">{modal.userName}</p></div>
               <div><span className="font-semibold text-[color:var(--color-text-soft)]">Status:</span><div className="mt-1"><Badge status={modal.status} /></div></div>
-              <div><span className="font-semibold text-[color:var(--color-text-soft)]">Waktu:</span><p className="text-[color:var(--color-heading)]">{formatDateShort(modal.startTime)} {formatTime(modal.startTime)}-{formatTime(modal.endTime)}</p></div>
+              <div><span className="font-semibold text-[color:var(--color-text-soft)]">Waktu:</span><p className="text-[color:var(--color-heading)]">
+                {new Date(modal.startTime).toDateString() === new Date(modal.endTime).toDateString()
+                  ? `${formatDateShort(modal.startTime)} ${formatTime(modal.startTime)}-${formatTime(modal.endTime)}`
+                  : `${formatDateShort(modal.startTime)} - ${formatDateShort(modal.endTime)} (${formatTime(modal.startTime)}-${formatTime(modal.endTime)})`}
+              </p></div>
               <div><span className="font-semibold text-[color:var(--color-text-soft)]">Penumpang:</span><p className="text-[color:var(--color-heading)]">{modal.jumlahPenumpang} orang</p></div>
               <div className="col-span-2"><span className="font-semibold text-[color:var(--color-text-soft)]">Keperluan:</span><p className="text-[color:var(--color-heading)]">{modal.keperluan}</p></div>
               {modal.catatan && <div className="col-span-2"><span className="font-semibold text-[color:var(--color-text-soft)]">Catatan Pengajuan:</span><p className="text-[color:var(--color-heading)]">{modal.catatan}</p></div>}
