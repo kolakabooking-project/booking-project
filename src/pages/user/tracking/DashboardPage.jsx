@@ -2,6 +2,7 @@ import { useTrackingDashboard } from '../../../hooks/useSheetData';
 import { FileText, Calendar, MapPin, CheckCircle, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import FridayWfoWidget from '../../../components/dashboard/FridayWfoWidget';
 import MyTrackingJourneyTracker from '../../../components/dashboard/MyTrackingJourneyTracker';
 import ActiveSTWidget from '../../../components/dashboard/ActiveSTWidget';
 
@@ -30,6 +31,9 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-heading font-bold text-[color:var(--color-heading)]">Tracking SPD</h1>
         <p className="text-sm text-[color:var(--color-text-soft)] mt-1">Ringkasan perjalanan dinas Anda</p>
       </div>
+
+      {/* Friday WFO Status Widget */}
+      <FridayWfoWidget />
 
       {/* Summary Journey Flow */}
       <MyTrackingJourneyTracker />

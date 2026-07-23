@@ -4,6 +4,7 @@ import { useRoomBooking } from '../../../contexts/RoomBookingContext';
 // import RoomCalendar from '../../../components/shared/RoomCalendar';
 import MyRoomJourneyTracker from '../../../components/dashboard/MyRoomJourneyTracker';
 import RoomShowcase from '../../../components/dashboard/RoomShowcase';
+import FridayWfoWidget from '../../../components/dashboard/FridayWfoWidget';
 import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
 import Card from '../../../components/ui/Card';
 import PageHeader from '../../../components/ui/PageHeader';
@@ -36,7 +37,8 @@ export default function DashboardPage() {
         subtitle="Pantau peminjaman aktif, cek kapasitas ruangan hari ini, dan buat permintaan baru."
       />
 
-
+      {/* Friday WFO Status Widget */}
+      <FridayWfoWidget />
 
       <div className="flex flex-col gap-8 mb-8">
         {/* On Mobile: below calendar. On Desktop: above calendar */}
