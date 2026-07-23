@@ -4,6 +4,7 @@ import { useBooking } from '../../contexts/BookingContext';
 import Calendar from '../../components/shared/Calendar';
 import MyJourneyTracker from '../../components/dashboard/MyJourneyTracker';
 import VehicleShowcase from '../../components/dashboard/VehicleShowcase';
+import FridayWfoWidget from '../../components/dashboard/FridayWfoWidget';
 import BookingModalFlow from '../../components/shared/BookingModalFlow';
 import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
@@ -37,6 +38,9 @@ export default function DashboardPage() {
         title={`Selamat datang, ${user.name}`}
         subtitle="Pantau peminjaman aktif, cek kapasitas kendaraan hari ini, dan buat permintaan baru."
       />
+
+      {/* Friday WFO Status Widget */}
+      <FridayWfoWidget />
 
       {/* Interactive Journey Tracker */}
       <MyJourneyTracker onNewBooking={handleNewBookingFromTracker} />
