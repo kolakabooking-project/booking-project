@@ -67,7 +67,7 @@ export default function Calendar({
         return matchUser || matchFor || matchVehicle || matchKeperluan || matchDriver;
       }
       return true;
-    });
+    }).sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
   }, [monthBookings, statusFilter, searchQuery, user?.id]);
 
   const getDateStatus = (date) => {
