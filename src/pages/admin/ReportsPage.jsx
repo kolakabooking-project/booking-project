@@ -10,6 +10,7 @@ import Badge from '../../components/ui/Badge';
 import { Download, BarChart3, Car } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../utils/helpers';
 import { BOOKING_STATUS } from '../../utils/constants';
+import UtilizationHeatmap from '../../components/admin/UtilizationHeatmap';
 // xlsx is loaded dynamically on export to avoid ~400KB in the initial bundle
 import { toast } from 'sonner';
 
@@ -97,6 +98,8 @@ export default function ReportsPage() {
         <StatCard icon={Car} label="Menunggu Persetujuan" value={pendingFiltered.length} color="warning" />
         <StatCard icon={Download} label="Selesai" value={completedFiltered.length} color="info" />
       </div>
+
+      <UtilizationHeatmap bookings={filtered} title="Heatmap Utilisasi Kendaraan" />
 
       <Card className="p-5 mb-6">
         <h3 className="mb-3 font-heading font-semibold text-[color:var(--color-heading)]">Filter laporan</h3>

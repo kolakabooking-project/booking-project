@@ -9,6 +9,7 @@ import PageHeader from '../../../components/ui/PageHeader';
 import Badge from '../../../components/ui/Badge';
 import { Download, BarChart3, Building2 } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../../utils/helpers';
+import UtilizationHeatmap from '../../../components/admin/UtilizationHeatmap';
 // xlsx is loaded dynamically on export to avoid ~400KB in the initial bundle
 import { toast } from 'sonner';
 
@@ -89,6 +90,8 @@ export default function ReportsPage() {
         <StatCard icon={Building2} label="Aktif/Akan Datang" value={activeFiltered.length} color="warning" />
         <StatCard icon={Download} label="Selesai" value={completedFiltered.length} color="info" />
       </div>
+
+      <UtilizationHeatmap bookings={filtered} title="Heatmap Utilisasi Ruangan" />
 
       <Card className="p-6 mb-8 border border-blue-100 shadow-sm">
         <h3 className="mb-4 font-heading font-semibold text-lg text-gray-800 dark:text-gray-200">Filter Laporan</h3>
