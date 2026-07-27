@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRoomBooking } from '../../../contexts/RoomBookingContext';
-// import RoomCalendar from '../../../components/shared/RoomCalendar';
+import Calendar from '../../../components/shared/Calendar';
 import MyRoomJourneyTracker from '../../../components/dashboard/MyRoomJourneyTracker';
 import RoomShowcase from '../../../components/dashboard/RoomShowcase';
 import FridayWfoWidget from '../../../components/dashboard/FridayWfoWidget';
@@ -12,7 +12,7 @@ import { ROOM_STATUS } from '../../../utils/constants';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { rooms, getRoomBookingsForDate } = useRoomBooking();
+  const { rooms, roomBookings, getRoomBookingsForDate } = useRoomBooking();
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -40,6 +40,9 @@ export default function DashboardPage() {
       {/* Friday WFO Status Widget */}
       <FridayWfoWidget />
 
+      {/* Interactive Journey Tracker */}
+      <MyRoomJourneyTracker onNewBooking={handleNewBookingFromTracker} />
+
       <div className="flex flex-col gap-8 mb-8">
         {/* On Mobile: below calendar. On Desktop: above calendar */}
         <div className="order-2 2xl:order-1 w-full grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_420px]">
@@ -61,9 +64,14 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* On Mobile: above vehicle showcase. On Desktop: below vehicle showcase */}
+        {/* On Mobile: above room showcase. On Desktop: below room showcase */}
         <div className="order-1 2xl:order-2 w-full">
-          <MyRoomJourneyTracker onNewBooking={() => setModalOpen(true)} />
+          <Calendar 
+            onDateClick={handleDateClick} 
+            getBookingsForDate={getRoomBookingsForDate}
+            bookings={roomBookings}
+            totalResources={rooms.filter(r => r.status !== 'Dalam Perawatan').length}
+          />
         </div>
       </div>
 

@@ -3,92 +3,135 @@ import { useRoomBooking } from '../../../contexts/RoomBookingContext';
 import Card from '../../../components/ui/Card';
 import PageHeader from '../../../components/ui/PageHeader';
 import Button from '../../../components/ui/Button';
-import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
-import { ROOM_STATUS } from '../../../utils/constants';
-import { isToday, formatTime } from '../../../utils/helpers';
+import Modal from '../../../components/ui/Modal';
 import Badge from '../../../components/ui/Badge';
-import { Building2, Clock, User, Plus } from 'lucide-react';
-import RoomStatsCards from '../../../components/dashboard/RoomStatsCards';
+import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
+import Calendar from '../../../components/shared/Calendar';
+import RoomCommandCenter from '../../../components/dashboard/RoomCommandCenter';
+import RoomTimetableBoard from '../../../components/dashboard/RoomTimetableBoard';
+import { ROOM_STATUS } from '../../../utils/constants';
+import { formatDateShort, formatTime } from '../../../utils/helpers';
+import { Plus, Building2 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-  const { rooms, roomBookings } = useRoomBooking();
+  const { rooms, roomBookings, getRoomBookingsForDate } = useRoomBooking();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [bookingFlowDate, setBookingFlowDate] = useState(null);
 
-  const availableRooms = rooms.filter(r => r.status === ROOM_STATUS.AVAILABLE).length;
-
-  const todaysBookings = roomBookings
-    .filter(b => b.status === 'Disetujui' && isToday(new Date(b.startTime)))
-    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  const dayBookings = selectedDate ? getRoomBookingsForDate(selectedDate) : [];
 
   return (
     <div>
       <PageHeader
         title="Ringkasan Operasional Ruangan"
-        subtitle="Awasi antrean booking ruangan dan penggunaan ruangan."
+        subtitle="Awasi antrean booking ruangan, penggunaan ruangan, dan kalender."
         actions={
           <Button onClick={() => setIsModalOpen(true)} variant="primary" size="md">
             <Plus size={16} className="mr-1.5" />
-            <span>Buat Peminjaman (Mandatory)</span>
+            <span className="hidden sm:inline">Buat Peminjaman (Mandatory)</span>
+            <span className="sm:hidden">+ Mandatory</span>
           </Button>
         }
       />
 
-      <RoomStatsCards />
+      {/* Interactive Room Command Center */}
+      <RoomCommandCenter />
 
-      {/* Jadwal Penggunaan Hari Ini */}
-      <Card className="p-6">
-        <div className="mb-6 flex items-center justify-between border-b pb-4 dark:border-gray-700">
-          <div>
-            <h3 className="text-xl font-heading font-bold text-gray-800 dark:text-white">Jadwal Hari Ini</h3>
-            <p className="text-sm text-gray-500 mt-1">Daftar ruangan yang telah disetujui untuk digunakan pada hari ini.</p>
-          </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600">
-            <Building2 size={24} />
-          </div>
-        </div>
+      {/* Dynamic Gantt Chart Room Occupancy Timetable Board */}
+      <RoomTimetableBoard />
 
-        {todaysBookings.length === 0 ? (
-          <div className="py-12 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4 text-gray-400">
-              <Clock size={32} />
+      {/* Calendar + Insight Card */}
+      <div className="mb-6 sm:mb-8 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Calendar 
+          onDateClick={(date) => setSelectedDate(date)} 
+          onMandatoryBookingClick={(date) => {
+            setBookingFlowDate(date);
+            setIsModalOpen(true);
+          }}
+          allowPastClick={true} 
+          getBookingsForDate={getRoomBookingsForDate}
+          bookings={roomBookings}
+          totalResources={rooms.filter(r => r.status !== 'Dalam Perawatan').length}
+        />
+        <Card className="p-6">
+          <span className="page-kicker">Insight Hari Ini</span>
+          <h2 className="mt-4 text-xl font-heading font-bold text-[color:var(--color-heading)]">Prioritas admin</h2>
+          <div className="mt-6 space-y-3">
+            <div className="surface-muted p-4">
+              <p className="text-sm font-semibold text-[color:var(--color-text-muted)]">Antrean persetujuan</p>
+              <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                {roomBookings.filter(b => b.status === 'Pending').length} permintaan perlu diproses agar jadwal ruangan tetap lancar.
+              </p>
             </div>
-            <p className="text-gray-500 font-medium">Tidak ada jadwal penggunaan hari ini.</p>
-            <p className="text-sm text-gray-400 mt-1">Semua ruangan tersedia untuk dibooking.</p>
+            <div className="surface-muted p-4">
+              <p className="text-sm font-semibold text-[color:var(--color-text-muted)]">Ruangan aktif hari ini</p>
+              <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                {roomBookings.filter(b => {
+                  const s = new Date(b.startTime);
+                  const today = new Date();
+                  return (b.status === 'Disetujui' || b.status === 'Sedang Digunakan') && 
+                    s.getDate() === today.getDate() && s.getMonth() === today.getMonth() && s.getFullYear() === today.getFullYear();
+                }).length} ruangan sedang digunakan atau sudah dialokasikan untuk hari ini.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {todaysBookings.map((booking) => {
-              const room = rooms.find(r => r.id === booking.roomId);
-              return (
-                <div key={booking.id} className="group relative flex flex-col sm:flex-row gap-4 rounded-2xl border p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors dark:border-gray-700">
-                  <div className="flex flex-col sm:w-48 shrink-0">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
-                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-md mt-2 w-fit">
-                      {room ? room.name : 'Ruangan'}
-                    </span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center">
-                    <h4 className="font-heading font-bold text-gray-800 dark:text-white mb-1">{booking.keperluan}</h4>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                      <User size={14} />
-                      <span>{booking.userName}</span>
-                      <span className="text-gray-300 dark:text-gray-600">•</span>
-                      <span>{booking.peserta || 1} Peserta</span>
+        </Card>
+      </div>
+
+      {/* Date Detail Modal */}
+      <Modal isOpen={!!selectedDate} onClose={() => setSelectedDate(null)} title={selectedDate ? `Booking: ${formatDateShort(selectedDate)}` : ''} size="md">
+        <div className="space-y-4">
+          {dayBookings.length === 0 ? (
+            <div className="py-8 text-center text-[color:var(--color-text-soft)] font-medium">Tidak ada peminjaman ruangan di hari ini.</div>
+          ) : (
+            <div className="space-y-3">
+              {dayBookings.map(b => {
+                const room = rooms.find(r => r.id === b.roomId);
+                return (
+                  <div key={b.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-heading font-bold text-[color:var(--color-heading)]">{b.userName}</span>
+                      <Badge status={b.status} />
+                    </div>
+                    <div className="text-sm text-[color:var(--color-text-muted)]">
+                      <p><span className="font-semibold">Waktu:</span> {formatTime(b.startTime)} - {formatTime(b.endTime)}</p>
+                      <p><span className="font-semibold">Keperluan:</span> {b.keperluan}</p>
+                      <p><span className="font-semibold">Ruangan:</span> {room ? room.name : 'Belum dialokasikan'}</p>
                     </div>
                   </div>
-                  <div className="flex items-start justify-end">
-                    <Badge status={booking.status} />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+          
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const dateToUse = selectedDate;
+                setSelectedDate(null);
+                setBookingFlowDate(dateToUse);
+                setIsModalOpen(true);
+              }}
+              className="w-full sm:w-auto"
+            >
+              + Buat Peminjaman (Mandatory)
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedDate(null)} className="w-full sm:w-auto">
+              Tutup
+            </Button>
           </div>
-        )}
-      </Card>
+        </div>
+      </Modal>
 
       <RoomBookingModalFlow
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setBookingFlowDate(null);
+        }}
+        selectedDate={bookingFlowDate}
         isAdmin={true}
       />
     </div>
