@@ -245,21 +245,40 @@ function sanitizeRoomBookingInsert(data: any) {
       try {
         const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
         const formattedStart = formatDateTime(startTime);
+
+        const notificationPayloads = adminUsers.map(admin => ({
+          userId: admin.id,
+          title: 'Peminjaman Ruangan Baru',
+          body: `Pegawai ${fullBooking.userName || 'Pegawai'} meminjam ${fullBooking.roomName} untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
+          url: '/admin/room/dashboard',
+        }));
+        const { createNotificationsBatch } = await import('./notification.service.js');
+        await createNotificationsBatch(notificationPayloads);
+
         const payload = {
           title: 'Peminjaman Ruangan Baru',
           body: `Pegawai ${fullBooking.userName || 'Pegawai'} meminjam ${fullBooking.roomName} untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
-          url: '/admin/room/requests',
+          url: '/admin/room/dashboard',
         };
         const { sendPushNotification } = await import('./push.service.js');
         await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
       } catch (err) {
-        console.error('[RoomBookingService] Failed to send push notifications:', err);
+        console.error('[RoomBookingService] Failed to send notifications:', err);
       }
     })();
   } else {
     (async () => {
       try {
         const formattedStart = formatDateTime(startTime);
+
+        const { createNotification } = await import('./notification.service.js');
+        await createNotification({
+          userId: fullBooking.userId,
+          title: 'Penugasan Ruangan Baru',
+          body: `Admin telah menugaskan peminjaman ${fullBooking.roomName} untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
+          url: '/user/room/my-bookings',
+        });
+
         const payload = {
           title: 'Penugasan Ruangan Baru',
           body: `Admin telah menugaskan peminjaman ${fullBooking.roomName} untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
@@ -317,6 +336,15 @@ export async function cancelRoomBooking(bookingId: string, userId: string, isAdm
     (async () => {
       try {
         const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+
+        const { createNotification } = await import('./notification.service.js');
+        await createNotification({
+          userId: fullBooking.userId,
+          title: 'Peminjaman Ruangan Dibatalkan',
+          body: `Peminjaman ${fullBooking.roomName} pada ${formattedStart} dibatalkan oleh Admin. Alasan: ${cancelled.alasanPembatalan}`,
+          url: '/user/room/my-bookings',
+        });
+
         const payload = {
           title: 'Peminjaman Ruangan Dibatalkan',
           body: `Peminjaman ${fullBooking.roomName} pada ${formattedStart} dibatalkan oleh Admin. Alasan: ${cancelled.alasanPembatalan}`,
@@ -333,15 +361,25 @@ export async function cancelRoomBooking(bookingId: string, userId: string, isAdm
       try {
         const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
         const formattedStart = formatDateTime(new Date(fullBooking.startTime));
+
+        const notificationPayloads = adminUsers.map(admin => ({
+          userId: admin.id,
+          title: 'Peminjaman Ruangan Dibatalkan',
+          body: `Pegawai ${fullBooking.userName} membatalkan peminjaman ruangan ${fullBooking.roomName} pada ${formattedStart}.`,
+          url: '/admin/room/dashboard',
+        }));
+        const { createNotificationsBatch } = await import('./notification.service.js');
+        await createNotificationsBatch(notificationPayloads);
+
         const payload = {
           title: 'Peminjaman Ruangan Dibatalkan',
           body: `Pegawai ${fullBooking.userName} membatalkan peminjaman ruangan ${fullBooking.roomName} pada ${formattedStart}.`,
-          url: '/admin/room/requests',
+          url: '/admin/room/dashboard',
         };
         const { sendPushNotification } = await import('./push.service.js');
         await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
       } catch (err) {
-        console.error('[RoomBookingService] Failed to send push notifications for cancelled room booking:', err);
+        console.error('[RoomBookingService] Failed to send push notification:', err);
       }
     })();
   }
