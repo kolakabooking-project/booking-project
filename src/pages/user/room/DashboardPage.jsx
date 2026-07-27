@@ -67,6 +67,7 @@ export default function DashboardPage() {
         {/* On Mobile: above room showcase. On Desktop: below room showcase */}
         <div className="order-1 2xl:order-2 w-full">
           <Calendar 
+            type="room"
             onDateClick={handleDateClick} 
             getBookingsForDate={getRoomBookingsForDate}
             bookings={roomBookings}

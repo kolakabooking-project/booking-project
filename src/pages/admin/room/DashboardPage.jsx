@@ -44,6 +44,7 @@ export default function AdminDashboardPage() {
       {/* Calendar + Insight Card */}
       <div className="mb-6 sm:mb-8 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <Calendar 
+          type="room"
           onDateClick={(date) => setSelectedDate(date)} 
           onMandatoryBookingClick={(date) => {
             setBookingFlowDate(date);

@@ -1,5 +1,5 @@
 import { useState, useMemo, useContext } from 'react';
-import { ChevronLeft, ChevronRight, LayoutGrid, TableProperties, Search, Download, Car, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, TableProperties, Search, Download, Car, User, Building2, Users } from 'lucide-react';
 import { getDaysInMonth, getFirstDayOfMonth, MONTH_NAMES, DAY_NAMES, isPastDate, isToday, formatDateShort, formatTime } from '../../utils/helpers';
 import { useAuth } from '../../contexts/AuthContext';
 import { BookingContext } from '../../contexts/BookingContext';
@@ -12,7 +12,8 @@ export default function Calendar({
   allowPastClick = false,
   getBookingsForDate,
   totalResources = 0,
-  bookings: propBookings
+  bookings: propBookings,
+  type = 'vehicle' // 'vehicle' | 'room'
 }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -23,6 +24,10 @@ export default function Calendar({
   
   const { user } = useAuth();
   const bookingContext = useContext(BookingContext);
+
+  const isRoom = type === 'room';
+  const resourceLabel = isRoom ? 'ruangan' : 'kendaraan';
+  const groupLabel = isRoom ? 'peminjaman ruangan' : 'peminjaman armada';
 
   const days = useMemo(() => getDaysInMonth(year, month), [year, month]);
   const firstDay = useMemo(() => getFirstDayOfMonth(year, month), [year, month]);
@@ -61,14 +66,13 @@ export default function Calendar({
         const q = searchQuery.toLowerCase();
         const matchUser = (b.userName || '').toLowerCase().includes(q);
         const matchFor = (b.bookingFor || '').toLowerCase().includes(q);
-        const matchVehicle = (b.vehicleName || '').toLowerCase().includes(q);
+        const matchResource = (isRoom ? (b.roomName || b.lokasi || '') : (b.vehicleName || b.driverName || '')).toLowerCase().includes(q);
         const matchKeperluan = (b.keperluan || '').toLowerCase().includes(q);
-        const matchDriver = (b.driverName || '').toLowerCase().includes(q);
-        return matchUser || matchFor || matchVehicle || matchKeperluan || matchDriver;
+        return matchUser || matchFor || matchResource || matchKeperluan;
       }
       return true;
     }).sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-  }, [monthBookings, statusFilter, searchQuery, user?.id]);
+  }, [monthBookings, statusFilter, searchQuery, user?.id, isRoom]);
 
   const getDateStatus = (date) => {
     if (isPastDate(date)) return 'past';
@@ -107,20 +111,38 @@ export default function Calendar({
   const exportToExcel = async () => {
     try {
       const { utils, writeFile } = await import('xlsx');
-      const data = filteredExcelBookings.map((b, idx) => ({
-        'No': idx + 1,
-        'Tanggal Mulai': formatDateShort(b.startTime),
-        'Tanggal Selesai': formatDateShort(b.endTime),
-        'Waktu': `${formatTime(b.startTime)} - ${formatTime(b.endTime)}`,
-        'Peminjam': b.userName || '-',
-        'Booking Atas Nama': b.bookingFor || '-',
-        'Kendaraan': b.vehicleName || 'Belum dialokasikan',
-        'Jenis Kendaraan': b.jenisKendaraan || 'Mobil',
-        'Pengemudi': b.driverName || (b.perluSopir ? 'Perlu Sopir (Belum ditugaskan)' : 'Tanpa Sopir'),
-        'Keperluan': b.keperluan || '-',
-        'Status': b.status || '-',
-        'Catatan': b.catatan || '-'
-      }));
+      const data = filteredExcelBookings.map((b, idx) => {
+        if (isRoom) {
+          return {
+            'No': idx + 1,
+            'Tanggal Mulai': formatDateShort(b.startTime),
+            'Tanggal Selesai': formatDateShort(b.endTime),
+            'Waktu': `${formatTime(b.startTime)} - ${formatTime(b.endTime)}`,
+            'Peminjam': b.userName || '-',
+            'Booking Atas Nama': b.bookingFor || '-',
+            'Ruangan': b.roomName || 'Belum dialokasikan',
+            'Lokasi': b.lokasi || b.location || '-',
+            'Jumlah Peserta': b.peserta || b.jumlahPeserta || '-',
+            'Keperluan': b.keperluan || '-',
+            'Status': b.status || '-',
+            'Catatan': b.catatan || '-'
+          };
+        }
+        return {
+          'No': idx + 1,
+          'Tanggal Mulai': formatDateShort(b.startTime),
+          'Tanggal Selesai': formatDateShort(b.endTime),
+          'Waktu': `${formatTime(b.startTime)} - ${formatTime(b.endTime)}`,
+          'Peminjam': b.userName || '-',
+          'Booking Atas Nama': b.bookingFor || '-',
+          'Kendaraan': b.vehicleName || 'Belum dialokasikan',
+          'Jenis Kendaraan': b.jenisKendaraan || 'Mobil',
+          'Pengemudi': b.driverName || (b.perluSopir ? 'Perlu Sopir (Belum ditugaskan)' : 'Tanpa Sopir'),
+          'Keperluan': b.keperluan || '-',
+          'Status': b.status || '-',
+          'Catatan': b.catatan || '-'
+        };
+      });
 
       const ws = utils.json_to_sheet(data);
       const wb = utils.book_new();
@@ -129,7 +151,10 @@ export default function Calendar({
       const colWidths = Object.keys(data[0] || {}).map((k) => ({ wch: Math.max(k.length, 18) }));
       ws['!cols'] = colWidths;
 
-      const filename = `Rekap_BOOKOLAKA_${MONTH_NAMES[month]}_${year}.xlsx`;
+      const filename = isRoom 
+        ? `Rekap_Booking_Ruangan_${MONTH_NAMES[month]}_${year}.xlsx`
+        : `Rekap_BOOKOLAKA_${MONTH_NAMES[month]}_${year}.xlsx`;
+
       writeFile(wb, filename);
       toast.success(`File ${filename} berhasil diunduh`);
     } catch (err) {
@@ -146,7 +171,9 @@ export default function Calendar({
       <div className="flex flex-col gap-4 border-b px-5 py-5 lg:flex-row lg:items-center lg:justify-between" style={{ borderColor: 'var(--color-border)' }}>
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h3 className="text-lg font-heading font-bold text-[color:var(--color-heading)]">Kalender BOOKOLAKA</h3>
+            <h3 className="text-lg font-heading font-bold text-[color:var(--color-heading)]">
+              {isRoom ? 'Kalender Booking Ruangan' : 'Kalender BOOKOLAKA'}
+            </h3>
             
             {/* View Switcher Pills */}
             <div className="inline-flex items-center rounded-xl p-1 bg-[color:var(--color-surface-muted)] border" style={{ borderColor: 'var(--color-border)' }}>
@@ -178,8 +205,8 @@ export default function Calendar({
           </div>
           <p className="mt-1.5 text-sm text-[color:var(--color-text-soft)]">
             {activeTab === 'grid' 
-              ? 'Pilih tanggal untuk melihat aktivitas dan ketersediaan kendaraan harian.'
-              : `Transparansi total daftar peminjaman armada selama bulan ${MONTH_NAMES[month]} ${year}.`}
+              ? `Pilih tanggal untuk melihat aktivitas dan ketersediaan ${resourceLabel} harian.`
+              : `Transparansi total daftar ${groupLabel} selama bulan ${MONTH_NAMES[month]} ${year}.`}
           </p>
         </div>
 
@@ -221,7 +248,6 @@ export default function Calendar({
               const status = getDateStatus(date);
               const bookingsForDay = getBookingsForDate ? getBookingsForDate(date) : [];
               const myBookingsCount = bookingsForDay.filter(b => b.userId === user?.id).length;
-              const otherBookingsCount = bookingsForDay.filter(b => b.userId !== user?.id).length;
               const totalBookingsCount = bookingsForDay.length;
 
               const isTodayDate = isToday(date);
@@ -261,7 +287,7 @@ export default function Calendar({
                             h-6 w-6 items-center justify-center rounded-full bg-djp-blue text-white hover:bg-djp-blue-dark shadow-sm
                             text-xs font-bold leading-none hover:scale-105 active:scale-95 transition-transform
                           "
-                          title="Buat Peminjaman Mandatori"
+                          title={isRoom ? 'Buat Peminjaman Ruangan Mandatory' : 'Buat Peminjaman Mandatori'}
                           type="button"
                         >
                           +
@@ -301,7 +327,7 @@ export default function Calendar({
               className="px-5 py-3.5 border-t bg-djp-blue/5 hover:bg-djp-blue/10 cursor-pointer transition-colors flex items-center justify-between text-xs sm:text-sm font-heading text-djp-blue font-semibold"
               style={{ borderColor: 'var(--color-border)' }}
             >
-              <span>Ada {monthBookings.length} peminjaman armada terdaftar pada bulan {MONTH_NAMES[month]} {year}.</span>
+              <span>Ada {monthBookings.length} {groupLabel} terdaftar pada bulan {MONTH_NAMES[month]} {year}.</span>
               <span className="flex items-center gap-1.5 underline decoration-djp-blue/40 underline-offset-4">
                 <TableProperties size={15} />
                 Buka Tabel Excel
@@ -320,7 +346,7 @@ export default function Calendar({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari peminjam, atas nama, kendaraan, tujuan..."
+                placeholder={isRoom ? "Cari peminjam, atas nama, ruangan, keperluan..." : "Cari peminjam, atas nama, kendaraan, tujuan..."}
                 className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm border bg-[color:var(--color-surface-strong)] text-[color:var(--color-heading)] placeholder:text-[color:var(--color-text-soft)] focus:outline-none focus:ring-2 focus:ring-djp-blue/30 focus:border-djp-blue transition-all"
                 style={{ borderColor: 'var(--color-border)' }}
               />
@@ -372,9 +398,9 @@ export default function Calendar({
                 <tr>
                   <th className="py-3.5 px-4 w-40 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Tanggal & Waktu</th>
                   <th className="py-3.5 px-4 w-52 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Peminjam</th>
-                  <th className="py-3.5 px-4 w-48 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Kendaraan & Plat</th>
-                  <th className="py-3.5 px-4 w-40 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Pengemudi</th>
-                  <th className="py-3.5 px-4 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Keperluan / Tujuan</th>
+                  <th className="py-3.5 px-4 w-48 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>{isRoom ? 'Ruangan & Lokasi' : 'Kendaraan & Plat'}</th>
+                  <th className="py-3.5 px-4 w-40 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>{isRoom ? 'Jumlah Peserta' : 'Pengemudi'}</th>
+                  <th className="py-3.5 px-4 sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>{isRoom ? 'Keperluan' : 'Keperluan / Tujuan'}</th>
                   <th className="py-3.5 px-4 w-32 text-center sticky top-0 z-20 bg-[color:var(--color-surface-strong)]" style={{ backgroundColor: 'var(--color-surface-strong)' }}>Status</th>
                 </tr>
               </thead>
@@ -387,7 +413,7 @@ export default function Calendar({
                         <p className="font-heading font-medium text-sm mt-1">
                           {searchQuery || statusFilter !== 'all'
                             ? 'Tidak ada peminjaman yang sesuai dengan pencarian atau filter.'
-                            : `Belum ada peminjaman armada terdaftar pada bulan ${MONTH_NAMES[month]} ${year}.`}
+                            : `Belum ada ${groupLabel} terdaftar pada bulan ${MONTH_NAMES[month]} ${year}.`}
                         </p>
                       </div>
                     </td>
@@ -438,24 +464,33 @@ export default function Calendar({
                         <td className="py-3.5 px-4 align-top">
                           <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-soft)]">
-                              <Car size={15} />
+                              {isRoom ? <Building2 size={15} /> : <Car size={15} />}
                             </div>
                             <div>
                               <div className="font-heading font-semibold text-[color:var(--color-heading)]">
-                                {b.vehicleName || 'Belum dialokasikan'}
+                                {isRoom ? (b.roomName || 'Belum dialokasikan') : (b.vehicleName || 'Belum dialokasikan')}
                               </div>
                               <div className="text-[11px] text-[color:var(--color-text-soft)]">
-                                {b.jenisKendaraan || 'Mobil'}
+                                {isRoom ? (b.lokasi || b.location || 'Ruangan') : (b.jenisKendaraan || 'Mobil')}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 align-top whitespace-nowrap">
-                          <div className="font-medium text-[color:var(--color-heading)]">
-                            {b.driverName || (b.perluSopir ? 'Perlu Sopir (Belum)' : 'Tanpa Sopir')}
-                          </div>
-                          {b.perluSopir && !b.driverName && (
-                            <span className="text-[10px] text-warning font-semibold block mt-0.5">Menunggu plot sopir</span>
+                          {isRoom ? (
+                            <div className="flex items-center gap-1.5 font-medium text-[color:var(--color-heading)]">
+                              <Users size={14} className="text-[color:var(--color-text-soft)]" />
+                              <span>{b.peserta || b.jumlahPeserta || 1} Orang</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-medium text-[color:var(--color-heading)]">
+                                {b.driverName || (b.perluSopir ? 'Perlu Sopir (Belum)' : 'Tanpa Sopir')}
+                              </div>
+                              {b.perluSopir && !b.driverName && (
+                                <span className="text-[10px] text-warning font-semibold block mt-0.5">Menunggu plot sopir</span>
+                              )}
+                            </>
                           )}
                         </td>
                         <td className="py-3.5 px-4 align-top">
@@ -483,4 +518,3 @@ export default function Calendar({
     </div>
   );
 }
-
