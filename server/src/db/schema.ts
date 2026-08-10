@@ -219,7 +219,9 @@ export const activityLog = pgTable('activity_log', {
       // Room Booking
       'ROOM_BOOKING_CREATED', 'ROOM_BOOKING_CANCELLED', 'ROOM_BOOKING_REVIEW',
       // WFO
-      'WFO_SCHEDULE_UPDATED'
+      'WFO_SCHEDULE_UPDATED',
+      // Tracking SPD
+      'SPD_CACHE_REFRESHED'
     ]
 
   }).notNull(),
