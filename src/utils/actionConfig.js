@@ -10,7 +10,7 @@ import {
   FilePlus2, FileX2, FileCheck2, FileWarning, FileClock, Navigation, FlagTriangleRight, CircleCheckBig,
   CarFront, Wrench, Trash2,
   UserPlus, Pencil,
-  UserRoundPlus, UserRoundX, RefreshCcw, ShieldCheck,
+  UserRoundPlus, UserRoundX, RefreshCcw, RefreshCw, ShieldCheck,
   Power, UserCog,
   CircleDot,
   Building2,
