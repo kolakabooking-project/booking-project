@@ -1,6 +1,12 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { roleGuard } from '../middleware/roleGuard.js';
 import * as sheetsService from '../services/sheets.service.js';
+import { logActivity } from '../services/activity.service.js';
+
+function getIp(req: Request): string | undefined {
+  const ip = req.ip;
+  return Array.isArray(ip) ? ip[0] : ip;
+}
 
 const router = Router();
 
@@ -105,9 +111,19 @@ router.get('/jadwal-jumat', async (req, res) => {
 
 // ─── POST /api/sheets/cache/refresh ───
 // Admin-only: force refresh cached data
-router.post('/cache/refresh', roleGuard('admin'), async (_req, res) => {
+router.post('/cache/refresh', roleGuard('admin'), async (req, res) => {
   try {
+    const user = (req as any).user;
     await sheetsService.refreshCache();
+
+    logActivity({
+      userId: user?.id || null,
+      userName: user?.name || 'Administrator',
+      action: 'SPD_CACHE_REFRESHED',
+      detail: 'Melakukan refresh data SPD dari Google Sheets',
+      ipAddress: getIp(req),
+    });
+
     res.json({ message: 'Cache berhasil di-refresh' });
   } catch (err: any) {
     console.error('[SHEETS] Error refreshing cache:', err.message);
