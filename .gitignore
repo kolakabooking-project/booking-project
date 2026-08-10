@@ -94,5 +94,6 @@ temp-build.*
 .cache/
 .turbo/
 
-# ─── AI Agent Skills ───
+# ─── AI Agent Skills & Superpowers Docs ───
 .agents/
+docs/
