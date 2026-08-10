@@ -61,6 +61,11 @@ export default function ActivityLogPage() {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </optgroup>
+            <optgroup label="Tracking SPD">
+              {ACTION_FILTER_OPTIONS.filter(o => o.value.startsWith('SPD_')).map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">

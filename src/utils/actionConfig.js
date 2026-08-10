@@ -241,6 +241,15 @@ export const ACTION_CONFIG = {
     bgClass: 'bg-teal-500/8 dark:bg-teal-500/15 border border-teal-500/15 dark:border-teal-400/20',
     badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-500/8 dark:bg-teal-500/15',
   },
+
+  // ─── Tracking SPD ─────────────────────────────
+  SPD_CACHE_REFRESHED: {
+    icon: RefreshCw,
+    label: 'Refresh Data SPD',
+    iconClass: 'text-emerald-600 dark:text-emerald-400',
+    bgClass: 'bg-emerald-500/8 dark:bg-emerald-500/15 border border-emerald-500/15 dark:border-emerald-400/20',
+    badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/8 dark:bg-emerald-500/15',
+  },
 };
 
 /** Default config for unknown action types */
