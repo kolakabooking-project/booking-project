@@ -160,10 +160,8 @@ router.post('/test', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/push/vapid-public-key — Get VAPID public key for frontend subscription
- */
-router.get('/vapid-public-key', async (req: Request, res: Response) => {
+// GET /api/push/vapid-public-key or /api/push/vapidPublicKey — Get VAPID public key for frontend subscription
+router.get(['/vapid-public-key', '/vapidPublicKey'], async (req: Request, res: Response) => {
   try {
     res.json({ publicKey: env.VAPID_PUBLIC_KEY });
   } catch (err: any) {

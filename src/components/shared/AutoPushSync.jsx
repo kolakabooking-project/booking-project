@@ -28,7 +28,7 @@ export default function AutoPushSync() {
 
         // Jika permission sudah diizinkan (granted) namun belum ada subscription atau belum tersimpan, otomatis daftarkan secara senyap
         if (!sub && Notification.permission === 'granted') {
-          const keyRes = await fetch('/api/push/vapidPublicKey');
+          const keyRes = await fetch('/api/push/vapid-public-key');
           if (keyRes.ok) {
             const { publicKey } = await keyRes.json();
             if (publicKey) {
