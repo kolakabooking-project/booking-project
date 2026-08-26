@@ -12,15 +12,16 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   LogOut, ChevronLeft, Home, ChevronRight,
   BarChart3, FileText, PieChart,
-  Settings, Shield, ArrowLeft, Users, CalendarDays, RefreshCw, Loader2
+  Settings, Shield, ArrowLeft, Users, CalendarDays, CalendarOff, RefreshCw, Loader2
 } from 'lucide-react';
 import SkipLink from '../ui/SkipLink';
 
-const iconMap = { BarChart3, FileText, PieChart, CalendarDays };
+const iconMap = { BarChart3, FileText, PieChart, CalendarDays, CalendarOff };
 
 const breadcrumbMap = {
   '/admin/tracking/monitoring-spd': 'Monitoring SPD',
   '/admin/tracking/perjadin': 'Perjadin',
+  '/admin/tracking/pegawai-cuti': 'Pegawai Cuti',
   '/admin/tracking/laporan': 'Laporan',
   '/admin/tracking/jadwal-jumat': 'Jadwal Jumat',
 };
@@ -173,11 +174,11 @@ export default function AdminTrackingLayout({ children }) {
 
   const handleRefreshCache = async () => {
     try {
-      showLoading('Memperbarui data dari Google Sheets...');
+      showLoading('Memperbarui seluruh data dari Google Sheets...');
       await refreshCache.mutateAsync();
-      toast.success('Data berhasil di-refresh dari Google Sheets');
+      toast.success('Semua data berhasil diperbarui dari Google Sheets (SPD, Perjadin, Pegawai Cuti)');
     } catch {
-      toast.error('Gagal me-refresh data');
+      toast.error('Gagal me-refresh data spreadsheet');
     } finally {
       hideLoading();
     }
@@ -258,7 +259,7 @@ export default function AdminTrackingLayout({ children }) {
           <div ref={trackingMenuRef} className="relative flex h-full items-center justify-center w-12">
             <button 
               onClick={() => setTrackingMenuOpen(!trackingMenuOpen)}
-              className={`flex flex-col items-center justify-center w-full h-full transition-colors ${['/admin/tracking/monitoring-spd', '/admin/tracking/perjadin'].includes(location.pathname) ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}
+              className={`flex flex-col items-center justify-center w-full h-full transition-colors ${['/admin/tracking/monitoring-spd', '/admin/tracking/perjadin', '/admin/tracking/pegawai-cuti'].includes(location.pathname) ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}
             >
               <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
                 <BarChart3 size={20} strokeWidth={2.5} />
@@ -290,6 +291,13 @@ export default function AdminTrackingLayout({ children }) {
                     className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors mt-1 ${isActive ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'text-[color:var(--color-heading)] hover:bg-[color:var(--color-surface-muted)]'}`}
                   >
                     <FileText size={16} /> Perjadin
+                  </NavLink>
+                  <NavLink
+                    to="/admin/tracking/pegawai-cuti"
+                    onClick={() => setTrackingMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors mt-1 ${isActive ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'text-[color:var(--color-heading)] hover:bg-[color:var(--color-surface-muted)]'}`}
+                  >
+                    <CalendarOff size={16} /> Cuti
                   </NavLink>
                 </motion.div>
               )}

@@ -67,6 +67,7 @@ const AdminMonitoringSPDPage = lazy(() => import('./pages/admin/tracking/Monitor
 const AdminPerjadinPage = lazy(() => import('./pages/admin/tracking/PerjadinPage'));
 const AdminLaporanPage = lazy(() => import('./pages/admin/tracking/LaporanPage'));
 const SharedJadwalJumatPage = lazy(() => import('./pages/shared/tracking/JadwalJumatPage'));
+const SharedPegawaiCutiPage = lazy(() => import('./pages/shared/tracking/PegawaiCutiPage'));
 
 // Tracking User pages
 const UserTrackingDashboard = lazy(() => import('./pages/user/tracking/DashboardPage'));
@@ -139,6 +140,15 @@ function SharedJadwalJumatRedirect() {
   return <Navigate to="/user/tracking/jadwal-jumat" replace />;
 }
 
+function SharedPegawaiCutiRedirect() {
+  const { activeRole, user } = useAuth();
+  const role = activeRole || user?.role || 'user';
+  if (role === 'admin' || role === 'superadmin') {
+    return <Navigate to="/admin/tracking/pegawai-cuti" replace />;
+  }
+  return <Navigate to="/user/tracking/pegawai-cuti" replace />;
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -178,6 +188,7 @@ function AppRoutes() {
         {/* Tracking Admin Routes */}
         <Route path="/admin/tracking/monitoring-spd" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminMonitoringSPDPage /></AdminTrackingLayout></ProtectedRoute>} />
         <Route path="/admin/tracking/perjadin" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminPerjadinPage /></AdminTrackingLayout></ProtectedRoute>} />
+        <Route path="/admin/tracking/pegawai-cuti" element={<ProtectedRoute role="admin"><AdminTrackingLayout><SharedPegawaiCutiPage /></AdminTrackingLayout></ProtectedRoute>} />
         <Route path="/admin/tracking/laporan" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminLaporanPage /></AdminTrackingLayout></ProtectedRoute>} />
         <Route path="/admin/tracking/jadwal-jumat" element={<ProtectedRoute role="admin"><AdminTrackingLayout><SharedJadwalJumatPage /></AdminTrackingLayout></ProtectedRoute>} />
         <Route path="/admin/tracking/settings" element={<ProtectedRoute role="admin"><AdminTrackingLayout><AdminSettingsPage /></AdminTrackingLayout></ProtectedRoute>} />
@@ -185,6 +196,7 @@ function AppRoutes() {
         {/* Tracking User Routes */}
         <Route path="/user/tracking/dashboard" element={<ProtectedRoute role="user"><UserTrackingLayout><UserTrackingDashboard /></UserTrackingLayout></ProtectedRoute>} />
         <Route path="/user/tracking/spd-saya" element={<ProtectedRoute role="user"><UserTrackingLayout><UserSPDSayaPage /></UserTrackingLayout></ProtectedRoute>} />
+        <Route path="/user/tracking/pegawai-cuti" element={<ProtectedRoute role="user"><UserTrackingLayout><SharedPegawaiCutiPage /></UserTrackingLayout></ProtectedRoute>} />
         <Route path="/user/tracking/jadwal-jumat" element={<ProtectedRoute role="user"><UserTrackingLayout><SharedJadwalJumatPage /></UserTrackingLayout></ProtectedRoute>} />
         <Route path="/user/tracking/account" element={<ProtectedRoute role="user"><UserTrackingLayout><AccountPage /></UserTrackingLayout></ProtectedRoute>} />
 
@@ -199,6 +211,7 @@ function AppRoutes() {
 
         {/* Shared / Legacy Tracking Redirect */}
         <Route path="/shared/tracking/jadwal-jumat" element={<ProtectedRoute><SharedJadwalJumatRedirect /></ProtectedRoute>} />
+        <Route path="/shared/tracking/pegawai-cuti" element={<ProtectedRoute><SharedPegawaiCutiRedirect /></ProtectedRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -24,7 +24,8 @@ export default function JadwalJumatPage() {
   const { data: result, isLoading, isError, refetch, isFetching } = useWfoSchedule(selectedDate);
 
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const activeRole = localStorage.getItem('booking_active_role') || user?.role;
+  const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
   const allData = result?.isConfigured ? (result?.data || []) : [];
 
@@ -159,14 +160,16 @@ export default function JadwalJumatPage() {
               />
             </div>
             
-            <button
-              onClick={handleRefresh}
-              disabled={isFetching}
-              className="flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-heading font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50 shrink-0"
-              style={{ borderColor: 'var(--color-border)' }}
-            >
-              <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleRefresh}
+                disabled={isFetching}
+                className="flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-heading font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50 shrink-0"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+              </button>
+            )}
           </div>
         </div>
 

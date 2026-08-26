@@ -11,7 +11,7 @@ function getIp(req: Request): string | undefined {
 const router = Router();
 
 // ─── GET /api/sheets/agenda-st ───
-// Admin: all data | User: filtered by NIP
+// Admin: all data | User: filtered by user (name & NIP)
 router.get('/agenda-st', async (req, res) => {
   try {
     const user = (req as any).user;
@@ -20,7 +20,7 @@ router.get('/agenda-st', async (req, res) => {
     const { search, wilayah, page = '1', limit = '20' } = req.query;
 
     const result = await sheetsService.getAgendaSuratTugas({
-      userName: isAdmin ? undefined : user.name,
+      user: isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang },
       search: typeof search === 'string' ? search : undefined,
       wilayah: typeof wilayah === 'string' ? wilayah : undefined,
       page: Math.max(1, parseInt(page as string, 10) || 1),
@@ -35,7 +35,7 @@ router.get('/agenda-st', async (req, res) => {
 });
 
 // ─── GET /api/sheets/rekap-spd ───
-// Admin: all data | User: filtered by NIP
+// Admin: all data | User: filtered by user (name & NIP)
 router.get('/rekap-spd', async (req, res) => {
   try {
     const user = (req as any).user;
@@ -44,7 +44,7 @@ router.get('/rekap-spd', async (req, res) => {
     const { search, wilayah, page = '1', limit = '20' } = req.query;
 
     const result = await sheetsService.getRekapSPD({
-      userName: isAdmin ? undefined : user.name,
+      user: isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang },
       search: typeof search === 'string' ? search : undefined,
       wilayah: typeof wilayah === 'string' ? wilayah : undefined,
       page: Math.max(1, parseInt(page as string, 10) || 1),
@@ -66,7 +66,9 @@ router.get('/spd-summary', async (req, res) => {
     const activeRole = req.header('x-active-role') || user.role;
     const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
-    const result = await sheetsService.getSPDSummary(isAdmin ? undefined : user.name);
+    const result = await sheetsService.getSPDSummary(
+      isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
+    );
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching SPD summary:', err.message);
@@ -82,7 +84,9 @@ router.get('/dashboard', async (req, res) => {
     const activeRole = req.header('x-active-role') || user.role;
     const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
 
-    const result = await sheetsService.getTrackingDashboard(isAdmin ? undefined : user.name);
+    const result = await sheetsService.getTrackingDashboard(
+      isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
+    );
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching dashboard:', err.message);
@@ -109,8 +113,46 @@ router.get('/jadwal-jumat', async (req, res) => {
   }
 });
 
+// ─── GET /api/sheets/pegawai-cuti ───
+// Accessible by all users, shows employee leave records
+router.get('/pegawai-cuti', async (req, res) => {
+  try {
+    const { search, page = '1', limit = '20' } = req.query;
+
+    const result = await sheetsService.getPegawaiCuti({
+      search: typeof search === 'string' ? search : undefined,
+      page: Math.max(1, parseInt(page as string, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('[SHEETS] Error fetching Pegawai Cuti:', err.message);
+    res.status(500).json({ error: 'Gagal mengambil data Pegawai Cuti' });
+  }
+});
+
+// ─── GET /api/sheets/spd-rankings ───
+// Admin: Top SPD employee rankings with month range and year filtering
+router.get('/spd-rankings', roleGuard('admin'), async (req, res) => {
+  try {
+    const { startMonth, endMonth, year } = req.query;
+
+    const result = await sheetsService.getSPDRankings({
+      startMonth: startMonth ? parseInt(startMonth as string, 10) : undefined,
+      endMonth: endMonth ? parseInt(endMonth as string, 10) : undefined,
+      year: year ? parseInt(year as string, 10) : undefined,
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('[SHEETS] Error fetching SPD rankings:', err.message);
+    res.status(500).json({ error: 'Gagal mengambil peringkat SPD pegawai' });
+  }
+});
+
 // ─── POST /api/sheets/cache/refresh ───
-// Admin-only: force refresh cached data
+// Admin-only: force refresh all cached sheet data
 router.post('/cache/refresh', roleGuard('admin'), async (req, res) => {
   try {
     const user = (req as any).user;
@@ -120,14 +162,14 @@ router.post('/cache/refresh', roleGuard('admin'), async (req, res) => {
       userId: user?.id || null,
       userName: user?.name || 'Administrator',
       action: 'SPD_CACHE_REFRESHED',
-      detail: 'Melakukan refresh data SPD dari Google Sheets',
+      detail: 'Melakukan refresh seluruh data spreadsheet dari Google Sheets (SPD, Perjadin, Pegawai Cuti)',
       ipAddress: getIp(req),
     });
 
-    res.json({ message: 'Cache berhasil di-refresh' });
+    res.json({ message: 'Semua cache data spreadsheet berhasil di-refresh' });
   } catch (err: any) {
     console.error('[SHEETS] Error refreshing cache:', err.message);
-    res.status(500).json({ error: 'Gagal me-refresh cache' });
+    res.status(500).json({ error: 'Gagal me-refresh cache data spreadsheet' });
   }
 });
 
