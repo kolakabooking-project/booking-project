@@ -122,36 +122,3 @@ export function getInitials(name) {
   }
   return (words[0][0] + words[1][0]).toUpperCase();
 }
-
-const MONTHS_ID_MAP = {
-  januari: 0, februari: 1, maret: 2, april: 3,
-  mei: 4, juni: 5, juli: 6, agustus: 7,
-  september: 8, oktober: 9, november: 10, desember: 11,
-};
-
-/**
- * Parse Indonesian date string or ISO/standard date string into a Date object.
- */
-export function parseIndonesianDate(dateStr) {
-  if (!dateStr) return null;
-  const str = String(dateStr).trim();
-
-  // Indonesian format: "05 Januari 2026"
-  const parts = str.toLowerCase().split(/\s+/);
-  if (parts.length >= 3) {
-    const day = parseInt(parts[0], 10);
-    const month = MONTHS_ID_MAP[parts[1]];
-    const year = parseInt(parts[2], 10);
-    if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-      return new Date(year, month, day);
-    }
-  }
-
-  // Standard formats: "8/24/2026", "2026-08-24"
-  const parsed = new Date(str);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
-  }
-
-  return null;
-}

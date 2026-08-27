@@ -481,19 +481,14 @@ export async function getJadwalJumat(filters: SheetFilters = {}): Promise<Pagina
 }
 
 /**
- * Fetch and transform Pegawai Cuti data with smart status & chronological sorting.
- * Priority order:
- * 1. Sedang Cuti (active today) -> ending soonest first
- * 2. Akan Datang (upcoming leave) -> starting soonest first
- * 3. Selesai (past leave) -> most recently ended first
+ * Fetch and transform Pegawai Cuti data.
+ * Sheet has 1 header row — data starts at row 2.
+ * Columns A-E (5 columns: No, Nama, Tanggal Mulai, Tanggal Selesai, Lama Cuti).
  */
 export async function getPegawaiCuti(filters: SheetFilters = {}): Promise<PaginatedResult<PegawaiCuti>> {
   const { search, page = 1, limit = 20 } = filters;
 
   const rawData = await getSheetData('Pegawai Cuti', 'A2:E').catch(() => [] as string[][]);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   let records: PegawaiCuti[] = rawData
     .filter((row) => isValidRow(row[1])) // col B = Nama Pegawai must be valid
@@ -504,42 +499,6 @@ export async function getPegawaiCuti(filters: SheetFilters = {}): Promise<Pagina
       tanggalSelesai: safeStr(row[3]),
       lamaCuti: safeInt(row[4]),
     }));
-
-  // Smart sort by status and chronology
-  records.sort((a, b) => {
-    const startA = parseIndonesianDate(a.tanggalMulai);
-    const endA = parseIndonesianDate(a.tanggalSelesai);
-    const startB = parseIndonesianDate(b.tanggalMulai);
-    const endB = parseIndonesianDate(b.tanggalSelesai);
-
-    if (startA) startA.setHours(0, 0, 0, 0);
-    if (endA) endA.setHours(0, 0, 0, 0);
-    if (startB) startB.setHours(0, 0, 0, 0);
-    if (endB) endB.setHours(0, 0, 0, 0);
-
-    const getPriority = (start: Date | null, end: Date | null) => {
-      if (!start || !end) return { prio: 4, val: 0 };
-      if (today >= start && today <= end) {
-        return { prio: 1, val: end.getTime() }; // Sedang cuti: ending soonest
-      } else if (today < start) {
-        return { prio: 2, val: start.getTime() }; // Akan datang: starting soonest
-      } else {
-        return { prio: 3, val: -end.getTime() }; // Selesai: most recently ended
-      }
-    };
-
-    const pa = getPriority(startA, endA);
-    const pb = getPriority(startB, endB);
-
-    if (pa.prio !== pb.prio) return pa.prio - pb.prio;
-    if (pa.val !== pb.val) return pa.val - pb.val;
-    return a.namaPegawai.localeCompare(b.namaPegawai);
-  });
-
-  // Re-assign sequential number
-  records.forEach((r, idx) => {
-    r.no = idx + 1;
-  });
 
   // Apply search filter
   if (search) {
@@ -604,15 +563,11 @@ export async function getActiveSTToday(): Promise<ActiveST[]> {
     }
   }
 
-  // Sort by namaPegawai alphabetically
-  active.sort((a, b) => a.namaPegawai.localeCompare(b.namaPegawai));
-
   return active;
 }
 
 /**
  * Fetch list of users currently on Leave (Cuti) today.
- * Sorted by ending date (ending soonest first), then by employee name.
  */
 export async function getActiveCutiToday(): Promise<ActiveCuti[]> {
   const rawData = await getSheetData('Pegawai Cuti', 'A2:E').catch(() => [] as string[][]);
@@ -647,14 +602,6 @@ export async function getActiveCutiToday(): Promise<ActiveCuti[]> {
       });
     }
   }
-
-  // Sort active leave: ending soonest first, tie-break by name
-  active.sort((a, b) => {
-    const endA = parseIndonesianDate(a.tanggalSelesai)?.getTime() || 0;
-    const endB = parseIndonesianDate(b.tanggalSelesai)?.getTime() || 0;
-    if (endA !== endB) return endA - endB;
-    return a.namaPegawai.localeCompare(b.namaPegawai);
-  });
 
   return active;
 }
