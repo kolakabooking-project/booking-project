@@ -71,11 +71,11 @@ export default function PerjadinPage() {
 
   const handleRefresh = async () => {
     try {
-      showLoading('Memperbarui seluruh data spreadsheet...');
+      showLoading('Memperbarui data perjadin...');
       await refreshCache.mutateAsync();
-      toast.success('Semua data berhasil diperbarui dari Google Sheets (SPD, Perjadin, Pegawai Cuti)');
+      toast.success('Data berhasil di-refresh dari Google Sheets');
     } catch {
-      toast.error('Gagal me-refresh data spreadsheet');
+      toast.error('Gagal me-refresh data');
     } finally {
       hideLoading();
     }

@@ -11,9 +11,9 @@ const router = Router();
 router.use(authGuard);
 
 /**
- * GET /api/room-bookings — All room bookings
+ * GET /api/room-bookings — All room bookings (admin)
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', roleGuard('admin'), async (req: Request, res: Response) => {
   try {
     const filters = {
       status: req.query.status as string,

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { NAV_TRACKING_USER } from '../../utils/constants';
-import { LogOut, ChevronDown, LayoutDashboard, FileText, Home, CircleUser, ArrowLeft, CalendarDays, CalendarOff, Loader2 } from 'lucide-react';
+import { LogOut, ChevronDown, LayoutDashboard, FileText, Home, CircleUser, ArrowLeft, CalendarDays, Loader2 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import ThemeLogo from '../ui/ThemeLogo';
 import NotificationBell from '../ui/NotificationBell';
@@ -12,7 +12,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { getInitials } from '../../utils/helpers';
 import SkipLink from '../ui/SkipLink';
 
-const iconMap = { LayoutDashboard, FileText, CalendarDays, CalendarOff };
+const iconMap = { LayoutDashboard, FileText, CalendarDays };
 
 export default function UserTrackingLayout({ children }) {
   const { user, logout, switchRole } = useAuth();
@@ -185,28 +185,21 @@ export default function UserTrackingLayout({ children }) {
             </motion.div>
           </NavLink>
 
-          <NavLink to="/user/tracking/spd-saya" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/tracking/spd-saya" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
               <FileText size={20} strokeWidth={2.5} />
               <span className="text-[10px] font-bold">SPD Saya</span>
             </motion.div>
           </NavLink>
 
-          <NavLink to="/user/tracking/pegawai-cuti" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
-            <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
-              <CalendarOff size={20} strokeWidth={2.5} />
-              <span className="text-[10px] font-bold">Cuti</span>
-            </motion.div>
-          </NavLink>
-
-          <NavLink to="/user/tracking/jadwal-jumat" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/tracking/jadwal-jumat" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
               <CalendarDays size={20} strokeWidth={2.5} />
               <span className="text-[10px] font-bold">Jadwal</span>
             </motion.div>
           </NavLink>
 
-          <NavLink to="/user/tracking/account" className={({ isActive }) => `flex flex-col items-center justify-center w-14 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
+          <NavLink to="/user/tracking/account" className={({ isActive }) => `flex flex-col items-center justify-center w-16 h-full transition-colors ${isActive ? 'text-emerald-600' : 'text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-muted)]'}`}>
             <motion.div whileTap={{ scale: 0.85 }} className="flex flex-col items-center justify-center w-full h-full gap-1">
               <CircleUser size={20} strokeWidth={2.5} />
               <span className="text-[10px] font-bold">Akun</span>

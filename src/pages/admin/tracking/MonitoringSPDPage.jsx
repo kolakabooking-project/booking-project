@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { useLoading } from '../../../contexts/LoadingContext';
 import { toast } from 'sonner';
 import ActiveSTWidget from '../../../components/dashboard/ActiveSTWidget';
-import ActiveCutiWidget from '../../../components/dashboard/ActiveCutiWidget';
 import Modal from '../../../components/ui/Modal';
 
 const WILAYAH_COLORS = {
@@ -64,11 +63,11 @@ export default function MonitoringSPDPage() {
 
   const handleRefresh = async () => {
     try {
-      showLoading('Memperbarui seluruh data spreadsheet...');
+      showLoading('Memperbarui data SPD...');
       await refreshCache.mutateAsync();
-      toast.success('Semua data berhasil diperbarui dari Google Sheets (SPD, Perjadin, Pegawai Cuti)');
+      toast.success('Data berhasil di-refresh dari Google Sheets');
     } catch {
-      toast.error('Gagal me-refresh data spreadsheet');
+      toast.error('Gagal me-refresh data');
     } finally {
       hideLoading();
     }
@@ -84,9 +83,6 @@ export default function MonitoringSPDPage() {
 
       {/* Sedang Dinas Hari Ini Widget */}
       <ActiveSTWidget />
-
-      {/* Sedang Cuti Hari Ini Widget */}
-      <ActiveCutiWidget />
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

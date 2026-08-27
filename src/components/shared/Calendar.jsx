@@ -301,43 +301,18 @@ export default function Calendar({
                     </div>
                   </div>
 
-                  {totalBookingsCount > 0 && (status !== 'past' || allowPastClick) && (
-                    <div className="mt-1 flex flex-col gap-1 w-full overflow-hidden">
-                      {/* Mobile indicator */}
-                      <div className="sm:hidden flex items-center justify-center">
-                        {myBookingsCount > 0 && (
-                          <span className="inline-block truncate rounded px-1 py-0.5 text-[8px] font-heading font-semibold bg-djp-blue/15 text-djp-blue border border-djp-blue/25">
-                            {myBookingsCount} Pribadi
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Desktop schedule chips */}
-                      <div className="hidden sm:flex flex-col gap-1 w-full">
-                        {bookingsForDay.slice(0, 2).map((b) => {
-                          const isMy = b.userId === user?.id;
-                          const resourceName = isRoom ? (b.roomName || 'Ruang') : (b.vehicleName || 'Kendaraan');
-                          return (
-                            <div
-                              key={b.id}
-                              className={`flex items-center gap-1 w-full truncate rounded px-1.5 py-0.5 text-[9px] font-medium leading-tight border transition-colors ${
-                                isMy
-                                  ? 'bg-djp-blue/15 text-djp-blue border-djp-blue/30 font-bold'
-                                  : 'bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-muted)] border-[color:var(--color-border)]'
-                              }`}
-                              title={`${formatTime(b.startTime)} - ${formatTime(b.endTime)}: ${resourceName} • ${b.userName || b.bookingFor || ''} (${b.keperluan || ''})`}
-                            >
-                              <span className="font-mono font-bold shrink-0 text-[8.5px] opacity-90">{formatTime(b.startTime)}</span>
-                              <span className="truncate">{resourceName}</span>
-                            </div>
-                          );
-                        })}
-                        {bookingsForDay.length > 2 && (
-                          <span className="text-[9px] text-[color:var(--color-text-soft)] font-semibold pl-0.5 leading-none">
-                            +{bookingsForDay.length - 2} lainnya
-                          </span>
-                        )}
-                      </div>
+                  {(totalBookingsCount > 0 && (status !== 'past' || allowPastClick)) && (
+                    <div className="mt-1 sm:mt-2 flex flex-col gap-1 items-center sm:items-start">
+                      {myBookingsCount > 0 && (
+                        <span className="inline-block truncate max-w-full rounded-md sm:rounded-full px-1 py-0.5 sm:px-2 sm:py-0.5 text-[9px] sm:text-[10px] font-heading font-semibold text-center sm:text-left bg-djp-blue/15 text-djp-blue border border-djp-blue/25">
+                          {myBookingsCount === totalBookingsCount ? (
+                            <span className="hidden sm:inline">Pribadi</span>
+                          ) : (
+                            <>{myBookingsCount} <span className="hidden sm:inline">Pribadi</span></>
+                          )}
+                          {myBookingsCount === totalBookingsCount && <span className="sm:hidden">{myBookingsCount}</span>}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
