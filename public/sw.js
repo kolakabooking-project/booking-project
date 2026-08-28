@@ -1,9 +1,11 @@
-const CACHE_NAME = 'bookolaka-cache-v9';
+const CACHE_NAME = 'bookolaka-cache-v10';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/iconweb.png',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
   '/logo.png',
   '/logocolor.png',
   '/logoweb.png'
