@@ -14,9 +14,9 @@ const connectionString =
 // Auto-detect NeonDB from connection string
 const isNeonDB = connectionString.includes('neon.tech');
 
-// Strip unsupported parameters (channel_binding is not supported by postgres.js)
+// Strip unsupported parameters (channel_binding and pgbouncer are not native postgres.js params)
 const cleanConnectionString = connectionString
-  .replace(/[&?]channel_binding=[^&]*/g, '')
+  .replace(/[&?](channel_binding|pgbouncer)=[^&]*/g, '')
   .replace(/\?&/, '?')      // Fix dangling ?& after removal
   .replace(/\?$/, '');       // Fix trailing ? if it was the only param
 
