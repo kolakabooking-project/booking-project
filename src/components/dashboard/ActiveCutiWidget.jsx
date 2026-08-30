@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTrackingDashboard } from '../../hooks/useSheetData';
 import { UserCheck, CalendarOff, Calendar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import './ActiveCutiWidget.css';
 
 /**
@@ -59,6 +59,15 @@ export default function ActiveCutiWidget() {
   const { data: dashboard, isLoading, error } = useTrackingDashboard();
   const activeCutiToday = dashboard?.activeCutiToday || [];
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const sortedActiveCuti = useMemo(() => {
+    return [...activeCutiToday].sort((a, b) => {
+      const endA = new Date(a.tanggalSelesai).getTime() || 0;
+      const endB = new Date(b.tanggalSelesai).getTime() || 0;
+      if (endA !== endB) return endA - endB;
+      return a.namaPegawai.localeCompare(b.namaPegawai);
+    });
+  }, [activeCutiToday]);
 
   return (
     <div className="acw-root">
@@ -151,7 +160,7 @@ export default function ActiveCutiWidget() {
                 </div>
               ) : (
                 <div className="acw-cards">
-                  {activeCutiToday.map((cuti, i) => {
+                  {sortedActiveCuti.map((cuti, i) => {
                     const { pct, daysLeft, totalDays, daysElapsed } = calcLeaveProgress(
                       cuti.tanggalMulai,
                       cuti.tanggalSelesai
