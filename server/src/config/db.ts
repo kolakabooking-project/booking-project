@@ -29,13 +29,13 @@ if (isNeonDB) {
   queryClient = neon(cleanConnectionString);
   db = drizzleNeon(queryClient, { schema });
 } else {
-  // Use postgres.js for local development
+  // Use postgres.js for local development and Supabase connection pooler in serverless
   queryClient = postgres(cleanConnectionString, {
-    max: env.NODE_ENV === 'production' ? 5 : 10,
-    idle_timeout: 20,
+    max: env.NODE_ENV === 'production' ? 1 : 10,
+    idle_timeout: 10,
     connect_timeout: 10,
     ssl: env.NODE_ENV === 'production' ? 'require' : undefined,
-    prepare: false,
+    prepare: false, // Critical for Supabase transaction mode pooler (port 6543)
   });
   db = drizzlePg(queryClient, { schema });
 }

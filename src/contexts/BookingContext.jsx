@@ -24,7 +24,7 @@ export function BookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.kdoActive,
-    staleTime: 30_000, // 30s — Ably handles real-time updates
+    staleTime: 10 * 60 * 1000, // 10m — Fleet data rarely changes; Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
 
@@ -35,22 +35,25 @@ export function BookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.kdoActive,
-    staleTime: 30_000,
+    staleTime: 10 * 60 * 1000, // 10m — Driver data rarely changes; Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
 
-  // Fetch ALL bookings so that:
-  // - Every employee can see agenda & availability on the dashboard calendar
+  // Fetch active bookings window (90 days past to 90 days future) so that:
+  // - Calendar & availability stay fast and accurate
   // - Client-side collision checks work accurately
-  // - Personal views filter client-side via getUserBookings(userId)
+  // - Prevents unbounded full table dumps over network (saves Supabase Egress)
+  // - Ably real-time events invalidate this cache instantly on any change
   const bookingsQuery = useQuery({
     queryKey: ['bookings'],
     queryFn: async () => {
-      const res = await bookingApi.getAll();
+      const past90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const future90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const res = await bookingApi.getAll({ startDate: past90, endDate: future90 });
       return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.kdoActive,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000, // 5m — Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
 

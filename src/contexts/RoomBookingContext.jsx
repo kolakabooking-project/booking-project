@@ -24,22 +24,25 @@ export function RoomBookingProvider({ children }) {
       return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.roomActive,
-    staleTime: 30_000,
+    staleTime: 10 * 60 * 1000, // 10m — Room definitions rarely change; Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
 
-  // Fetch ALL room bookings so that:
-  // - Every employee can see agenda & availability on the room calendar
+  // Fetch active room bookings window (90 days past to 90 days future) so that:
+  // - Calendar & room agenda stay fast and accurate
   // - Client-side collision checks work accurately
-  // - Personal views filter client-side via getUserRoomBookings(userId)
+  // - Prevents unbounded full table dumps over network (saves Supabase Egress)
+  // - Ably real-time events invalidate this cache instantly on any change
   const roomBookingsQuery = useQuery({
     queryKey: ['roomBookings'],
     queryFn: async () => {
-      const res = await roomBookingApi.getAll({});
+      const past90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const future90 = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const res = await roomBookingApi.getAll({ startDate: past90, endDate: future90 });
       return res?.data || [];
     },
     enabled: isAuthenticated && serviceStatuses?.roomActive,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000, // 5m — Ably handles real-time updates
     refetchOnWindowFocus: false,
   });
 
