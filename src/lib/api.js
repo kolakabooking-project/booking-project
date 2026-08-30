@@ -375,6 +375,22 @@ export const sheetsApi = {
     const query = qs.toString();
     return request(`/sheets/jadwal-jumat${query ? `?${query}` : ''}`);
   },
+  getPegawaiCuti: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request(`/sheets/pegawai-cuti${query ? `?${query}` : ''}`);
+  },
+  getSPDRankings: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.startMonth) qs.set('startMonth', String(params.startMonth));
+    if (params?.endMonth) qs.set('endMonth', String(params.endMonth));
+    if (params?.year) qs.set('year', String(params.year));
+    const query = qs.toString();
+    return request(`/sheets/spd-rankings${query ? `?${query}` : ''}`);
+  },
   getTrackingDashboard: () => request('/sheets/dashboard'),
   refreshCache: () => request('/sheets/cache/refresh', { method: 'POST' }),
 };

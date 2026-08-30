@@ -69,6 +69,7 @@ export default function DashboardPage() {
           <Calendar 
             type="room"
             onDateClick={handleDateClick} 
+            allowPastClick={true}
             getBookingsForDate={getRoomBookingsForDate}
             bookings={roomBookings}
             totalResources={rooms.filter(r => r.status !== 'Dalam Perawatan').length}

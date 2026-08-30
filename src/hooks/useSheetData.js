@@ -67,17 +67,43 @@ export function useJadwalJumat(params = {}) {
   });
 }
 
-// ─── Refresh Cache ───
+// ─── Pegawai Cuti ───
+export function usePegawaiCuti(params = {}) {
+  const debouncedSearch = useDebounce(params.search);
+  return useQuery({
+    queryKey: ['pegawai-cuti', { ...params, search: debouncedSearch }],
+    queryFn: () => sheetsApi.getPegawaiCuti({ ...params, search: debouncedSearch }),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+// ─── SPD Rankings (Top Frequent Travellers) ───
+export function useSPDRankings(params = {}) {
+  return useQuery({
+    queryKey: ['spd-rankings', params],
+    queryFn: () => sheetsApi.getSPDRankings(params),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+// ─── Refresh Cache (Refreshes ALL sheets data) ───
 export function useRefreshCache() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => sheetsApi.refreshCache(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agenda-st'] });
-      queryClient.invalidateQueries({ queryKey: ['rekap-spd'] });
-      queryClient.invalidateQueries({ queryKey: ['spd-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['jadwal-jumat'] });
-      queryClient.invalidateQueries({ queryKey: ['tracking-dashboard'] });
+    onSuccess: async () => {
+      // Invalidate all queries related to all sheets data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['agenda-st'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['rekap-spd'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['spd-summary'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['spd-rankings'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['jadwal-jumat'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['pegawai-cuti'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['tracking-dashboard'], refetchType: 'all' }),
+      ]);
     },
   });
 }
