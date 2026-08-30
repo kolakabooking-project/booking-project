@@ -253,7 +253,7 @@ export default function AdminTrackingLayout({ children }) {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[9999]">
-        <div className="relative flex justify-around items-center h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pb-safe" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="relative flex justify-around items-center min-h-[4.5rem] bg-[color:var(--color-surface-elevated)]/90 backdrop-blur-xl border-t rounded-t-[1.5rem] shadow-[0_-8px_20px_rgba(0,0,0,0.08)] px-2 pt-3 pb-3 pb-safe" style={{ borderColor: 'var(--color-border)', minHeight: '4.5rem', paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
           
           {/* Tracking with Drop-up */}
           <div ref={trackingMenuRef} className="relative flex h-full items-center justify-center w-12">

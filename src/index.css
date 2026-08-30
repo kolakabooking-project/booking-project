@@ -507,6 +507,10 @@ input:focus, select:focus, textarea:focus {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .pb-3.pb-safe,
+  .pb-safe-offset-3 {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Rich Text Editor & Content Display Styling */
