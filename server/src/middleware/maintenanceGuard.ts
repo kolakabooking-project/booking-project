@@ -16,6 +16,11 @@ export const invalidateMaintenanceCache = invalidateServiceStatusCache;
 export async function maintenanceGuard(req: Request, res: Response, next: NextFunction) {
   const user = (req as any).user;
 
+  // Superadmin always bypasses maintenance mode
+  if (user?.role === 'superadmin') {
+    return next();
+  }
+
   const isRoomRoute = req.originalUrl.includes('/api/room');
   const isSpdRoute = req.originalUrl.includes('/api/sheets') || req.originalUrl.includes('/api/wfo');
   

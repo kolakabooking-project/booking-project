@@ -31,7 +31,7 @@ if (isNeonDB) {
 } else {
   // Use postgres.js for local development and Supabase connection pooler in serverless
   queryClient = postgres(cleanConnectionString, {
-    max: env.NODE_ENV === 'production' ? 1 : 10,
+    max: 10,
     idle_timeout: 10,
     connect_timeout: 10,
     ssl: env.NODE_ENV === 'production' ? 'require' : undefined,

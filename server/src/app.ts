@@ -213,10 +213,10 @@ export function createApp() {
   // ─── API Routes — with standard rate limit + maintenance guard ───
   app.use('/api/vehicles', apiLimiter, authGuard, maintenanceGuard, vehicleRoutes);
   app.use('/api/drivers', apiLimiter, authGuard, maintenanceGuard, driverRoutes);
-  app.use('/api/bookings', apiLimiter, maintenanceGuard, bookingRoutes);
+  app.use('/api/bookings', apiLimiter, authGuard, maintenanceGuard, bookingRoutes);
   app.use('/api/reports', apiLimiter, authGuard, maintenanceGuard, reportRoutes);
   app.use('/api/rooms', apiLimiter, authGuard, maintenanceGuard, roomRoutes);
-  app.use('/api/room-bookings', apiLimiter, maintenanceGuard, roomBookingRoutes);
+  app.use('/api/room-bookings', apiLimiter, authGuard, maintenanceGuard, roomBookingRoutes);
   app.use('/api/room-reports', apiLimiter, authGuard, maintenanceGuard, roomReportRoutes);
   app.use('/api/chat', apiLimiter, authGuard, maintenanceGuard, chatRoutes);
   app.use('/api/push', apiLimiter, authGuard, maintenanceGuard, pushRoutes);

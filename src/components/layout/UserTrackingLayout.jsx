@@ -52,6 +52,11 @@ export default function UserTrackingLayout({ children }) {
     navigate('/admin/tracking/monitoring-spd');
   };
 
+  const handleSwitchToSuperadmin = () => {
+    switchRole('superadmin');
+    navigate('/superadmin/dashboard');
+  };
+
   return (
     <div className="min-h-screen bg-[color:var(--color-bg-main)] min-w-0 overflow-x-hidden pb-32 md:pb-0">
       <SkipLink />
@@ -128,13 +133,22 @@ export default function UserTrackingLayout({ children }) {
                       <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)]">{user?.name}</p>
                       <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan}</p>
                     </Link>
-                    {user?.role === 'admin' && (
+                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
                       <button
                         onClick={handleSwitchToAdmin}
                         className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 transition-colors dark:text-emerald-300 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50"
                       >
                         <CircleUser size={16} />
                         Mode Admin
+                      </button>
+                    )}
+                    {user?.role === 'superadmin' && (
+                      <button
+                        onClick={handleSwitchToSuperadmin}
+                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-purple-200 hover:bg-purple-300 transition-colors dark:bg-purple-900/40 dark:text-purple-200 dark:hover:bg-purple-800/50"
+                      >
+                        <CircleUser size={16} />
+                        Mode Superadmin
                       </button>
                     )}
                     <Link

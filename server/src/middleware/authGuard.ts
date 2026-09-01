@@ -50,10 +50,12 @@ function extractSessionToken(req: Request): string | null {
   const cookies = cookieHeader.split(';');
   for (const cookie of cookies) {
     const [name, ...valueParts] = cookie.trim().split('=');
-    if (name === 'better-auth.session_token' || name === 'better-auth.session_token.sig') {
-      if (name === 'better-auth.session_token') {
-        return valueParts.join('='); // Rejoin in case value contains '='
-      }
+    if (
+      name === 'better-auth.session_token' ||
+      name === '__Secure-better-auth.session_token' ||
+      name === '__Host-better-auth.session_token'
+    ) {
+      return valueParts.join('='); // Rejoin in case value contains '='
     }
   }
   return null;

@@ -64,6 +64,11 @@ export default function UserLayout({ children }) {
     navigate('/admin/dashboard');
   };
 
+  const handleSwitchToSuperadmin = () => {
+    switchRole('superadmin');
+    navigate('/superadmin/dashboard');
+  };
+
   const handleNotifClick = (bookingId) => {
     setNotifOpen(false);
     navigate('/user/my-bookings', { state: { openBookingId: bookingId } });
@@ -151,13 +156,22 @@ export default function UserLayout({ children }) {
                         <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)] group-hover:text-djp-blue transition-colors">{user?.name}</p>
                         <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan}</p>
                       </Link>
-                      {user?.role === 'admin' && (
+                      {(user?.role === 'admin' || user?.role === 'superadmin') && (
                         <button
                           onClick={handleSwitchToAdmin}
                           className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-djp-yellow hover:bg-yellow-400 transition-colors"
                         >
                           <CircleUser size={16} />
                           Mode Admin
+                        </button>
+                      )}
+                      {user?.role === 'superadmin' && (
+                        <button
+                          onClick={handleSwitchToSuperadmin}
+                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-purple-200 hover:bg-purple-300 transition-colors dark:bg-purple-900/40 dark:text-purple-200 dark:hover:bg-purple-800/50"
+                        >
+                          <CircleUser size={16} />
+                          Mode Superadmin
                         </button>
                       )}
                       <Link

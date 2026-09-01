@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { roomBooking, roomBookingReview, user, room } from '../db/schema.js';
-import { eq, and, or, not, lte, gte, desc, asc, ilike, lt, gt } from 'drizzle-orm';
+import { eq, and, or, not, lte, gte, desc, asc, ilike, lt, gt, inArray } from 'drizzle-orm';
 import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors.js';
 import { broadcastBookingUpdate } from '../lib/ably.js';
 
@@ -207,7 +207,7 @@ export async function createRoomBooking(data: RoomBookingInsert, isAdmin: boolea
     .where(
       and(
         eq(roomBooking.roomId, data.roomId),
-        not(eq(roomBooking.status, 'Dibatalkan')),
+        inArray(roomBooking.status, ['Disetujui', 'Berlangsung']),
         lt(roomBooking.startTime, endTime),
         gt(roomBooking.endTime, startTime)
       )

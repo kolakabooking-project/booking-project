@@ -43,14 +43,19 @@ export function AuthProvider({ children }) {
 
           const savedRole = localStorage.getItem('booking_active_role');
           if (userData.role === 'superadmin') {
-            // Superadmin defaults to superadmin role
-            setActiveRole('superadmin');
-            localStorage.setItem('booking_active_role', 'superadmin');
-          } else if (savedRole && (savedRole === 'admin' || savedRole === 'user')) {
-            setActiveRole(savedRole);
+            const validRoles = ['superadmin', 'admin', 'user'];
+            const initialRole = savedRole && validRoles.includes(savedRole) ? savedRole : 'superadmin';
+            setActiveRole(initialRole);
+            localStorage.setItem('booking_active_role', initialRole);
+          } else if (userData.role === 'admin') {
+            const validRoles = ['admin', 'user'];
+            const initialRole = savedRole && validRoles.includes(savedRole) ? savedRole : 'admin';
+            setActiveRole(initialRole);
+            localStorage.setItem('booking_active_role', initialRole);
           } else {
-            setActiveRole(userData.role);
-            localStorage.setItem('booking_active_role', userData.role);
+            // Regular user can only have 'user' activeRole
+            setActiveRole('user');
+            localStorage.setItem('booking_active_role', 'user');
           }
         }
       } catch {

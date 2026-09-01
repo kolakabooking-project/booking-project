@@ -15,7 +15,15 @@ import { bookingApi } from '../../lib/api';
 
 export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, dateBookings = [], isAdmin = false }) {
   const { user } = useAuth();
-  const { createRoomBooking, createMandatoryRoomBooking, getAvailableRooms, getRoomBookingsForDate } = useRoomBooking();
+  const { 
+    createRoomBooking, 
+    createMandatoryRoomBooking, 
+    getAvailableRooms, 
+    getRoomBookingsForDate,
+    rooms = [],
+    isLoading: isRoomsLoading,
+    refreshRooms,
+  } = useRoomBooking();
   const { showLoading, hideLoading } = useLoading();
   
   const [mode, setMode] = useState('list'); // 'list', 'form'
@@ -98,6 +106,16 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleCheckAvailability = () => {
+    if (isRoomsLoading) {
+      toast.info('Sedang memuat data ruangan...');
+      return;
+    }
+    if (rooms.length === 0) {
+      if (refreshRooms) refreshRooms();
+      setAvailChecked(true);
+      toast.error('Data ruangan belum termuat dari server. Sedang mencoba memuat ulang...');
+      return;
+    }
     if (!form.startTime || !form.endTime) {
       toast.error('Isi waktu mulai dan selesai terlebih dahulu');
       return;
@@ -359,6 +377,17 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         {!availChecked ? (
           <div className="w-full rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 p-6 text-center text-gray-500 font-medium text-sm bg-gray-50 dark:bg-gray-900/50 transition-all">
             Klik tombol "Cek Ruang Kosong" untuk melihat daftar ruangan yang tersedia.
+          </div>
+        ) : isRoomsLoading ? (
+          <div className="w-full rounded-2xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 p-6 text-center text-blue-600 dark:text-blue-400 font-medium text-sm shadow-inner">
+            Sedang memuat data ketersediaan ruangan...
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-6 text-center text-amber-700 dark:text-amber-300 font-medium text-sm shadow-inner space-y-3">
+            <p className="font-bold text-sm">Data ruangan belum berhasil dimuat dari server.</p>
+            <Button type="button" size="sm" variant="secondary" onClick={() => { if (refreshRooms) refreshRooms(); setAvailChecked(false); }}>
+              Muat Ulang Data Ruangan
+            </Button>
           </div>
         ) : availableRooms.length === 0 ? (
           <div className="w-full rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-600 font-bold text-sm shadow-inner">

@@ -1,5 +1,4 @@
 import { Router, type Request, type Response } from 'express';
-import { authGuard } from '../middleware/authGuard.js';
 import { roleGuard } from '../middleware/roleGuard.js';
 import * as roomService from '../services/room.service.js';
 import { upload, deleteUploadedFile, validateImageSignature } from '../utils/upload.js';
@@ -7,9 +6,6 @@ import { AppError } from '../utils/errors.js';
 import { logActivity } from '../services/activity.service.js';
 
 const router = Router();
-
-// All room routes require authentication
-router.use(authGuard);
 
 /**
  * GET /api/rooms — List all rooms with computed status

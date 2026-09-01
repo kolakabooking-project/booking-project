@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { authGuard } from '../middleware/authGuard.js';
 import * as notificationService from '../services/notification.service.js';
 
 const router = Router();
 
 // Get all notifications for the logged-in user
-router.get('/', authGuard, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const notifications = await notificationService.getUserNotifications(user.id);
@@ -17,7 +16,7 @@ router.get('/', authGuard, async (req: Request, res: Response) => {
 });
 
 // Mark all notifications as read
-router.put('/read-all', authGuard, async (req: Request, res: Response) => {
+router.put('/read-all', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     await notificationService.markAllAsRead(user.id);
@@ -29,7 +28,7 @@ router.put('/read-all', authGuard, async (req: Request, res: Response) => {
 });
 
 // Mark a specific notification as read
-router.put('/:id/read', authGuard, async (req: Request, res: Response) => {
+router.put('/:id/read', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const id = req.params.id as string;

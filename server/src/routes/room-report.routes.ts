@@ -1,5 +1,4 @@
 import { Router, type Request, type Response } from 'express';
-import { authGuard } from '../middleware/authGuard.js';
 import { roleGuard } from '../middleware/roleGuard.js';
 import * as roomReportService from '../services/room-report.service.js';
 import { AppError } from '../utils/errors.js';
@@ -7,7 +6,6 @@ import { AppError } from '../utils/errors.js';
 const router = Router();
 
 // All report routes require admin role
-router.use(authGuard);
 router.use(roleGuard('admin'));
 
 /**

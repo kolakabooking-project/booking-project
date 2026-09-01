@@ -1,13 +1,10 @@
 import { Router, type Request, type Response } from 'express';
-import { authGuard } from '../middleware/authGuard.js';
 import { roleGuard } from '../middleware/roleGuard.js';
 import * as bookingService from '../services/booking.service.js';
 import { AppError } from '../utils/errors.js';
 import { logActivity } from '../services/activity.service.js';
 
 const router = Router();
-
-router.use(authGuard);
 
 /** Extract client IP safely */
 function getIp(req: Request): string | undefined {
