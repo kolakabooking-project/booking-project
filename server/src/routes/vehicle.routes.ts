@@ -42,12 +42,29 @@ router.get('/available', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/vehicles/:id — Single vehicle
+ * GET /api/vehicles/:id — Single vehicle (includes foto)
  */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const vehicle = await vehicleService.getVehicleById(req.params.id as string);
     res.json({ data: vehicle });
+  } catch (err: any) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/vehicles/:id/photo — Get only the photo for a vehicle (lazy-load)
+ * Returns { data: "<base64 string>" } or { data: null } if no photo.
+ * This avoids sending ~500KB per vehicle in the list endpoint.
+ */
+router.get('/:id/photo', async (req: Request, res: Response) => {
+  try {
+    const foto = await vehicleService.getVehiclePhoto(req.params.id as string);
+    // Set cache header — photos rarely change
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({ data: foto });
   } catch (err: any) {
     const status = err instanceof AppError ? err.statusCode : 500;
     res.status(status).json({ error: err.message });

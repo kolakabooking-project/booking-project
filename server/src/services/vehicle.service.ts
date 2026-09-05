@@ -16,6 +16,8 @@ export async function getAllVehicles() {
   const now = new Date();
 
   // Single query: fetch vehicles + check active bookings via subquery
+  // NOTE: foto is EXCLUDED to save egress — each foto is ~500KB Base64.
+  // Photos are fetched individually via getVehicleById() or getVehiclePhoto().
   const allVehicles = await db
     .select({
       id: vehicle.id,
@@ -29,7 +31,7 @@ export async function getAllVehicles() {
       jadwalPajak: vehicle.jadwalPajak,
       jadwalServis: vehicle.jadwalServis,
       warna: vehicle.warna,
-      foto: vehicle.foto,
+      hasFoto: sql<boolean>`(${vehicle.foto} IS NOT NULL AND ${vehicle.foto} != '')`.as('has_foto'),
       deletedAt: vehicle.deletedAt,
       createdAt: vehicle.createdAt,
       updatedAt: vehicle.updatedAt,
@@ -76,8 +78,25 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
   const bookedIds = new Set(overlapping.map((b) => b.vehicleId).filter(Boolean));
 
   // Exclude only vehicles under maintenance — not 'Sedang Dipakai' (which is computed)
+  // NOTE: foto is EXCLUDED to save egress (same as getAllVehicles)
   const allVehicles = await db
-    .select()
+    .select({
+      id: vehicle.id,
+      platNomor: vehicle.platNomor,
+      merek: vehicle.merek,
+      tipe: vehicle.tipe,
+      tahun: vehicle.tahun,
+      kapasitas: vehicle.kapasitas,
+      status: vehicle.status,
+      odometer: vehicle.odometer,
+      jadwalPajak: vehicle.jadwalPajak,
+      jadwalServis: vehicle.jadwalServis,
+      warna: vehicle.warna,
+      hasFoto: sql<boolean>`(${vehicle.foto} IS NOT NULL AND ${vehicle.foto} != '')`.as('has_foto'),
+      deletedAt: vehicle.deletedAt,
+      createdAt: vehicle.createdAt,
+      updatedAt: vehicle.updatedAt,
+    })
     .from(vehicle)
     .where(
       and(
@@ -96,6 +115,20 @@ export async function getVehicleById(id: string) {
   const [found] = await db.select().from(vehicle).where(and(eq(vehicle.id, id), isNull(vehicle.deletedAt)));
   if (!found) throw new NotFoundError('Kendaraan');
   return found;
+}
+
+/**
+ * Get only the photo (foto) for a single vehicle by ID.
+ * Used by the lazy-load photo endpoint to avoid sending ~500KB Base64
+ * in every getAllVehicles() call.
+ */
+export async function getVehiclePhoto(id: string) {
+  const [found] = await db
+    .select({ id: vehicle.id, foto: vehicle.foto })
+    .from(vehicle)
+    .where(and(eq(vehicle.id, id), isNull(vehicle.deletedAt)));
+  if (!found) throw new NotFoundError('Kendaraan');
+  return found.foto;
 }
 
 /**

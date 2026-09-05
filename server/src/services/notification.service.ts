@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { notification } from '../db/schema.js';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, gte } from 'drizzle-orm';
 import ably from '../lib/ably.js';
 
 interface CreateNotificationParams {
@@ -63,15 +63,24 @@ export async function createNotificationsBatch(
 
 /**
  * Retrieves notifications for a specific user.
- * Limits to the 50 most recent notifications.
+ * Time-bounded to the last 30 days and limited to 30 most recent records
+ * to eliminate egress overhead from old notifications.
  */
 export async function getUserNotifications(userId: string) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   return await db
     .select()
     .from(notification)
-    .where(eq(notification.userId, userId))
+    .where(
+      and(
+        eq(notification.userId, userId),
+        gte(notification.createdAt, thirtyDaysAgo)
+      )
+    )
     .orderBy(desc(notification.createdAt))
-    .limit(50);
+    .limit(30);
 }
 
 /**

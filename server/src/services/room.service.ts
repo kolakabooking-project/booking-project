@@ -1,13 +1,27 @@
 import { db } from '../config/db.js';
 import { room, roomBooking } from '../db/schema.js';
-import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull } from 'drizzle-orm';
+import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
 type RoomInsert = typeof room.$inferInsert;
 
 export async function getAllRooms() {
   const now = new Date();
-  const allRooms = await db.select().from(room).where(isNull(room.deletedAt));
+  // NOTE: foto is EXCLUDED to save egress bandwidth.
+  // Photos are fetched individually via getRoomPhoto() when needed.
+  const allRooms = await db
+    .select({
+      id: room.id,
+      name: room.name,
+      lokasi: room.lokasi,
+      status: room.status,
+      hasFoto: sql<boolean>`(${room.foto} IS NOT NULL AND ${room.foto} != '')`.as('has_foto'),
+      deletedAt: room.deletedAt,
+      createdAt: room.createdAt,
+      updatedAt: room.updatedAt,
+    })
+    .from(room)
+    .where(isNull(room.deletedAt));
 
   const activeBookings = await db
     .select({ roomId: roomBooking.roomId })
@@ -44,7 +58,16 @@ export async function getAvailableRooms(startTime: Date, endTime: Date) {
   const bookedIds = new Set(overlapping.map((b) => b.roomId).filter(Boolean));
 
   const allRooms = await db
-    .select()
+    .select({
+      id: room.id,
+      name: room.name,
+      lokasi: room.lokasi,
+      status: room.status,
+      hasFoto: sql<boolean>`(${room.foto} IS NOT NULL AND ${room.foto} != '')`.as('has_foto'),
+      deletedAt: room.deletedAt,
+      createdAt: room.createdAt,
+      updatedAt: room.updatedAt,
+    })
     .from(room)
     .where(
       and(
@@ -62,18 +85,44 @@ export async function getRoomById(id: string) {
   return found;
 }
 
-export async function createRoom(data: RoomInsert) {
+/**
+ * Get only the photo (foto) for a single room by ID.
+ * Used by the lazy-load photo endpoint to avoid sending Base64 in list queries.
+ */
+export async function getRoomPhoto(id: string) {
+  const [found] = await db
+    .select({ id: room.id, foto: room.foto })
+    .from(room)
+    .where(and(eq(room.id, id), isNull(room.deletedAt)));
+  if (!found) throw new NotFoundError('Ruangan');
+  return found.foto;
+}
+
+export async function createRoom(data: any) {
   if (!data.name || !data.lokasi) {
     throw new ValidationError('Nama dan lokasi ruangan wajib diisi.');
   }
 
-  const [created] = await db.insert(room).values(data).returning();
+  // Support both photo and foto fields from frontend
+  const insertData: any = { ...data };
+  if (insertData.photo !== undefined && insertData.foto === undefined) {
+    insertData.foto = insertData.photo;
+    delete insertData.photo;
+  }
+  if (insertData.foto === '') insertData.foto = null;
+
+  const [created] = await db.insert(room).values(insertData).returning();
   return created;
 }
 
 export async function updateRoom(id: string, data: any) {
   const { id: _, createdAt, updatedAt, ...updateData } = data;
   
+  // Support both photo and foto fields from frontend
+  if (updateData.photo !== undefined && updateData.foto === undefined) {
+    updateData.foto = updateData.photo;
+    delete updateData.photo;
+  }
   if (updateData.foto === '') updateData.foto = null;
 
   const [updated] = await db

@@ -2,6 +2,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRoomBooking } from '../../contexts/RoomBookingContext';
 import { formatTime } from '../../utils/helpers';
 import { Building2, Wrench } from 'lucide-react';
+import RoomPhoto from '../ui/RoomPhoto';
 import ResourceShowcase from './ResourceShowcase';
 import './VehicleShowcase.css';
 
@@ -35,11 +36,13 @@ export default function RoomShowcase() {
     renderCard: (r, statusCls, statusLabel) => (
       <div className={`vs-card vs-card--${statusCls} border border-transparent hover:border-blue-200 shadow-sm`}>
         <div className="vs-card-svg text-blue-500">
-          {r.photo ? (
-            <img src={r.photo} alt={r.name} className="w-12 h-12 rounded-lg object-cover mx-auto mb-2" />
-          ) : (
-            <Building2 size={40} className="mx-auto mb-2 opacity-80" />
-          )}
+          <RoomPhoto
+            roomId={r.id}
+            hasFoto={r.hasFoto}
+            alt={r.name}
+            className="w-12 h-12 rounded-lg object-cover mx-auto mb-2"
+            fallback={<Building2 size={40} className="mx-auto mb-2 opacity-80" />}
+          />
         </div>
         <div className="vs-card-name font-bold text-gray-800 dark:text-gray-200">{r.name}</div>
         <div className={`vs-card-status vs-card-status--${statusCls} mt-2`}>
@@ -58,11 +61,13 @@ export default function RoomShowcase() {
     renderModalHeader: (r, statusCls, statusLabel) => (
       <div className="flex items-center gap-4 mb-6 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
         <div className="w-16 h-16 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600 border border-blue-200 shadow-sm overflow-hidden">
-          {r.photo ? (
-            <img src={r.photo} alt={r.name} className="w-full h-full object-cover" />
-          ) : (
-            <Building2 size={32} />
-          )}
+          <RoomPhoto
+            roomId={r.id}
+            hasFoto={r.hasFoto}
+            alt={r.name}
+            className="w-full h-full object-cover"
+            fallback={<Building2 size={32} />}
+          />
         </div>
         <div className="flex-1">
           <div className="font-heading font-extrabold text-gray-900 dark:text-white text-lg">

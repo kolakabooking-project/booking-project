@@ -4,6 +4,7 @@ import { BOOKING_STATUS, VEHICLE_STATUS } from '../../utils/constants';
 import { formatTime } from '../../utils/helpers';
 import { Car, Wrench } from 'lucide-react';
 import { CarIcon as CarSVG, MotorcycleIcon as MotorcycleSVG } from '../icons/VehicleIcons';
+import VehiclePhoto from '../ui/VehiclePhoto';
 import ResourceShowcase from './ResourceShowcase';
 import './VehicleShowcase.css';
 
@@ -28,11 +29,23 @@ export default function VehicleShowcase() {
     
     // UI Renderers
     renderCard: (v, statusCls, statusLabel) => (
-      <div className={`vs-vehicle-card vs-vehicle-card--${v.foto ? 'has-photo' : 'no-photo'} vs-vehicle-card--${statusCls}`}>
+      <div className={`vs-vehicle-card vs-vehicle-card--${v.hasFoto ? 'has-photo' : 'no-photo'} vs-vehicle-card--${statusCls}`}>
         <div className="vs-vehicle-card-bg">
-          {v.foto ? (
+          {v.hasFoto ? (
             <>
-              <img src={v.foto} alt={v.merek} className="vs-vehicle-card-img" loading="lazy" />
+              <VehiclePhoto
+                vehicleId={v.id}
+                hasFoto={v.hasFoto}
+                alt={v.merek}
+                className="vs-vehicle-card-img"
+                fallback={
+                  <div className="vs-vehicle-card-fallback">
+                    <div className="vs-vehicle-fallback-icon-wrapper">
+                      {isMotorcycle(v) ? <MotorcycleSVG size={48} /> : <CarSVG size={56} />}
+                    </div>
+                  </div>
+                }
+              />
               <div className="vs-vehicle-card-overlay" />
             </>
           ) : (
@@ -66,9 +79,13 @@ export default function VehicleShowcase() {
           width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: '0.875rem', background: 'var(--color-surface-muted)', overflow: 'hidden', flexShrink: 0
         }}>
-          {v.foto ? (
-            <img src={v.foto} alt={v.merek} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : isMotorcycle(v) ? <MotorcycleSVG size={36} /> : <CarSVG size={42} />}
+          <VehiclePhoto
+            vehicleId={v.id}
+            hasFoto={v.hasFoto}
+            alt={v.merek}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            fallback={isMotorcycle(v) ? <MotorcycleSVG size={36} /> : <CarSVG size={42} />}
+          />
         </div>
         <div>
           <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-heading)', fontSize: '0.9375rem' }}>

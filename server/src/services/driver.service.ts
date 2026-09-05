@@ -1,6 +1,6 @@
 import { db } from '../config/db.js';
 import { driver, booking } from '../db/schema.js';
-import { eq, and, not, lte, gte, inArray, isNull } from 'drizzle-orm';
+import { eq, and, not, lte, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -9,9 +9,25 @@ type DriverUpdate = Partial<Omit<DriverInsert, 'id' | 'createdAt'>>;
 
 /**
  * Get all drivers.
+ * NOTE: foto is EXCLUDED to save egress bandwidth.
+ * Photos are fetched individually via getDriverPhoto() when needed.
  */
 export async function getAllDrivers() {
-  return db.select().from(driver).where(isNull(driver.deletedAt));
+  return db
+    .select({
+      id: driver.id,
+      name: driver.name,
+      noHP: driver.noHP,
+      status: driver.status,
+      simJenis: driver.simJenis,
+      simExpiry: driver.simExpiry,
+      hasFoto: sql<boolean>`(${driver.foto} IS NOT NULL AND ${driver.foto} != '')`.as('has_foto'),
+      deletedAt: driver.deletedAt,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt,
+    })
+    .from(driver)
+    .where(isNull(driver.deletedAt));
 }
 
 /**
@@ -32,7 +48,18 @@ export async function getAvailableDrivers(startTime: Date, endTime: Date) {
   const busyIds = new Set(overlapping.map((b) => b.driverId).filter(Boolean));
 
   const allDrivers = await db
-    .select()
+    .select({
+      id: driver.id,
+      name: driver.name,
+      noHP: driver.noHP,
+      status: driver.status,
+      simJenis: driver.simJenis,
+      simExpiry: driver.simExpiry,
+      hasFoto: sql<boolean>`(${driver.foto} IS NOT NULL AND ${driver.foto} != '')`.as('has_foto'),
+      deletedAt: driver.deletedAt,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt,
+    })
     .from(driver)
     .where(and(eq(driver.status, 'Tersedia'), isNull(driver.deletedAt)));
 
@@ -46,6 +73,19 @@ export async function getDriverById(id: string) {
   const [found] = await db.select().from(driver).where(and(eq(driver.id, id), isNull(driver.deletedAt)));
   if (!found) throw new NotFoundError('Pengemudi');
   return found;
+}
+
+/**
+ * Get only the photo (foto) for a single driver by ID.
+ * Used by the lazy-load photo endpoint to avoid sending Base64 in list queries.
+ */
+export async function getDriverPhoto(id: string) {
+  const [found] = await db
+    .select({ id: driver.id, foto: driver.foto })
+    .from(driver)
+    .where(and(eq(driver.id, id), isNull(driver.deletedAt)));
+  if (!found) throw new NotFoundError('Pengemudi');
+  return found.foto;
 }
 
 /**

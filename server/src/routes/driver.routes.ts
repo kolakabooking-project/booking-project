@@ -55,6 +55,21 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/drivers/:id/photo — Get only the photo for a driver (lazy-load)
+ * Returns { data: "<base64 string>" } or { data: null } if no photo.
+ */
+router.get('/:id/photo', async (req: Request, res: Response) => {
+  try {
+    const foto = await driverService.getDriverPhoto(req.params.id as string);
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({ data: foto });
+  } catch (err: any) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/drivers — Create driver (admin only)
  */
 router.post('/', roleGuard('admin'), async (req: Request, res: Response) => {

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useBooking } from '../contexts/BookingContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { vehicleApi } from '../lib/api';
 import { VEHICLE_STATUS } from '../utils/constants';
 
 const INITIAL_FORM = { 
@@ -34,10 +35,20 @@ export default function useFleetManagement() {
     setModalOpen(true); 
   }, []);
   
-  const openEdit = useCallback((v) => { 
+  // Fetch full vehicle data (including foto) when editing
+  const openEdit = useCallback(async (v) => { 
     setEditing(v.id); 
-    setForm({ ...v }); 
-    setModalOpen(true); 
+    setForm({ ...v, foto: '' }); // Start with empty foto
+    setModalOpen(true);
+    // Lazy-load the foto for the edit form
+    try {
+      const res = await vehicleApi.getById(v.id);
+      if (res?.data?.foto) {
+        setForm(prev => ({ ...prev, foto: res.data.foto }));
+      }
+    } catch {
+      // Non-critical — form works without foto preview
+    }
   }, []);
 
   const handleFormChange = useCallback((field, value) => {

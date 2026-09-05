@@ -2,6 +2,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/ui/FormInput';
 import PhotoUploadCard from '../../components/ui/PhotoUploadCard';
+import VehiclePhoto from '../../components/ui/VehiclePhoto';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Badge from '../../components/ui/Badge';
 import DataTable from '../../components/ui/DataTable';
@@ -45,9 +46,9 @@ export default function FleetPage() {
             <td className="font-mono font-semibold text-djp-blue">{v.platNomor}</td>
             <td>
               <div className="flex items-center gap-3">
-                {v.foto && (
+                {v.hasFoto && (
                   <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
-                    <img src={v.foto} alt={v.merek} className="h-full w-full object-cover" loading="lazy" />
+                    <VehiclePhoto vehicleId={v.id} hasFoto={v.hasFoto} alt={v.merek} className="h-full w-full object-cover" />
                   </div>
                 )}
                 <div>

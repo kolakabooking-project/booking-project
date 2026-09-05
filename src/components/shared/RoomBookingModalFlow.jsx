@@ -7,6 +7,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import FormInput from '../ui/FormInput';
 import CounterInput from '../ui/CounterInput';
+import RoomPhoto from '../ui/RoomPhoto';
 import { Plus, ArrowLeft, Building2, Info, Send, Search, CheckCircle, Users } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
 import { BOOKING_STATUS } from '../../utils/constants';
@@ -399,7 +400,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
               <div key={r.id} className={`flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors ${form.roomId === r.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-4 border-l-transparent'}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 overflow-hidden border border-blue-200">
-                    {r.photo ? <img src={r.photo} alt={r.name} className="w-full h-full object-cover" /> : <Building2 size={20} />}
+                    <RoomPhoto roomId={r.id} hasFoto={r.hasFoto} alt={r.name} className="w-full h-full object-cover" fallback={<Building2 size={20} />} />
                   </div>
                   <div>
                     <p className="font-heading font-extrabold text-gray-900 dark:text-white text-sm">
@@ -496,11 +497,13 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         >
           <div className="space-y-5 p-2">
             <div className="flex items-center justify-center h-40 rounded-2xl mb-2 overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
-              {roomDetailModal.photo ? (
-                <img src={roomDetailModal.photo} alt={roomDetailModal.name} className="w-full h-full object-cover" loading="lazy" />
-              ) : (
-                <Building2 size={64} className="text-blue-500/30" />
-              )}
+              <RoomPhoto
+                roomId={roomDetailModal.id}
+                hasFoto={roomDetailModal.hasFoto}
+                alt={roomDetailModal.name}
+                className="w-full h-full object-cover"
+                fallback={<Building2 size={64} className="text-blue-500/30" />}
+              />
             </div>
             
             <div className="text-center">

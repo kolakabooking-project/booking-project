@@ -118,9 +118,8 @@ export function BookingProvider({ children }) {
   }, [isAuthenticated, subscribe, queryClient, refreshBookings]);
 
   // ─── Booking Actions ───
-  // Pattern: await the mutation + minimum loading time, then trigger background refresh.
-  // Ably real-time subscription (line 85-111) provides instant optimistic cache updates.
-  // Background refreshes are fire-and-forget for eventual consistency.
+  // Pattern: await the mutation + minimum loading time, then optimistically update the query cache.
+  // Ably real-time subscription also syncs cache across all clients without redundant network refetches.
   // Minimum loading time prevents the loading overlay from flashing too briefly.
 
   const MIN_LOADING_MS = 600;
@@ -128,47 +127,91 @@ export function BookingProvider({ children }) {
 
   const createBooking = useCallback(async (bookingData) => {
     const [res] = await Promise.all([bookingApi.create(bookingData), minDelay()]);
-    refreshBookings();
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        if (current.some(b => b.id === res.data.id)) return current;
+        return [res.data, ...current];
+      });
+    }
     return res?.data;
-  }, [refreshBookings]);
+  }, [queryClient]);
 
   const createMandatoryBooking = useCallback(async (bookingData) => {
     const [res] = await Promise.all([bookingApi.createMandatory(bookingData), minDelay()]);
-    refreshBookings();
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        if (current.some(b => b.id === res.data.id)) return current;
+        return [res.data, ...current];
+      });
+    }
     return res?.data;
-  }, [refreshBookings]);
+  }, [queryClient]);
 
   const cancelBooking = useCallback(async (bookingId, alasan) => {
-    await Promise.all([bookingApi.cancel(bookingId, alasan), minDelay()]);
-    refreshBookings();
-  }, [refreshBookings]);
+    const [res] = await Promise.all([bookingApi.cancel(bookingId, alasan), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
+      });
+    }
+    return res?.data;
+  }, [queryClient]);
 
   const approveBooking = useCallback(async (bookingId, vehicleId, driverId) => {
-    await Promise.all([bookingApi.approve(bookingId, vehicleId, driverId), minDelay()]);
-    refreshBookings();
+    const [res] = await Promise.all([bookingApi.approve(bookingId, vehicleId, driverId), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
+      });
+    }
     refreshVehicles();
-  }, [refreshBookings, refreshVehicles]);
+    refreshDrivers();
+    return res?.data;
+  }, [queryClient, refreshVehicles, refreshDrivers]);
 
   const rejectBooking = useCallback(async (bookingId, alasan) => {
-    await Promise.all([bookingApi.reject(bookingId, alasan), minDelay()]);
-    refreshBookings();
-  }, [refreshBookings]);
+    const [res] = await Promise.all([bookingApi.reject(bookingId, alasan), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
+      });
+    }
+    return res?.data;
+  }, [queryClient]);
 
   const submitReview = useCallback(async (bookingId, notes) => {
-    await Promise.all([bookingApi.submitReview(bookingId, notes), minDelay()]);
-    refreshBookings();
-  }, [refreshBookings]);
+    const [res] = await Promise.all([bookingApi.submitReview(bookingId, notes), minDelay()]);
+    queryClient.setQueryData(['bookings'], (old) => {
+      const current = old || [];
+      return current.map(b => b.id === bookingId ? { ...b, reviewNotes: notes, isNewReview: true } : b);
+    });
+    return res?.data;
+  }, [queryClient]);
 
   const markReviewAsRead = useCallback(async (bookingId) => {
     await Promise.all([bookingApi.markReviewRead(bookingId), minDelay()]);
-    refreshBookings();
-  }, [refreshBookings]);
+    queryClient.setQueryData(['bookings'], (old) => {
+      const current = old || [];
+      return current.map(b => b.id === bookingId ? { ...b, isNewReview: false } : b);
+    });
+  }, [queryClient]);
 
   const completeBookingEarly = useCallback(async (bookingId, catatan) => {
-    await Promise.all([bookingApi.completeEarly(bookingId, catatan), minDelay()]);
-    refreshBookings();
+    const [res] = await Promise.all([bookingApi.completeEarly(bookingId, catatan), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['bookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
+      });
+    }
     refreshVehicles();
-  }, [refreshBookings, refreshVehicles]);
+    return res?.data;
+  }, [queryClient, refreshVehicles]);
 
   // ─── Vehicle Actions ───
 
@@ -181,13 +224,15 @@ export function BookingProvider({ children }) {
   const updateVehicle = useCallback(async (vehicleId, updates) => {
     const res = await vehicleApi.update(vehicleId, updates);
     await refreshVehicles();
+    queryClient.invalidateQueries({ queryKey: ['vehicle-photo', vehicleId] });
     return res?.data;
-  }, [refreshVehicles]);
+  }, [refreshVehicles, queryClient]);
 
   const deleteVehicle = useCallback(async (vehicleId) => {
     await vehicleApi.delete(vehicleId);
     await refreshVehicles();
-  }, [refreshVehicles]);
+    queryClient.removeQueries({ queryKey: ['vehicle-photo', vehicleId] });
+  }, [refreshVehicles, queryClient]);
 
   // ─── Driver Actions ───
 
@@ -200,13 +245,15 @@ export function BookingProvider({ children }) {
   const updateDriver = useCallback(async (driverId, updates) => {
     const res = await driverApi.update(driverId, updates);
     await refreshDrivers();
+    queryClient.invalidateQueries({ queryKey: ['driver-photo', driverId] });
     return res?.data;
-  }, [refreshDrivers]);
+  }, [refreshDrivers, queryClient]);
 
   const deleteDriver = useCallback(async (driverId) => {
     await driverApi.delete(driverId);
     await refreshDrivers();
-  }, [refreshDrivers]);
+    queryClient.removeQueries({ queryKey: ['driver-photo', driverId] });
+  }, [refreshDrivers, queryClient]);
 
   // ─── Query Helpers ───
 

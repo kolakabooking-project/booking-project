@@ -5,11 +5,13 @@ import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import FormInput from '../../../components/ui/FormInput';
 import PhotoUploadCard from '../../../components/ui/PhotoUploadCard';
+import RoomPhoto from '../../../components/ui/RoomPhoto';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import Badge from '../../../components/ui/Badge';
 import DataTable from '../../../components/ui/DataTable';
 import PageHeader from '../../../components/ui/PageHeader';
 import { ROOM_STATUS } from '../../../utils/constants';
+import { roomApi } from '../../../lib/api';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Users, Wifi, Tv, MonitorPlay } from 'lucide-react';
 
@@ -25,7 +27,18 @@ export default function RoomManagementPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => { setEditing(null); setForm(INITIAL); setModalOpen(true); };
-  const openEdit = (r) => { setEditing(r.id); setForm({ ...r }); setModalOpen(true); };
+  const openEdit = async (r) => { 
+    setEditing(r.id); 
+    setForm({ ...r, photo: '' }); 
+    setModalOpen(true); 
+    try {
+      const res = await roomApi.getById(r.id);
+      const photoVal = res?.data?.foto || res?.data?.photo;
+      if (photoVal) setForm(prev => ({ ...prev, photo: photoVal }));
+    } catch {
+      // Non-critical — form works without photo preview
+    }
+  };
 
   const handleSave = async () => {
     if (!form.name || !form.lokasi) { toast.error('Nama dan lokasi ruangan wajib diisi'); return; }
@@ -83,9 +96,9 @@ export default function RoomManagementPage() {
           <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
             <td>
               <div className="flex items-center gap-4">
-                {r.photo ? (
+                {r.hasFoto ? (
                   <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 shadow-sm bg-gray-100">
-                    <img src={r.photo} alt={r.name} className="h-full w-full object-cover" loading="lazy" />
+                    <RoomPhoto roomId={r.id} hasFoto={r.hasFoto} alt={r.name} className="h-full w-full object-cover" />
                   </div>
                 ) : (
                   <div className="h-12 w-12 flex-shrink-0 rounded-xl bg-blue-100 flex items-center justify-center text-blue-500 font-bold text-lg border border-blue-200">

@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import FormInput from '../ui/FormInput';
 import CounterInput from '../ui/CounterInput';
+import VehiclePhoto from '../ui/VehiclePhoto';
 import { Plus, ArrowLeft, Car, Info, Send, Search, CheckCircle } from 'lucide-react';
 import { formatTime, formatDateShort } from '../../utils/helpers';
 import { toast } from 'sonner';
@@ -567,11 +568,13 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         >
           <div className="space-y-4">
             <div className="flex items-center justify-center w-full aspect-square rounded-3xl mb-4 overflow-hidden relative shadow-inner" style={{ background: 'var(--color-surface-muted)' }}>
-              {vehicleDetailModal.foto ? (
-                <img src={vehicleDetailModal.foto} alt={vehicleDetailModal.merek} className="w-full h-full object-cover" loading="lazy" />
-              ) : (
-                <Car size={64} className="text-[color:var(--color-text-soft)] opacity-40" />
-              )}
+              <VehiclePhoto
+                vehicleId={vehicleDetailModal.id}
+                hasFoto={vehicleDetailModal.hasFoto}
+                alt={vehicleDetailModal.merek}
+                className="w-full h-full object-cover"
+                fallback={<Car size={64} className="text-[color:var(--color-text-soft)] opacity-40" />}
+              />
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-[color:var(--color-text-soft)]">{vehicleDetailModal.tipe}</p>

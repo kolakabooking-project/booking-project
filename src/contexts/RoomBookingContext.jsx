@@ -104,33 +104,58 @@ export function RoomBookingProvider({ children }) {
 
   const createRoomBooking = useCallback(async (bookingData) => {
     const [res] = await Promise.all([roomBookingApi.create(bookingData), minDelay()]);
-    refreshRoomBookings();
+    if (res?.data) {
+      queryClient.setQueryData(['roomBookings'], (old) => {
+        const current = old || [];
+        if (current.some(b => b.id === res.data.id)) return current;
+        return [res.data, ...current];
+      });
+    }
     refreshRooms();
     return res?.data;
-  }, [refreshRoomBookings, refreshRooms]);
+  }, [queryClient, refreshRooms]);
 
   const createMandatoryRoomBooking = useCallback(async (bookingData) => {
     const [res] = await Promise.all([roomBookingApi.createMandatory(bookingData), minDelay()]);
-    refreshRoomBookings();
+    if (res?.data) {
+      queryClient.setQueryData(['roomBookings'], (old) => {
+        const current = old || [];
+        if (current.some(b => b.id === res.data.id)) return current;
+        return [res.data, ...current];
+      });
+    }
     refreshRooms();
     return res?.data;
-  }, [refreshRoomBookings, refreshRooms]);
+  }, [queryClient, refreshRooms]);
 
   const cancelRoomBooking = useCallback(async (bookingId, alasan) => {
-    await Promise.all([roomBookingApi.cancel(bookingId, alasan), minDelay()]);
-    refreshRoomBookings();
+    const [res] = await Promise.all([roomBookingApi.cancel(bookingId, alasan), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['roomBookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
+      });
+    }
     refreshRooms();
-  }, [refreshRoomBookings, refreshRooms]);
+    return res?.data;
+  }, [queryClient, refreshRooms]);
 
   const submitRoomReview = useCallback(async (bookingId, notes) => {
-    await Promise.all([roomBookingApi.submitReview(bookingId, notes), minDelay()]);
-    refreshRoomBookings();
-  }, [refreshRoomBookings]);
+    const [res] = await Promise.all([roomBookingApi.submitReview(bookingId, notes), minDelay()]);
+    queryClient.setQueryData(['roomBookings'], (old) => {
+      const current = old || [];
+      return current.map(b => b.id === bookingId ? { ...b, reviewNotes: notes, isNewReview: true } : b);
+    });
+    return res?.data;
+  }, [queryClient]);
 
   const markRoomReviewAsRead = useCallback(async (bookingId) => {
     await Promise.all([roomBookingApi.markReviewRead(bookingId), minDelay()]);
-    refreshRoomBookings();
-  }, [refreshRoomBookings]);
+    queryClient.setQueryData(['roomBookings'], (old) => {
+      const current = old || [];
+      return current.map(b => b.id === bookingId ? { ...b, isNewReview: false } : b);
+    });
+  }, [queryClient]);
 
   // ─── Room Actions ───
 
@@ -143,19 +168,22 @@ export function RoomBookingProvider({ children }) {
   const updateRoom = useCallback(async (roomId, updates) => {
     const res = await roomApi.update(roomId, updates);
     await refreshRooms();
+    queryClient.invalidateQueries({ queryKey: ['room-photo', roomId] });
     return res?.data;
-  }, [refreshRooms]);
+  }, [refreshRooms, queryClient]);
 
   const deleteRoom = useCallback(async (roomId) => {
     await roomApi.delete(roomId);
     await refreshRooms();
-  }, [refreshRooms]);
+    queryClient.removeQueries({ queryKey: ['room-photo', roomId] });
+  }, [refreshRooms, queryClient]);
   
   const uploadRoomPhoto = useCallback(async (roomId, file) => {
     const res = await roomApi.uploadPhoto(roomId, file);
     await refreshRooms();
+    queryClient.invalidateQueries({ queryKey: ['room-photo', roomId] });
     return res?.data;
-  }, [refreshRooms]);
+  }, [refreshRooms, queryClient]);
 
   // ─── Query Helpers ───
 

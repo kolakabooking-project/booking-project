@@ -6,9 +6,11 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/ui/FormInput';
 import PhotoUploadCard from '../../components/ui/PhotoUploadCard';
+import DriverPhoto from '../../components/ui/DriverPhoto';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageHeader from '../../components/ui/PageHeader';
 import { DRIVER_STATUS } from '../../utils/constants';
+import { driverApi } from '../../lib/api';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
@@ -24,7 +26,19 @@ export default function DriversPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => { setEditing(null); setForm(INITIAL); setModalOpen(true); };
-  const openEdit = (d) => { setEditing(d.id); setForm({ ...d }); setModalOpen(true); };
+  const openEdit = async (d) => { 
+    setEditing(d.id); 
+    setForm({ ...d, foto: '' }); 
+    setModalOpen(true); 
+    try {
+      const res = await driverApi.getById(d.id);
+      if (res?.data?.foto) {
+        setForm(prev => ({ ...prev, foto: res.data.foto }));
+      }
+    } catch {
+      // Non-critical — form works without photo preview
+    }
+  };
 
   const handleSave = async () => {
     if (!form.name) { toast.error('Nama wajib diisi'); return; }
@@ -75,8 +89,14 @@ export default function DriversPage() {
           <Card key={d.id} hover className="p-5 shadow-sm">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-djp-blue/10 overflow-hidden">
-                {d.foto ? (
-                  <img src={d.foto} alt={d.name} className="h-full w-full object-cover" loading="lazy" />
+                {d.hasFoto ? (
+                  <DriverPhoto
+                    driverId={d.id}
+                    hasFoto={d.hasFoto}
+                    alt={d.name}
+                    className="h-full w-full object-cover"
+                    fallback={<span className="text-lg font-heading font-bold text-djp-blue">{d.name.charAt(0)}</span>}
+                  />
                 ) : (
                   <span className="text-lg font-heading font-bold text-djp-blue">{d.name.charAt(0)}</span>
                 )}
