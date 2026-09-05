@@ -184,7 +184,11 @@ export function createApp() {
       const user = (req as any).user;
       // Dynamically import ably to avoid circular dependency or initialization issues if env is missing
       const { default: ably } = await import('./lib/ably.js');
-      const tokenRequestData = await ably.auth.createTokenRequest({ clientId: user.id });
+      // Set TTL to 12 hours (43,200,000 ms) to reduce database/serverless wake-up frequency on idle/background tabs
+      const tokenRequestData = await ably.auth.createTokenRequest({
+        clientId: user.id,
+        ttl: 12 * 60 * 60 * 1000, // 12 hours
+      });
       res.json(tokenRequestData);
     } catch (err: any) {
       console.error('[ABLY AUTH ERROR]', err.message); // Don't log full error object (may contain keys)
