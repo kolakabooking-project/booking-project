@@ -15,24 +15,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showDev, setShowDev] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-
-  const handleMouseEnter = () => {
-    if (window.matchMedia('(hover: hover)').matches) {
-      setShowDev(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (window.matchMedia('(hover: hover)').matches) {
-      setShowDev(false);
-    }
-  };
-
-  const handleClick = () => {
-    setShowDev((prev) => !prev);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,18 +78,8 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Top-Right Controls: About App & Theme Toggle */}
-          <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setInfoOpen(true)}
-              aria-label="Tentang Aplikasi Bookolaka"
-              className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-500 bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300/90 dark:hover:bg-white/20 text-slate-700 dark:text-white/90 border border-slate-300/80 dark:border-white/15 shadow-sm hover:scale-105 active:scale-95 focus:outline-none"
-            >
-              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="text-xs font-bold tracking-wide">Tentang</span>
-            </button>
-
+          {/* Top-Right Controls: Theme Toggle */}
+          <div className="absolute top-5 right-5 z-20 flex items-center">
             <button
               type="button"
               onClick={toggleTheme}
@@ -214,26 +187,17 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Footer Copyright */}
-          <div
-            className="relative z-10 mt-5 sm:mt-7 text-center select-none cursor-pointer"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
-          >
-            <p className="text-[10px] font-heading font-extrabold uppercase tracking-[0.18em] sm:tracking-[0.32em] text-slate-900 dark:text-white/85 transition-colors hover:text-black dark:hover:text-white inline-block py-1 px-2 rounded-lg max-w-full break-words drop-shadow-sm">
-              © 2026 KPP PRATAMA KOLAKA V1.0.0
-            </p>
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                showDev ? 'max-h-12 opacity-100 mt-1.5' : 'max-h-0 opacity-0 mt-0'
-              }`}
+          {/* Footer Action: Button Tentang Aplikasi */}
+          <div className="relative z-10 mt-5 sm:mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              aria-label="Tentang Aplikasi Bookolaka"
+              className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-heading font-bold text-slate-700 dark:text-white/90 hover:text-slate-900 dark:hover:text-white bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200/90 dark:hover:bg-white/20 border border-slate-300/80 dark:border-white/15 shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
             >
-              <p className="text-[11px] font-semibold text-slate-900 dark:text-white/75 dark:[text-shadow:_0_1px_8px_rgba(0,0,0,0.95)]">
-                Dikembangkan oleh{' '}
-                <span className="font-extrabold text-black dark:text-white">Ahmad Fikri Rafiuddin</span>
-              </p>
-            </div>
+              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="tracking-wide">Tentang Aplikasi</span>
+            </button>
           </div>
         </div>
       </div>
