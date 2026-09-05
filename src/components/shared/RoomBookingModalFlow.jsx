@@ -9,7 +9,7 @@ import FormInput from '../ui/FormInput';
 import CounterInput from '../ui/CounterInput';
 import RoomPhoto from '../ui/RoomPhoto';
 import { Plus, ArrowLeft, Building2, Info, Send, Search, CheckCircle, Users } from 'lucide-react';
-import { formatTime, formatDateShort } from '../../utils/helpers';
+import { formatTime, formatDateShort, isPastDate } from '../../utils/helpers';
 import { BOOKING_STATUS } from '../../utils/constants';
 import { toast } from 'sonner';
 import { bookingApi } from '../../lib/api';
@@ -32,6 +32,20 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
   const [availChecked, setAvailChecked] = useState(false);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [roomDetailModal, setRoomDetailModal] = useState(null);
+
+  const isPast = selectedDate ? isPastDate(selectedDate) : false;
+  const isReadOnly = isPast && !isAdmin;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const changeMode = (newMode) => {
+    if (isReadOnly && newMode !== 'list') {
+      toast.error('Tidak dapat mengajukan peminjaman ruangan untuk tanggal yang telah lewat.');
+      return;
+    }
+    setMode(newMode);
+  };
 
   const [pegawaiList, setPegawaiList] = useState([]);
   const [pegawaiSearch, setPegawaiSearch] = useState('');
@@ -79,7 +93,11 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
-      setMode(isAdmin || !selectedDate ? 'form' : 'list');
+      if (isReadOnly) {
+        setMode('list');
+      } else {
+        setMode(isAdmin || !selectedDate ? 'form' : 'list');
+      }
       setAvailChecked(false);
       setAvailableRooms([]);
       setRoomDetailModal(null);
@@ -141,6 +159,10 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isReadOnly || (!isAdmin && isPastDate(form.startDate))) {
+      toast.error('Tidak dapat membuat peminjaman ruangan untuk tanggal yang telah lewat.');
+      return;
+    }
     if (!form.roomId) {
       toast.error('Pilih ruangan terlebih dahulu');
       return;
@@ -194,8 +216,22 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
     <div className="space-y-4">
       {dateBookings.length === 0 ? (
         <div className="text-center py-8">
-          <Building2 size={48} className="mx-auto text-blue-500/40 mb-3" />
-          <p className="text-[color:var(--color-text-soft)] text-sm">Semua ruangan tersedia pada tanggal ini.</p>
+          {isReadOnly ? (
+            <>
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 mb-3">
+                <Info size={24} />
+              </div>
+              <p className="text-sm font-semibold text-[color:var(--color-heading)]">Tidak Ada Catatan Peminjaman Ruangan</p>
+              <p className="mt-1 text-xs text-[color:var(--color-text-soft)]">
+                Tidak ada aktivitas ruangan pada tanggal {selectedDate ? formatDateShort(selectedDate) : ''}.
+              </p>
+            </>
+          ) : (
+            <>
+              <Building2 size={48} className="mx-auto text-blue-500/40 mb-3" />
+              <p className="text-[color:var(--color-text-soft)] text-sm">Semua ruangan tersedia pada tanggal ini.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -222,12 +258,21 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         </div>
       )}
       
-      <div className="mt-6 border-t pt-5 border-gray-100 dark:border-gray-800 flex justify-end">
-        <Button onClick={() => setMode('form')} size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20">
-          <Plus size={16} />
-          Buat Peminjaman Ruang
-        </Button>
-      </div>
+      {isReadOnly ? (
+        <div className="mt-6 border-t pt-4 border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
+            <Info size={16} className="shrink-0 text-amber-500" />
+            <span>Tanggal ini telah berlalu. Pengajuan peminjaman ruangan baru tidak dapat dibuat untuk tanggal lampau.</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 border-t pt-5 border-gray-100 dark:border-gray-800 flex justify-end">
+          <Button onClick={() => changeMode('form')} size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20">
+            <Plus size={16} />
+            Buat Peminjaman Ruang
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -319,6 +364,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
           id="startDate"
           type="date"
           required
+          min={!isAdmin ? todayStr : undefined}
           value={form.startDate}
           disabled={!!selectedDate && !isAdmin}
           onChange={(e) => { setForm({...form, startDate: e.target.value}); setAvailChecked(false); }}
@@ -478,7 +524,11 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
         isOpen={isOpen} 
         onClose={onClose} 
         title={
-          mode === 'list' ? `Jadwal Ruangan: ${selectedDate ? formatDateShort(selectedDate) : ''}` : 'Booking Ruang Rapat'
+          mode === 'list' ? (
+            isReadOnly 
+              ? `Riwayat Jadwal Ruangan: ${selectedDate ? formatDateShort(selectedDate) : ''}`
+              : `Jadwal Ruangan: ${selectedDate ? formatDateShort(selectedDate) : ''}`
+          ) : 'Booking Ruang Rapat'
         }
         size="lg"
       >

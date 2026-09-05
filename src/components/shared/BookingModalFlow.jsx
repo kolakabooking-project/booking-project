@@ -10,7 +10,7 @@ import FormInput from '../ui/FormInput';
 import CounterInput from '../ui/CounterInput';
 import VehiclePhoto from '../ui/VehiclePhoto';
 import { Plus, ArrowLeft, Car, Info, Send, Search, CheckCircle } from 'lucide-react';
-import { formatTime, formatDateShort } from '../../utils/helpers';
+import { formatTime, formatDateShort, isPastDate } from '../../utils/helpers';
 import { toast } from 'sonner';
 import { bookingApi } from '../../lib/api';
 
@@ -24,6 +24,20 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
   const [availChecked, setAvailChecked] = useState(false);
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [vehicleDetailModal, setVehicleDetailModal] = useState(null);
+
+  const isPast = selectedDate ? isPastDate(selectedDate) : false;
+  const isReadOnly = isPast && !isAdmin;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const changeMode = (newMode) => {
+    if (isReadOnly && newMode !== 'list') {
+      toast.error('Tidak dapat mengajukan peminjaman untuk tanggal yang telah lewat.');
+      return;
+    }
+    setMode(newMode);
+  };
 
   const [pegawaiList, setPegawaiList] = useState([]);
   const [pegawaiSearch, setPegawaiSearch] = useState('');
@@ -76,7 +90,11 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
   // This effect intentionally resets the flow each time the modal session is opened.
   useEffect(() => {
     if (isOpen) {
-      setMode(isAdmin || !selectedDate ? 'select_type' : 'list');
+      if (isReadOnly) {
+        setMode('list');
+      } else {
+        setMode(isAdmin || !selectedDate ? 'select_type' : 'list');
+      }
       setAvailChecked(false);
       setAvailableVehicles([]);
       setVehicleDetailModal(null);
@@ -145,6 +163,10 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isReadOnly || (!isAdmin && isPastDate(form.startDate))) {
+      toast.error('Tidak dapat membuat pengajuan peminjaman untuk tanggal yang telah lewat.');
+      return;
+    }
     if (!form.vehicleId) {
       toast.error('Pilih kendaraan terlebih dahulu');
       return;
@@ -208,8 +230,22 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
     <div className="space-y-4">
       {dateBookings.length === 0 ? (
         <div className="text-center py-8">
-          <Car size={48} className="mx-auto text-success/40 mb-3" />
-          <p className="text-[color:var(--color-text-soft)]">Semua kendaraan tersedia pada tanggal ini.</p>
+          {isReadOnly ? (
+            <>
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 mb-3">
+                <Info size={24} />
+              </div>
+              <p className="text-sm font-semibold text-[color:var(--color-heading)]">Tidak Ada Catatan Peminjaman</p>
+              <p className="mt-1 text-xs text-[color:var(--color-text-soft)]">
+                Tidak ada aktivitas peminjaman kendaraan pada tanggal {selectedDate ? formatDateShort(selectedDate) : ''}.
+              </p>
+            </>
+          ) : (
+            <>
+              <Car size={48} className="mx-auto text-success/40 mb-3" />
+              <p className="text-[color:var(--color-text-soft)]">Semua kendaraan tersedia pada tanggal ini.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -234,12 +270,21 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         </div>
       )}
       
-      <div className="mt-6 border-t pt-4 flex justify-end" style={{ borderColor: 'var(--color-border)' }}>
-        <Button onClick={() => setMode('select_type')} size="lg" className="w-full sm:w-auto">
-          <Plus size={16} />
-          Buat Peminjaman
-        </Button>
-      </div>
+      {isReadOnly ? (
+        <div className="mt-6 border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
+            <Info size={16} className="shrink-0 text-amber-500" />
+            <span>Tanggal ini telah berlalu. Pengajuan peminjaman baru tidak dapat dibuat untuk tanggal lampau.</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 border-t pt-4 flex justify-end" style={{ borderColor: 'var(--color-border)' }}>
+          <Button onClick={() => changeMode('select_type')} size="lg" className="w-full sm:w-auto">
+            <Plus size={16} />
+            Buat Peminjaman
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -255,7 +300,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <button 
-          onClick={() => { setMode('form_single'); setAvailChecked(false); }}
+          onClick={() => { changeMode('form_single'); setAvailChecked(false); }}
           className="border-2 rounded-3xl p-6 text-center transition-all group hover:border-djp-blue hover:bg-[color:var(--color-surface-muted)]"
           style={{ borderColor: 'var(--color-border)' }}
         >
@@ -267,7 +312,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         </button>
         
         <button 
-          onClick={() => { setMode('form_multiple'); setAvailChecked(false); }}
+          onClick={() => { changeMode('form_multiple'); setAvailChecked(false); }}
           className="border-2 rounded-3xl p-6 text-center transition-all group hover:border-djp-blue hover:bg-[color:var(--color-surface-muted)]"
           style={{ borderColor: 'var(--color-border)' }}
         >
@@ -368,6 +413,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
             id="startDate"
             type="date"
             required
+            min={!isAdmin ? todayStr : undefined}
             value={form.startDate}
             disabled={!!selectedDate && !isAdmin}
             onChange={(e) => { setForm({...form, startDate: e.target.value, endDate: e.target.value}); setAvailChecked(false); }}
@@ -419,7 +465,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
             id="startDate"
             type="date"
             required
-            min={form.startDate}
+            min={!isAdmin ? todayStr : undefined}
             value={form.startDate}
             onChange={(e) => { setForm({...form, startDate: e.target.value}); setAvailChecked(false); }}
           />
@@ -428,7 +474,7 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
             id="endDate"
             type="date"
             required
-            min={form.startDate}
+            min={!isAdmin ? (form.startDate && form.startDate > todayStr ? form.startDate : todayStr) : form.startDate}
             value={form.endDate}
             onChange={(e) => { setForm({...form, endDate: e.target.value}); setAvailChecked(false); }}
           />
@@ -547,7 +593,11 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         isOpen={isOpen} 
         onClose={onClose} 
         title={
-          mode === 'list' ? `Agenda: ${selectedDate ? formatDateShort(selectedDate) : ''}` :
+          mode === 'list' ? (
+            isReadOnly 
+              ? `Riwayat Agenda: ${selectedDate ? formatDateShort(selectedDate) : ''}`
+              : `Agenda: ${selectedDate ? formatDateShort(selectedDate) : ''}`
+          ) :
           mode === 'select_type' ? 'Buat Peminjaman Baru' :
           mode === 'form_single' ? 'Form Pinjam Sehari' : 'Form Lebih Dari Sehari'
         }

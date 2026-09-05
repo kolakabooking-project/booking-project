@@ -92,10 +92,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
     const booking = await roomBookingService.createRoomBooking({
       ...req.body,
       userId: user.id,
-    });
+    }, isAdmin);
     res.status(201).json({ data: booking });
 
     logActivity({

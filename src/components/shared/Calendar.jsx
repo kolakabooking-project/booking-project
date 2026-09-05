@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 export default function Calendar({ 
   onDateClick, 
   onMandatoryBookingClick, 
-  allowPastClick = false,
+  allowPastClick = true,
   getBookingsForDate,
   totalResources = 0,
   bookings: propBookings,
@@ -262,7 +262,11 @@ export default function Calendar({
                   }}
                   className={`
                     relative min-h-[70px] sm:min-h-[96px] border-b border-r p-1.5 sm:p-2 transition-all
-                    ${(status === 'past' && !allowPastClick && !isAdmin) ? 'cursor-not-allowed opacity-40' : 'cursor-pointer hover:bg-[color:var(--color-surface-muted)] active:bg-djp-blue/5'}
+                    ${(status === 'past' && !allowPastClick && !isAdmin)
+                      ? 'cursor-not-allowed opacity-40' 
+                      : status === 'past'
+                      ? 'cursor-pointer opacity-80 hover:opacity-100 hover:bg-[color:var(--color-surface-muted)] active:bg-djp-blue/5'
+                      : 'cursor-pointer hover:bg-[color:var(--color-surface-muted)] active:bg-djp-blue/5'}
                     ${isTodayDate ? 'bg-djp-blue/5' : ''}
                   `}
                   style={{ borderColor: 'color-mix(in srgb, var(--color-border) 70%, transparent)' }}
@@ -270,7 +274,7 @@ export default function Calendar({
                   <div className="flex items-start justify-between">
                     <span className={`
                       flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full text-xs font-heading font-bold
-                      ${isTodayDate ? 'bg-djp-blue text-white shadow-md shadow-djp-blue/30' : 'text-[color:var(--color-heading)]'}
+                      ${isTodayDate ? 'bg-djp-blue text-white shadow-md shadow-djp-blue/30' : status === 'past' ? 'text-[color:var(--color-text-soft)]' : 'text-[color:var(--color-heading)]'}
                     `}>
                       {date.getDate()}
                     </span>

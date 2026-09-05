@@ -126,10 +126,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const actor = (req as any).user;
+    const isAdmin = actor?.role === 'admin' || actor?.role === 'superadmin';
     const booking = await bookingService.createBooking({
       ...req.body,
       userId: actor.id,
-    });
+    }, isAdmin);
     res.status(201).json({ data: booking });
 
     // Log: user request

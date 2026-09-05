@@ -200,6 +200,22 @@ export async function createRoomBooking(data: RoomBookingInsert, isAdmin: boolea
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
 
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    throw new ValidationError('Format waktu mulai atau selesai tidak valid.');
+  }
+
+  if (startTime >= endTime) {
+    throw new ValidationError('Waktu selesai harus setelah waktu mulai.');
+  }
+
+  if (!isAdmin) {
+    // Toleransi 5 menit untuk perbedaan clock drift antara server dan client
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if (startTime < fiveMinutesAgo) {
+      throw new ValidationError('Tidak dapat membuat pengajuan peminjaman ruangan untuk tanggal atau waktu yang telah lewat.');
+    }
+  }
+
   // Check overlap securely
   const overlapping = await db
     .select({ id: roomBooking.id })

@@ -70,6 +70,7 @@ export default function DashboardPage() {
         <div className="order-1 2xl:order-2 w-full">
           <Calendar 
             onDateClick={handleDateClick} 
+            allowPastClick={true}
             getBookingsForDate={getBookingsForDate}
             bookings={bookings}
             totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}

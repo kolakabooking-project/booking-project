@@ -287,12 +287,29 @@ function sanitizeBookingInsert(data: any) {
 /**
  * Create a new booking (user — status=Pending).
  */
-export async function createBooking(data: any) {
+export async function createBooking(data: any, isAdmin: boolean = false) {
   if (!data.keperluan) throw new ValidationError('Keperluan wajib diisi.');
   if (!data.startTime || !data.endTime) throw new ValidationError('Waktu mulai dan selesai wajib diisi.');
 
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
+
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    throw new ValidationError('Format waktu mulai atau selesai tidak valid.');
+  }
+
+  if (startTime >= endTime) {
+    throw new ValidationError('Waktu selesai harus setelah waktu mulai.');
+  }
+
+  if (!isAdmin) {
+    // Toleransi 5 menit untuk perbedaan clock drift antara server dan client
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if (startTime < fiveMinutesAgo) {
+      throw new ValidationError('Tidak dapat membuat pengajuan peminjaman untuk tanggal atau waktu yang telah lewat.');
+    }
+  }
+
   const cleanData = sanitizeBookingInsert(data);
 
   // ── Core mutation (awaited — must succeed) ──
