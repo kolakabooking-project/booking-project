@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/ui/Button';
-import { Search, Download, Calendar } from 'lucide-react';
+import { Search, Download, Calendar, ChevronRight } from 'lucide-react';
 import { getActionMeta, ACTION_FILTER_OPTIONS } from '../../utils/actionConfig';
 import useActivityLog from '../../hooks/useActivityLog';
+import LogDetailModal from '../../components/superadmin/LogDetailModal';
 
 export default function ActivityLogPage() {
   const { state, actions } = useActivityLog();
@@ -16,6 +18,8 @@ export default function ActivityLogPage() {
     setAction, setSearch, setStartDate, setEndDate,
     handlePageChange, handleExport
   } = actions;
+
+  const [selectedLog, setSelectedLog] = useState(null);
 
   return (
     <div className="pb-10">
@@ -105,7 +109,20 @@ export default function ActivityLogPage() {
                   const meta = getActionMeta(log.action);
                   const IconComponent = meta.icon;
                   return (
-                    <div key={log.id} className={`flex items-start gap-3 p-4 transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02] ${i < dateLogs.length - 1 ? 'border-b' : ''}`} style={{ borderColor: 'var(--color-border)' }}>
+                    <div
+                      key={log.id}
+                      onClick={() => setSelectedLog(log)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedLog(log);
+                        }
+                      }}
+                      className={`group flex items-start gap-3 p-4 transition-colors cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.03] active:bg-black/[0.05] dark:active:bg-white/[0.05] ${i < dateLogs.length - 1 ? 'border-b' : ''}`}
+                      style={{ borderColor: 'var(--color-border)' }}
+                    >
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.bgClass}`}>
                         <IconComponent size={16} strokeWidth={2} className={meta.iconClass} />
                       </div>
@@ -124,11 +141,14 @@ export default function ActivityLogPage() {
                           <p className="text-xs text-[color:var(--color-text-muted)] mt-1 line-clamp-2">{log.detail}</p>
                         )}
                       </div>
-                      {log.ipAddress && (
-                        <span className="text-[9px] font-mono text-[color:var(--color-text-soft)] flex-shrink-0 hidden sm:block opacity-60">
-                          {log.ipAddress}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0 self-center">
+                        {log.ipAddress && (
+                          <span className="text-[9px] font-mono text-[color:var(--color-text-soft)] hidden sm:block opacity-60">
+                            {log.ipAddress}
+                          </span>
+                        )}
+                        <ChevronRight size={16} className="text-[color:var(--color-text-soft)] opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      </div>
                     </div>
                   );
                 })}
@@ -170,6 +190,14 @@ export default function ActivityLogPage() {
       <p className="mt-3 text-xs text-[color:var(--color-text-soft)] text-center">
         Log disimpan selama 31 hari. Gunakan Export Excel untuk backup sebelum data otomatis terhapus.
       </p>
+
+      {/* Detail Modal */}
+      <LogDetailModal
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        logId={selectedLog?.id}
+        initialLog={selectedLog}
+      />
     </div>
   );
 }

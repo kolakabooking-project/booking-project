@@ -1,6 +1,9 @@
 import { db } from '../config/db.js';
-import { activityLog, user } from '../db/schema.js';
+import { activityLog, user, vehicle, driver } from '../db/schema.js';
 import { eq, desc, and, gte, lte, ilike, or, lt, count } from 'drizzle-orm';
+import { NotFoundError } from '../utils/errors.js';
+import * as bookingService from './booking.service.js';
+import * as roomBookingService from './room-booking.service.js';
 
 // ─── Types ───
 
@@ -193,4 +196,85 @@ export async function cleanupOldLogs(): Promise<number> {
   }
 
   return deletedCount;
+}
+
+/**
+ * Get detailed information for a single activity log entry,
+ * including resolved target entity details (e.g. booking, room booking, user, vehicle, driver).
+ */
+export async function getActivityLogDetail(id: string) {
+  const [log] = await db
+    .select()
+    .from(activityLog)
+    .where(eq(activityLog.id, id));
+
+  if (!log) {
+    throw new NotFoundError('Log aktivitas');
+  }
+
+  let entityType: 'booking' | 'room_booking' | 'user' | 'vehicle' | 'driver' | 'general' = 'general';
+  let entityDetail: any = null;
+
+  if (log.action.startsWith('BOOKING_') && log.targetId) {
+    entityType = 'booking';
+    try {
+      entityDetail = await bookingService.getBookingById(log.targetId);
+    } catch {
+      // Target booking may have been deleted or reset
+      entityDetail = null;
+    }
+  } else if (log.action.startsWith('ROOM_BOOKING_') && log.targetId) {
+    entityType = 'room_booking';
+    try {
+      entityDetail = await roomBookingService.getRoomBookingById(log.targetId);
+    } catch {
+      entityDetail = null;
+    }
+  } else if ((log.action.startsWith('ACCOUNT_') || log.action === 'PROFILE_UPDATED') && log.targetId) {
+    entityType = 'user';
+    try {
+      const [targetUser] = await db
+        .select({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          nip: user.nip,
+          jabatan: user.jabatan,
+          role: user.role,
+        })
+        .from(user)
+        .where(eq(user.id, log.targetId));
+      entityDetail = targetUser || null;
+    } catch {
+      entityDetail = null;
+    }
+  } else if (log.action.startsWith('VEHICLE_') && log.targetId) {
+    entityType = 'vehicle';
+    try {
+      const [targetVehicle] = await db
+        .select()
+        .from(vehicle)
+        .where(eq(vehicle.id, log.targetId));
+      entityDetail = targetVehicle || null;
+    } catch {
+      entityDetail = null;
+    }
+  } else if (log.action.startsWith('DRIVER_') && log.targetId) {
+    entityType = 'driver';
+    try {
+      const [targetDriver] = await db
+        .select()
+        .from(driver)
+        .where(eq(driver.id, log.targetId));
+      entityDetail = targetDriver || null;
+    } catch {
+      entityDetail = null;
+    }
+  }
+
+  return {
+    log,
+    entityType,
+    entityDetail,
+  };
 }

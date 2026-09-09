@@ -358,6 +358,18 @@ router.post('/logs/cleanup', async (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/superadmin/logs/:id — Get single activity log detail with resolved entity data
+ */
+router.get('/logs/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await activityService.getActivityLogDetail(req.params.id as string);
+    res.json({ data: result });
+  } catch (err: any) {
+    handleError(err, res);
+  }
+});
+
+/**
  * POST /api/superadmin/reset — Secure reset of system components
  */
 router.post('/reset', async (req: Request, res: Response) => {
