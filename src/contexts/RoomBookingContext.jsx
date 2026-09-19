@@ -206,20 +206,22 @@ export function RoomBookingProvider({ children }) {
 
   const getAvailableRooms = useCallback(
     (startTime, endTime) => {
-      const bookedRoomIds = roomBookings
-        .filter((b) => {
-          if (['Dibatalkan', 'Selesai', 'Selesai dengan Catatan'].includes(b.status)) return false;
-          const bStart = new Date(b.startTime);
-          const bEnd = new Date(b.endTime);
-          const rStart = new Date(startTime);
-          const rEnd = new Date(endTime);
-          return bStart < rEnd && bEnd > rStart;
-        })
-        .map((b) => b.roomId)
-        .filter(Boolean);
+      const bookedRoomIds = new Set(
+        roomBookings
+          .filter((b) => {
+            if (['Dibatalkan', 'Selesai', 'Selesai dengan Catatan'].includes(b.status)) return false;
+            const bStart = new Date(b.startTime);
+            const bEnd = new Date(b.endTime);
+            const rStart = new Date(startTime);
+            const rEnd = new Date(endTime);
+            return bStart < rEnd && bEnd > rStart;
+          })
+          .map((b) => String(b.roomId))
+          .filter(Boolean)
+      );
 
       return rooms.filter(
-        (r) => r.status !== 'Dalam Perawatan' && !bookedRoomIds.includes(r.id)
+        (r) => r.status !== 'Dalam Perawatan' && !bookedRoomIds.has(String(r.id))
       );
     },
     [roomBookings, rooms]

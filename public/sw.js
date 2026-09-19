@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookolaka-cache-v10';
+const CACHE_NAME = 'bookolaka-cache-v11';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -37,39 +37,57 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Skip API requests and non-GET requests
+  // 1. Lewatkan request non-GET atau request ke API backend
   if (e.request.method !== 'GET' || e.request.url.includes('/api/')) {
     return;
   }
 
   const url = new URL(e.request.url);
 
-  // Lewatkan langsung ke network jika di local development (localhost / 127.0.0.1) agar tidak bentrok dengan Vite dev server & HMR
+  // 2. Hanya tangani request yang ditujukan ke domain yang sama (same-origin)
+  // Jangan intercept request ke layanan luar (Ably, Google Fonts, Sheets, dll.)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 3. Lewatkan langsung ke network jika di local development agar tidak bentrok dengan Vite dev server & HMR
   if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
     return;
   }
 
-  // Network First strategy for HTML navigation requests (to always get the latest chunks)
-  if (e.request.mode === 'navigate') {
+  // 4. Deteksi apakah ini request navigasi halaman / rute SPA HTML
+  // Termasuk request mode navigate, dokumen HTML, atau path rute SPA tanpa ekstensi file
+  const isHtmlNavigation =
+    e.request.mode === 'navigate' ||
+    e.request.destination === 'document' ||
+    e.request.headers.get('accept')?.includes('text/html') ||
+    (!url.pathname.includes('.') && !url.pathname.startsWith('/api/'));
+
+  if (isHtmlNavigation) {
+    // Network First strategy untuk halaman HTML: selalu coba ambil yang terbaru dari server
     e.respondWith(
       fetch(e.request)
         .then((networkResponse) => {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              // Simpan shell HTML ke cache /index.html
+              cache.put('/index.html', responseToCache);
+            });
+          }
           return networkResponse;
         })
         .catch(async () => {
-          const cached = await caches.match('/index.html');
+          // Jika offline atau jaringan gagal, fallback ke index.html yang ada di cache
+          const cached = await caches.match('/index.html') || await caches.match('/');
           if (cached) {
             return cached;
           }
-          // Jika index.html tidak ada di cache, kembalikan halaman offline standar
+          // Jika index.html belum ada di cache, tampilkan pesan offline informatif
           return new Response(
             '<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Offline</title></head><body style="font-family: sans-serif; text-align: center; padding: 2rem; color: #333;"><h2>Aplikasi Sedang Offline</h2><p>Pastikan koneksi internet Anda aktif. Sistem tidak dapat memuat data saat ini.</p><button onclick="window.location.reload()" style="padding: 10px 20px; background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer;">Coba Lagi</button></body></html>',
             {
-              status: 503,
+              status: 200,
               headers: { 'Content-Type': 'text/html' }
             }
           );
@@ -78,7 +96,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Stale-While-Revalidate for other assets (JS, CSS, images)
+  // 5. Stale-While-Revalidate untuk static assets (JS, CSS, images, icons)
   e.respondWith(
     caches.match(e.request).then(async (cachedResponse) => {
       if (cachedResponse) {
@@ -97,13 +115,12 @@ self.addEventListener('fetch', (e) => {
         return cachedResponse;
       }
 
-      // Jika tidak ada di cache, kita harus fetch
+      // Jika tidak ada di cache, fetch dari jaringan
       try {
         const networkResponse = await fetch(e.request);
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const contentType = networkResponse.headers.get('content-type');
           if (e.request.url.match(/\.(js|css)$/) && contentType && contentType.includes('text/html')) {
-            // Jangan cache, dan lempar response 404 agar module loader (React) gagal & me-reload
             return new Response('Not Found', { status: 404, statusText: 'Not Found' });
           }
           const responseToCache = networkResponse.clone();
@@ -113,9 +130,8 @@ self.addEventListener('fetch', (e) => {
         }
         return networkResponse;
       } catch (err) {
-        console.warn('[SW] Fetch failed for', e.request.url, err);
-        // Penting: kembalikan response error agar Promise tidak reject dengan undefined (yang bikin TypeError)
-        return new Response('Network Error', { status: 503, statusText: 'Service Unavailable' });
+        // Jika aset statis gagal dimuat, kembalikan 404 bukan 503
+        return new Response('Asset Not Found', { status: 404, statusText: 'Not Found' });
       }
     })
   );

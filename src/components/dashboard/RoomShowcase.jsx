@@ -6,7 +6,7 @@ import RoomPhoto from '../ui/RoomPhoto';
 import ResourceShowcase from './ResourceShowcase';
 import './VehicleShowcase.css';
 
-export default function RoomShowcase() {
+export default function RoomShowcase({ onBookRoom }) {
   const { user } = useAuth();
   const { rooms, roomBookings } = useRoomBooking();
 
@@ -121,7 +121,22 @@ export default function RoomShowcase() {
       </>
     ),
 
-    emptyTimelineText: "Ruangan ini tersedia sepanjang hari."
+    emptyTimelineText: "Ruangan ini tersedia sepanjang hari.",
+
+    renderModalFooter: onBookRoom ? (r, closeModal) => (
+      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            closeModal();
+            onBookRoom(r);
+          }}
+          className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-heading font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+        >
+          <Building2 size={16} /> Ajukan Peminjaman Ruangan Ini
+        </button>
+      </div>
+    ) : undefined
   };
 
   return (

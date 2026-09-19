@@ -15,17 +15,31 @@ export default function DashboardPage() {
   const { rooms, roomBookings, getRoomBookingsForDate } = useRoomBooking();
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [preselectedRoomId, setPreselectedRoomId] = useState(null);
 
   const availableToday = rooms.filter((r) => r.status === ROOM_STATUS.AVAILABLE).length;
 
   const handleDateClick = (date) => {
+    setPreselectedRoomId(null);
     setSelectedDate(date);
     setModalOpen(true);
   };
 
   const handleNewBookingFromTracker = () => {
+    setPreselectedRoomId(null);
     setSelectedDate(null);
     setModalOpen(true);
+  };
+
+  const handleBookSpecificRoom = (room) => {
+    setPreselectedRoomId(room?.id || null);
+    setSelectedDate(new Date());
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setPreselectedRoomId(null);
   };
 
   const dateBookings = selectedDate ? getRoomBookingsForDate(selectedDate) : [];
@@ -46,7 +60,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8 mb-8">
         {/* On Mobile: below calendar. On Desktop: above calendar */}
         <div className="order-2 2xl:order-1 w-full grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_420px]">
-          <RoomShowcase />
+          <RoomShowcase onBookRoom={handleBookSpecificRoom} />
 
           {/* Agenda Card */}
           <Card className="hidden 2xl:block overflow-hidden p-0">
@@ -79,9 +93,10 @@ export default function DashboardPage() {
 
       <RoomBookingModalFlow
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         selectedDate={selectedDate}
         dateBookings={dateBookings}
+        initialRoomId={preselectedRoomId}
       />
     </div>
   );

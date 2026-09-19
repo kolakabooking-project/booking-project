@@ -222,6 +222,8 @@ export default function ResourceShowcase({
                 {emptyTimelineText}
               </div>
             )}
+
+            {config.renderModalFooter && config.renderModalFooter(selectedResource, () => setSelectedResource(null))}
           </div>
         )}
       </Modal>

@@ -14,7 +14,14 @@ import { BOOKING_STATUS } from '../../utils/constants';
 import { toast } from 'sonner';
 import { bookingApi } from '../../lib/api';
 
-export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, dateBookings = [], isAdmin = false }) {
+export default function RoomBookingModalFlow({ 
+  isOpen, 
+  onClose, 
+  selectedDate, 
+  dateBookings = [], 
+  isAdmin = false,
+  initialRoomId = null,
+}) {
   const { user } = useAuth();
   const { 
     createRoomBooking, 
@@ -96,7 +103,7 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
       if (isReadOnly) {
         setMode('list');
       } else {
-        setMode(isAdmin || !selectedDate ? 'form' : 'list');
+        setMode(isAdmin || !selectedDate || initialRoomId ? 'form' : 'list');
       }
       setAvailChecked(false);
       setAvailableRooms([]);
@@ -104,24 +111,26 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
       setSelectedPegawai(null);
       setPegawaiSearch('');
       
-      const targetDate = selectedDate || new Date();
-      const yyyy = targetDate.getFullYear();
-      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(targetDate.getDate()).padStart(2, '0');
+      const rawDate = selectedDate || new Date();
+      const targetDate = rawDate instanceof Date ? rawDate : new Date(rawDate);
+      const validDate = isNaN(targetDate.getTime()) ? new Date() : targetDate;
+      const yyyy = validDate.getFullYear();
+      const mm = String(validDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(validDate.getDate()).padStart(2, '0');
       const formattedDate = `${yyyy}-${mm}-${dd}`;
       
       setForm({
         startTime: '',
         endTime: '',
         startDate: formattedDate,
-        roomId: '',
+        roomId: initialRoomId ? String(initialRoomId) : '',
         keperluan: '',
         jumlahPeserta: 5,
         catatan: '',
         adminUserName: 'Admin',
       });
     }
-  }, [isOpen, selectedDate, isAdmin]);
+  }, [isOpen, selectedDate, isAdmin, initialRoomId]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleCheckAvailability = () => {
@@ -136,11 +145,17 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
       return;
     }
     if (!form.startTime || !form.endTime) {
-      toast.error('Isi waktu mulai dan selesai terlebih dahulu');
+      toast.error('Silakan tentukan Waktu Mulai dan Waktu Selesai terlebih dahulu');
+      if (!form.startTime) {
+        document.getElementById('startTime')?.focus();
+      } else {
+        document.getElementById('endTime')?.focus();
+      }
       return;
     }
     if (form.startTime >= form.endTime) {
       toast.error('Waktu selesai harus setelah waktu mulai');
+      document.getElementById('endTime')?.focus();
       return;
     }
     
@@ -150,10 +165,23 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
     const avail = getAvailableRooms(startIso, endIso);
     setAvailableRooms(avail);
     setAvailChecked(true);
-    setForm(prev => ({ ...prev, roomId: '' })); // reset selected room
+
+    let isSelectedStillAvail = false;
+    setForm(prev => {
+      const match = prev.roomId && avail.some(r => String(r.id) === String(prev.roomId));
+      isSelectedStillAvail = Boolean(match);
+      return {
+        ...prev,
+        roomId: match ? prev.roomId : ''
+      };
+    });
     
     if (avail.length === 0) {
       toast.error('Tidak ada ruangan tersedia pada jadwal tersebut');
+    } else if (isSelectedStillAvail) {
+      toast.success(`Ruangan pilihan Anda tersedia (${avail.length} ruangan kosong pada jadwal ini)`);
+    } else {
+      toast.success(`${avail.length} ruangan tersedia pada jadwal ini`);
     }
   };
 
@@ -417,13 +445,24 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
             Pilih Ruangan <span className="text-red-500">*</span>
           </label>
           <Button type="button" variant="secondary" size="sm" onClick={handleCheckAvailability} className="bg-white hover:bg-gray-50 border-gray-200 text-gray-700 shadow-sm">
-            <Search size={14} /> Cek Ruang Kosong
+            <Search size={14} /> Cek Ketersediaan
           </Button>
         </div>
         
         {!availChecked ? (
           <div className="w-full rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 p-6 text-center text-gray-500 font-medium text-sm bg-gray-50 dark:bg-gray-900/50 transition-all">
-            Klik tombol "Cek Ruang Kosong" untuk melihat daftar ruangan yang tersedia.
+            {form.roomId ? (
+              <div className="space-y-1">
+                <p className="font-semibold text-blue-600 dark:text-blue-400">
+                  Ruangan terpilih: {rooms.find(r => String(r.id) === String(form.roomId))?.name || 'Ruangan Pilihan'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Tentukan Waktu Mulai &amp; Waktu Selesai di atas, lalu klik &quot;Cek Ketersediaan&quot; untuk memastikan ruangan ini belum terisi pada jam tersebut.
+                </p>
+              </div>
+            ) : (
+              'Tentukan Waktu Mulai & Waktu Selesai di atas, lalu klik "Cek Ketersediaan" untuk melihat daftar ruangan yang tersedia.'
+            )}
           </div>
         ) : isRoomsLoading ? (
           <div className="w-full rounded-2xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 p-6 text-center text-blue-600 dark:text-blue-400 font-medium text-sm shadow-inner">
@@ -442,41 +481,44 @@ export default function RoomBookingModalFlow({ isOpen, onClose, selectedDate, da
           </div>
         ) : (
           <div className="w-full rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-h-60 overflow-y-auto shadow-inner bg-white dark:bg-gray-900">
-            {availableRooms.map(r => (
-              <div key={r.id} className={`flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors ${form.roomId === r.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-4 border-l-transparent'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 overflow-hidden border border-blue-200">
-                    <RoomPhoto roomId={r.id} hasFoto={r.hasFoto} alt={r.name} className="w-full h-full object-cover" fallback={<Building2 size={20} />} />
+            {availableRooms.map(r => {
+              const isSelected = String(form.roomId) === String(r.id);
+              return (
+                <div key={r.id} className={`flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-4 border-l-transparent'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 overflow-hidden border border-blue-200">
+                      <RoomPhoto roomId={r.id} hasFoto={r.hasFoto} alt={r.name} className="w-full h-full object-cover" fallback={<Building2 size={20} />} />
+                    </div>
+                    <div>
+                      <p className="font-heading font-extrabold text-gray-900 dark:text-white text-sm">
+                        {r.name}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-heading font-extrabold text-gray-900 dark:text-white text-sm">
-                      {r.name}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => setRoomDetailModal(r)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                      title="Detail Fasilitas"
+                    >
+                      <Info size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, roomId: String(r.id) }))}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                        isSelected 
+                          ? 'bg-blue-600 text-white shadow-blue-500/30' 
+                          : 'bg-white text-gray-600 hover:text-blue-600 border border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {isSelected ? <span className="flex items-center gap-1.5"><CheckCircle size={14}/> Dipilih</span> : 'Pilih'}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    type="button" 
-                    onClick={() => setRoomDetailModal(r)}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                    title="Detail Fasilitas"
-                  >
-                    <Info size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm({...form, roomId: r.id})}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                      form.roomId === r.id 
-                        ? 'bg-blue-600 text-white shadow-blue-500/30' 
-                        : 'bg-white text-gray-600 hover:text-blue-600 border border-gray-200 hover:border-blue-300'
-                    }`}
-                  >
-                    {form.roomId === r.id ? <span className="flex items-center gap-1.5"><CheckCircle size={14}/> Dipilih</span> : 'Pilih'}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
