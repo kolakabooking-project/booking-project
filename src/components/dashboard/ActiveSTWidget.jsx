@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTrackingDashboard } from '../../hooks/useSheetData';
 import { UserCheck, MapPin, Calendar, Radar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import './ActiveSTWidget.css';
 
 /**
@@ -78,9 +79,14 @@ function SkeletonCard() {
 }
 
 export default function ActiveSTWidget() {
+  const { serviceStatuses } = useAuth();
   const { data: dashboard, isLoading, error } = useTrackingDashboard();
   const activeSTToday = dashboard?.activeSTToday || [];
   const [isExpanded, setIsExpanded] = useState(false);
+
+  if (serviceStatuses?.spdActive === false) {
+    return null;
+  }
 
   return (
     <div className="ast-root">

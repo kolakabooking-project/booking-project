@@ -5,6 +5,8 @@ import Calendar from '../../components/shared/Calendar';
 import MyJourneyTracker from '../../components/dashboard/MyJourneyTracker';
 import VehicleShowcase from '../../components/dashboard/VehicleShowcase';
 import FridayWfoWidget from '../../components/dashboard/FridayWfoWidget';
+import ActiveSTWidget from '../../components/dashboard/ActiveSTWidget';
+import ActiveCutiWidget from '../../components/dashboard/ActiveCutiWidget';
 import BookingModalFlow from '../../components/shared/BookingModalFlow';
 import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
@@ -44,6 +46,12 @@ export default function DashboardPage() {
 
       {/* Interactive Journey Tracker */}
       <MyJourneyTracker onNewBooking={handleNewBookingFromTracker} />
+
+      {/* Sedang Dinas Hari Ini */}
+      <ActiveSTWidget />
+
+      {/* Sedang Cuti Hari Ini */}
+      <ActiveCutiWidget />
 
       <div className="flex flex-col gap-8 mb-8">
         {/* On Mobile: below calendar. On Desktop: above calendar */}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTrackingDashboard } from '../../hooks/useSheetData';
 import { UserCheck, CalendarOff, Calendar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import './ActiveCutiWidget.css';
 
 /**
@@ -56,6 +57,7 @@ function SkeletonCard() {
 }
 
 export default function ActiveCutiWidget() {
+  const { serviceStatuses } = useAuth();
   const { data: dashboard, isLoading, error } = useTrackingDashboard();
   const activeCutiToday = dashboard?.activeCutiToday || [];
   const [isExpanded, setIsExpanded] = useState(false);
@@ -68,6 +70,10 @@ export default function ActiveCutiWidget() {
       return a.namaPegawai.localeCompare(b.namaPegawai);
     });
   }, [activeCutiToday]);
+
+  if (serviceStatuses?.spdActive === false) {
+    return null;
+  }
 
   return (
     <div className="acw-root">
