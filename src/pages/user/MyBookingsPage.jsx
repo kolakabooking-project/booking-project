@@ -27,6 +27,7 @@ export default function MyBookingsPage() {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const myBookings = getUserBookings(user.id);
   const forcedTab = location.state?.openBookingId ? 'Semua' : activeTab;
 
@@ -71,10 +72,12 @@ export default function MyBookingsPage() {
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!reviewNotes.trim()) {
       toast.error('Ulasan tidak boleh kosong');
       return;
     }
+    setIsSubmitting(true);
     showLoading('Mengirim catatan review...');
     try {
       await submitReview(reviewTarget.id, reviewNotes);
@@ -84,6 +87,7 @@ export default function MyBookingsPage() {
     } catch (err) {
       toast.error(err.message || 'Gagal mengirim catatan');
     } finally {
+      setIsSubmitting(false);
       hideLoading();
     }
   };
@@ -160,8 +164,8 @@ export default function MyBookingsPage() {
             required
           />
           <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-            <Button type="button" variant="ghost" onClick={() => setReviewTarget(null)}>Batal</Button>
-            <Button type="submit" variant="primary">Kirim Catatan</Button>
+            <Button type="button" variant="ghost" onClick={() => setReviewTarget(null)} disabled={isSubmitting}>Batal</Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting} loading={isSubmitting}>Kirim Catatan</Button>
           </div>
         </form>
       </Modal>

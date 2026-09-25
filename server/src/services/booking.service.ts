@@ -648,6 +648,7 @@ export async function submitReview(bookingId: string, reviewNotes: string, userI
   const [target] = await db.select().from(booking).where(eq(booking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman');
   if (target.userId !== userId) throw new ForbiddenError('Anda hanya bisa memberikan review untuk peminjaman sendiri.');
+  if (target.status !== BOOKING_STATUS.COMPLETED) throw new ValidationError('Review sudah pernah disubmit untuk peminjaman ini.');
 
   // ── Core mutations (awaited) ──
   // Update booking status

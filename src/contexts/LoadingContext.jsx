@@ -21,7 +21,7 @@ export function LoadingProvider({ children }) {
       {children}
       {loading && (
         <div 
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md transition-all duration-300 pointer-events-auto select-none"
+          className="fixed inset-0 z-[10001] flex flex-col items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md transition-all duration-300 pointer-events-auto select-none"
         >
           <div 
             className="w-full max-w-sm rounded-[2rem] border p-8 shadow-[var(--shadow-card-hover)] animate-scale-in text-center flex flex-col items-center gap-5"
