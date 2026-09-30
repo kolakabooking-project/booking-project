@@ -30,6 +30,8 @@ const UserRoomLayout = lazy(() => import('./components/layout/UserRoomLayout'));
 const AdminRoomLayout = lazy(() => import('./components/layout/AdminRoomLayout'));
 const AdminTrackingLayout = lazy(() => import('./components/layout/AdminTrackingLayout'));
 const UserTrackingLayout = lazy(() => import('./components/layout/UserTrackingLayout'));
+const KepalaKantorJadwalLayout = lazy(() => import('./components/layout/KepalaKantorJadwalLayout'));
+const SekretarisJadwalLayout = lazy(() => import('./components/layout/SekretarisJadwalLayout'));
 
 // ─── Lazy-loaded Pages ───
 // Auth & Selector
@@ -82,6 +84,14 @@ const AnnouncementManagementPage = lazy(() => import('./pages/superadmin/Announc
 const SuperadminSettingsPage = lazy(() => import('./pages/superadmin/SettingsPage'));
 const TestingPage = lazy(() => import('./pages/superadmin/TestingPage'));
 
+// Jadwal Kepala Kantor & Sekretaris pages
+const KepalaKantorCalendarPage = lazy(() => import('./pages/kepala-kantor/CalendarPage'));
+const KepalaKantorAccountPage = lazy(() => import('./pages/kepala-kantor/AccountPage'));
+const SekretarisCalendarPage = lazy(() => import('./pages/sekretaris/CalendarPage'));
+const ManajemenKegiatanPage = lazy(() => import('./pages/sekretaris/ManajemenKegiatanPage'));
+const ManajemenSTPage = lazy(() => import('./pages/sekretaris/ManajemenSTPage'));
+const SekretarisSettingsPage = lazy(() => import('./pages/sekretaris/SettingsPage'));
+
 function ProtectedRoute({ children, role }) {
   const { activeRole, isAuthenticated, serviceStatuses, user } = useAuth();
   const location = useLocation();
@@ -91,11 +101,12 @@ function ProtectedRoute({ children, role }) {
   // Determine active state based on route
   const isSuperadminRoute = location.pathname.startsWith('/superadmin');
   const isSelectorRoute = location.pathname === '/select-service';
+  const isJadwalRoute = location.pathname.startsWith('/kepala-kantor') || location.pathname.startsWith('/sekretaris');
   const isRoomRoute = location.pathname.includes('/room');
   const isTrackingRoute = location.pathname.includes('/tracking') || location.pathname.includes('/sheets');
   
   let isActive = true;
-  if (isSuperadminRoute || isSelectorRoute) {
+  if (isSuperadminRoute || isSelectorRoute || isJadwalRoute) {
     isActive = true;
   } else if (isTrackingRoute) {
     isActive = serviceStatuses?.spdActive;
@@ -114,6 +125,18 @@ function ProtectedRoute({ children, role }) {
   }
 
   if (role && activeRole !== role) {
+    // Sekretaris has admin privileges for operational services
+    if (role === 'admin' && activeRole === 'sekretaris') {
+      return children;
+    }
+    // Kepala Kantor has view-only user access to operational services
+    if (role === 'user' && activeRole === 'kepala_kantor') {
+      return children;
+    }
+    // Sekretaris can also view kepala kantor calendar
+    if (role === 'kepala_kantor' && activeRole === 'sekretaris') {
+      return children;
+    }
     if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
     return <Navigate to="/select-service" replace />;
   }
@@ -212,6 +235,21 @@ function AppRoutes() {
         {/* Shared / Legacy Tracking Redirect */}
         <Route path="/shared/tracking/jadwal-jumat" element={<ProtectedRoute><SharedJadwalJumatRedirect /></ProtectedRoute>} />
         <Route path="/shared/tracking/pegawai-cuti" element={<ProtectedRoute><SharedPegawaiCutiRedirect /></ProtectedRoute>} />
+
+        {/* Kepala Kantor Routes */}
+        <Route path="/kepala-kantor/jadwal" element={<ProtectedRoute role="kepala_kantor"><KepalaKantorJadwalLayout><KepalaKantorCalendarPage /></KepalaKantorJadwalLayout></ProtectedRoute>} />
+        <Route path="/kepala-kantor/jadwal/kalender" element={<Navigate to="/kepala-kantor/jadwal" replace />} />
+        <Route path="/kepala-kantor/jadwal/chat" element={<ProtectedRoute role="kepala_kantor"><KepalaKantorJadwalLayout><UserChatPage /></KepalaKantorJadwalLayout></ProtectedRoute>} />
+        <Route path="/kepala-kantor/jadwal/account" element={<ProtectedRoute role="kepala_kantor"><KepalaKantorJadwalLayout><KepalaKantorAccountPage /></KepalaKantorJadwalLayout></ProtectedRoute>} />
+
+        {/* Sekretaris Routes */}
+        <Route path="/sekretaris/jadwal/calendar" element={<ProtectedRoute role="sekretaris"><SekretarisJadwalLayout><SekretarisCalendarPage /></SekretarisJadwalLayout></ProtectedRoute>} />
+        <Route path="/sekretaris/jadwal/kalender" element={<Navigate to="/sekretaris/jadwal/calendar" replace />} />
+        <Route path="/sekretaris/jadwal/kegiatan" element={<ProtectedRoute role="sekretaris"><SekretarisJadwalLayout><ManajemenKegiatanPage /></SekretarisJadwalLayout></ProtectedRoute>} />
+        <Route path="/sekretaris/jadwal/surat-tugas" element={<ProtectedRoute role="sekretaris"><SekretarisJadwalLayout><ManajemenSTPage /></SekretarisJadwalLayout></ProtectedRoute>} />
+        <Route path="/sekretaris/jadwal/st" element={<Navigate to="/sekretaris/jadwal/surat-tugas" replace />} />
+        <Route path="/sekretaris/jadwal/settings" element={<ProtectedRoute role="sekretaris"><SekretarisJadwalLayout><SekretarisSettingsPage /></SekretarisJadwalLayout></ProtectedRoute>} />
+        <Route path="/sekretaris/jadwal/account" element={<Navigate to="/sekretaris/jadwal/settings" replace />} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/login" replace />} />

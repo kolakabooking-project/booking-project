@@ -228,8 +228,8 @@ router.patch('/users/:id/role', async (req: Request, res: Response) => {
     const actor = (req as any).user;
     const { role } = req.body;
 
-    if (!role || !['user', 'admin'].includes(role)) {
-      res.status(400).json({ error: 'Role harus "user" atau "admin".' });
+    if (!role || !['user', 'admin', 'kepala_kantor', 'sekretaris'].includes(role)) {
+      res.status(400).json({ error: 'Role harus "Pengguna", "Admin", "Kepala Kantor", atau "Sekretaris".' });
       return;
     }
 

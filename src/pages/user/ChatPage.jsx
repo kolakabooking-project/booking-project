@@ -25,12 +25,12 @@ export default function ChatPage() {
 
   // Load history
   useEffect(() => {
-    if (!isAuthenticated || activeRole !== 'user') return;
+    if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return;
 
     const loadHistory = async () => {
       setIsLoading(true);
       try {
-        const history = await chatApi.getHistory(user.id, user.id, user.role);
+        const history = await chatApi.getHistory(user.id, user.id, activeRole);
         setMessages(history);
         
         // Mark as read immediately when page is opened
@@ -48,7 +48,7 @@ export default function ChatPage() {
 
   // Initialize Ably (via shared AblyProvider)
   useEffect(() => {
-    if (!isAuthenticated || activeRole !== 'user') return;
+    if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return;
 
     const unsub1 = subscribe(`chat:user_${user.id}`, 'new_message', (msg) => {
       const newMsg = msg.data;
@@ -113,7 +113,9 @@ export default function ChatPage() {
     }
   };
 
-  if (!isAuthenticated || activeRole !== 'user') return null;
+  if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return null;
+
+  const isKepala = activeRole === 'kepala_kantor';
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] -mt-4">
@@ -124,8 +126,8 @@ export default function ChatPage() {
       <div className="flex-1 border rounded-2xl md:rounded-3xl shadow-sm flex flex-col overflow-hidden bg-[color:var(--color-surface)]" style={{ borderColor: 'var(--color-border)' }}>
         {/* Header for mobile */}
         <div className="md:hidden p-4 border-b flex items-center gap-3" style={{ background: 'var(--color-surface-elevated)', borderColor: 'var(--color-border)' }}>
-          <div className="w-10 h-10 rounded-full bg-djp-blue/10 flex items-center justify-center">
-            <MessageCircle size={20} className="text-djp-blue" />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isKepala ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400' : 'bg-djp-blue/10 text-djp-blue'}`}>
+            <MessageCircle size={20} className={isKepala ? 'text-teal-600 dark:text-teal-400' : 'text-djp-blue'} />
           </div>
           <div>
             <h2 className="font-heading font-bold text-[color:var(--color-heading)]">Hubungi Admin</h2>

@@ -326,7 +326,7 @@ export async function createBooking(data: any, isAdmin: boolean = false) {
     console.error('[BookingService] Ably broadcast failed:', err)
   );
 
-  // Push notification to admins — uses fullBooking.userName instead of separate DB query
+  // Push and in-app notification to admins — uses fullBooking.userName instead of separate DB query
   (async () => {
     try {
       const adminUsers = await db.select({ id: user.id }).from(user).where(eq(user.role, 'admin'));
@@ -336,10 +336,13 @@ export async function createBooking(data: any, isAdmin: boolean = false) {
         body: `Pegawai ${fullBooking.userName || 'Pegawai'} mengajukan peminjaman ${created.jenisKendaraan} untuk keperluan "${created.keperluan}" pada ${formattedStart}. Mohon segera ditinjau.`,
         url: '/admin/requests',
       };
+      const { createNotificationsBatch } = await import('./notification.service.js');
+      await createNotificationsBatch(adminUsers.map(admin => ({ userId: admin.id, ...payload })));
+
       const { sendPushNotification } = await import('./push.service.js');
       await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
     } catch (err) {
-      console.error('[BookingService] Failed to send push notifications for new booking:', err);
+      console.error('[BookingService] Failed to send push/in-app notifications for new booking:', err);
     }
   })();
 
@@ -378,10 +381,13 @@ export async function createMandatoryBooking(data: any) {
         body: `Admin telah menugaskan peminjaman kendaraan untuk keperluan "${created.keperluan}" pada ${formattedStart}.`,
         url: '/user/my-bookings',
       };
+      const { createNotification } = await import('./notification.service.js');
+      await createNotification({ userId: fullBooking.userId, ...payload });
+
       const { sendPushNotification } = await import('./push.service.js');
       await sendPushNotification(fullBooking.userId, payload);
     } catch (err) {
-      console.error('[BookingService] Failed to send push notification for mandatory booking:', err);
+      console.error('[BookingService] Failed to send notification for mandatory booking:', err);
     }
   })();
 
@@ -456,10 +462,13 @@ export async function approveBooking(
         body: `Halo ${fullBooking.userName}, pengajuan kendaraan untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} telah disetujui menggunakan ${fullBooking.vehicleName || 'kendaraan dinas'}.`,
         url: '/user/my-bookings',
       };
+      const { createNotification } = await import('./notification.service.js');
+      await createNotification({ userId: fullBooking.userId, ...payload });
+
       const { sendPushNotification } = await import('./push.service.js');
       await sendPushNotification(fullBooking.userId, payload);
     } catch (err) {
-      console.error('[BookingService] Failed to send push notification for approved booking:', err);
+      console.error('[BookingService] Failed to send notification for approved booking:', err);
     }
   })();
 
@@ -500,10 +509,13 @@ export async function rejectBooking(bookingId: string, alasan: string) {
         body: `Halo ${fullBooking.userName}, pengajuan peminjaman untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart} ditolak. Alasan: ${rejected.alasanPenolakan || '-'}`,
         url: '/user/my-bookings',
       };
+      const { createNotification } = await import('./notification.service.js');
+      await createNotification({ userId: fullBooking.userId, ...payload });
+
       const { sendPushNotification } = await import('./push.service.js');
       await sendPushNotification(fullBooking.userId, payload);
     } catch (err) {
-      console.error('[BookingService] Failed to send push notification for rejected booking:', err);
+      console.error('[BookingService] Failed to send notification for rejected booking:', err);
     }
   })();
 
@@ -567,10 +579,13 @@ export async function cancelBooking(bookingId: string, userId: string, isAdmin: 
         body: `Pegawai ${fullBooking.userName} membatalkan pengajuan peminjaman untuk keperluan "${fullBooking.keperluan}" pada ${formattedStart}.`,
         url: '/admin/requests',
       };
+      const { createNotificationsBatch } = await import('./notification.service.js');
+      await createNotificationsBatch(adminUsers.map(admin => ({ userId: admin.id, ...payload })));
+
       const { sendPushNotification } = await import('./push.service.js');
       await Promise.all(adminUsers.map(admin => sendPushNotification(admin.id, payload)));
     } catch (err) {
-      console.error('[BookingService] Failed to send push notifications for cancelled booking:', err);
+      console.error('[BookingService] Failed to send notifications for cancelled booking:', err);
     }
   })();
 

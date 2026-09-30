@@ -1,4 +1,6 @@
 import { getSheetData, invalidateCache } from '../lib/google-sheets.js';
+import { db } from '../config/db.js';
+import { user } from '../db/schema.js';
 export { invalidateCache };
 
 // ─── Interfaces ───
@@ -122,7 +124,10 @@ export function cleanNameForMatch(name: string): string {
   if (!name) return '';
   let base = name.split(',')[0].trim();
   base = base.replace(/^(drs\.|dra\.|ir\.|h\.|hj\.)\s+/i, '');
-  return base.toLowerCase().replace(/[^a-z0-9]/g, '');
+  base = base.toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Normalize known spelling variations across sheets and DB
+  base = base.replace(/iswahyudi/g, 'iswayudi');
+  return base;
 }
 
 function cleanDigits(s: string | undefined): string {
@@ -488,7 +493,7 @@ export async function getJadwalJumat(filters: SheetFilters = {}): Promise<Pagina
  * 3. Selesai (past leave) -> most recently ended first
  */
 export async function getPegawaiCuti(filters: SheetFilters = {}): Promise<PaginatedResult<PegawaiCuti>> {
-  const { search, page = 1, limit = 20 } = filters;
+  const { user, userName, search, page = 1, limit = 20 } = filters;
 
   const rawData = await getSheetData('Pegawai Cuti', 'A2:E').catch(() => [] as string[][]);
 
@@ -504,6 +509,12 @@ export async function getPegawaiCuti(filters: SheetFilters = {}): Promise<Pagina
       tanggalSelesai: safeStr(row[3]),
       lamaCuti: safeInt(row[4]),
     }));
+
+  // Apply user filter (user-specific data matching by name and NIP)
+  const targetUser = user || (userName ? { name: userName } : undefined);
+  if (targetUser) {
+    records = records.filter((r) => isUserMatch(r.namaPegawai, targetUser));
+  }
 
   // Smart sort by status and chronology
   records.sort((a, b) => {
@@ -698,8 +709,26 @@ export interface EmployeeSPDRanking {
   spdList: RekapSPD[];
 }
 
+export interface SectionEmployeeSummary {
+  namaPegawai: string;
+  totalSpd: number;
+  totalHari: number;
+}
+
+export interface SectionSPDRanking {
+  rank: number;
+  seksi: string;
+  totalSpd: number;
+  totalHari: number;
+  jumlahPegawai: number;
+  persentaseSpd: number;
+  pegawaiList: SectionEmployeeSummary[];
+  spdList: RekapSPD[];
+}
+
 export interface SPDRankingsResult {
   rankings: EmployeeSPDRanking[];
+  sectionRankings: SectionSPDRanking[];
   totalSpdInPeriod: number;
   availableMonths: { value: number; label: string }[];
   availableYears: number[];
@@ -709,6 +738,157 @@ export interface SPDRankingsResult {
     year?: number;
   };
 }
+
+export const CORE_SECTIONS = [
+  'Subbagian Umum dan Kepatuhan Internal',
+  'Seksi Penjaminan Kualitas Data',
+  'Seksi Pelayanan',
+  'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'Seksi Pengawasan I',
+  'Seksi Pengawasan II',
+  'Seksi Pengawasan III',
+  'Seksi Pengawasan IV',
+  'Seksi Pengawasan V',
+] as const;
+
+export function getSectionFromJabatan(jabatan: string | null | undefined): string {
+  if (!jabatan) return 'Lainnya';
+  const j = jabatan.toLowerCase();
+
+  // Pengawasan I - V (MUST be split as requested)
+  if (j.includes('pengawasan iii') || j.includes('pengawasan 3')) return 'Seksi Pengawasan III';
+  if (j.includes('pengawasan ii') || j.includes('pengawasan 2')) return 'Seksi Pengawasan II';
+  if (j.includes('pengawasan iv') || j.includes('pengawasan 4')) return 'Seksi Pengawasan IV';
+  if (j.includes('pengawasan i') || j.includes('pengawasan 1')) return 'Seksi Pengawasan I';
+  if (j.includes('pengawasan v') || j.includes('pengawasan 5')) return 'Seksi Pengawasan V';
+
+  // Other Sections / Units
+  if (j.includes('penjamin') || j.includes('kualitas data') || j.includes('pkd')) return 'Seksi Penjaminan Kualitas Data';
+  if (j.includes('pelayanan') || j.includes('penyuluh')) return 'Seksi Pelayanan';
+  if (j.includes('pemeriksaan') || j.includes('penilaian') || j.includes('penagihan') || j.includes('juru sita')) {
+    if (j.includes('pemeriksa pajak') && !j.includes('seksi')) {
+      return 'Fungsional Pemeriksa Pajak';
+    }
+    return 'Seksi Pemeriksaan, Penilaian, dan Penagihan';
+  }
+  if (j.includes('umum') || j.includes('kepatuhan internal') || j.includes('sekretaris') || j.includes('subbag') || j.includes('bendahara') || j.includes('pengemudi') || j.includes('driver')) {
+    return 'Subbagian Umum dan Kepatuhan Internal';
+  }
+  if (j.includes('pemeriksa pajak')) return 'Fungsional Pemeriksa Pajak';
+  if (j.includes('kp2kp')) return 'KP2KP';
+  if (j.includes('kepala kantor')) return 'Kepala Kantor';
+
+  return 'Lainnya';
+}
+
+const COMMON_STOPWORDS = new Set(['muhammad', 'andi', 'laode', 'abdul', 'putra', 'putri', 'utama', 'seksi', 'pelaksana', 'nur']);
+
+const MASTER_EMPLOYEE_SEKSI: Record<string, string> = {
+  'helmyafrul': 'Kepala Kantor',
+  'idokrishnatitara': 'Seksi Pelayanan',
+  'andihafsah': 'Seksi Penjaminan Kualitas Data',
+  'bintartoalimudin': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'andiroslina': 'Seksi Pengawasan I',
+  'teguhsulistyo': 'Seksi Pengawasan II',
+  'edisucipto': 'Seksi Pengawasan III',
+  'naali': 'Seksi Pengawasan IV',
+  'suhermawanapriyanto': 'Seksi Pengawasan V',
+  'gemiwitsnawan': 'Subbagian Umum dan Kepatuhan Internal',
+  'yusrinayadi': 'Seksi Pelayanan',
+  'fitriasyafitri': 'Seksi Pelayanan',
+  'firstarahadatulaisy': 'Seksi Pelayanan',
+  'kristianmnathanaelpasaribu': 'Seksi Pelayanan',
+  'reginaldieleazarpratama': 'Seksi Pelayanan',
+  'bonifasiustodichrisavero': 'Seksi Pelayanan',
+  'sarahnabilasalmahadindaputeri': 'Subbagian Umum dan Kepatuhan Internal',
+  'bellasagita': 'Subbagian Umum dan Kepatuhan Internal',
+  'nandaefriliani': 'Subbagian Umum dan Kepatuhan Internal',
+  'almapratiwi': 'Subbagian Umum dan Kepatuhan Internal',
+  'ilhamrusady': 'Subbagian Umum dan Kepatuhan Internal',
+  'silfiaetikasafitri': 'Subbagian Umum dan Kepatuhan Internal',
+  'sukarsi': 'Seksi Penjaminan Kualitas Data',
+  'ahmadfikrirafiuddin': 'Seksi Penjaminan Kualitas Data',
+  'tyasalifaardayanti': 'Seksi Penjaminan Kualitas Data',
+  'danybudisetyawan': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'keziaoliviavalerine': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'anggawahyudi': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'ghufron': 'Seksi Penjaminan Kualitas Data',
+  'ghufronrifai': 'Seksi Penjaminan Kualitas Data',
+  'farannisaukkizalats': 'Seksi Pengawasan I',
+  'tesaradityasaputra': 'Seksi Pengawasan I',
+  'suhendrawahyu': 'Seksi Pengawasan I',
+  'evanlestyanmahendra': 'Seksi Pengawasan I',
+  'kasnawati': 'Seksi Pengawasan I',
+  'ayshabilyintifadhaaprisya': 'Seksi Pengawasan II',
+  'muhammadtaufik': 'Seksi Pengawasan II',
+  'ninarizkiamelia': 'Seksi Pengawasan II',
+  'nurfajriirawan': 'Seksi Pengawasan II',
+  'ikarantika': 'Seksi Pengawasan II',
+  'fitriyaelytafajarini': 'Seksi Pengawasan III',
+  'laodeabdulmalikkarim': 'Seksi Pengawasan III',
+  'dwisandilestari': 'Seksi Pengawasan III',
+  'alifrahardian': 'Seksi Pengawasan III',
+  'rusnah': 'Seksi Pengawasan IV',
+  'sonyazorayastkhodijah': 'Seksi Pengawasan IV',
+  'mitawidyastuti': 'Seksi Pengawasan IV',
+  'rachmatnuryadin': 'Seksi Pengawasan IV',
+  'untarimurniyati': 'Seksi Pengawasan IV',
+  'laodemazun': 'Seksi Pengawasan V',
+  'merlynirmayasaputri': 'Seksi Pengawasan V',
+  'estikharohseptianingsih': 'Seksi Pengawasan V',
+  'retnorachmawati': 'Seksi Pengawasan V',
+  'parmenasobajapaguling': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'kalpataru': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'kalpataruamirultainiswayudi': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'kalpataruamirultainiswahyudi': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'nahdliyyatussholichah': 'Subbagian Umum dan Kepatuhan Internal',
+  'teguharifianto': 'Fungsional Pemeriksa Pajak',
+  'akhbarbudimanfarsitiantoarmanto': 'Seksi Pelayanan',
+  'purnomoadi': 'Fungsional Pemeriksa Pajak',
+  'ikaerawati': 'Fungsional Pemeriksa Pajak',
+  'nurfajar': 'Seksi Pelayanan',
+  'dwiindahnovita': 'Seksi Pelayanan',
+  'rivanwibowo': 'Fungsional Pemeriksa Pajak',
+  'ekanuryuliana': 'Fungsional Pemeriksa Pajak',
+  'dindarizkiparamudita': 'Seksi Pelayanan',
+  'biancakanyahaqqulontoh': 'Fungsional Pemeriksa Pajak',
+  'ubaidillahhafiluddinfath': 'Fungsional Pemeriksa Pajak',
+  'handokosusilo': 'KP2KP',
+  'ignatiusrakaradityowisnumurti': 'KP2KP',
+  'ilhamsatriagumilar': 'KP2KP',
+  'ornasradityandaru': 'KP2KP',
+  'fachrul': 'KP2KP',
+  'ilhamaqshalramadhan': 'KP2KP',
+
+  // PPNPN / Pegawai Lapangan / Petugas Penugasan Khusus
+  'ariefhartono': 'Seksi Pemeriksaan, Penilaian, dan Penagihan',
+  'muhammadrafinugroho': 'Seksi Penjaminan Kualitas Data',
+  'joisreiyaga': 'Subbagian Umum dan Kepatuhan Internal',
+  'jois': 'Subbagian Umum dan Kepatuhan Internal',
+  'abdulkasritahir': 'Subbagian Umum dan Kepatuhan Internal',
+  'lawandi': 'Subbagian Umum dan Kepatuhan Internal',
+  'joni': 'Subbagian Umum dan Kepatuhan Internal',
+  'triindahutami': 'Subbagian Umum dan Kepatuhan Internal',
+  'nandaasdianto': 'Subbagian Umum dan Kepatuhan Internal',
+  'ridwan': 'Subbagian Umum dan Kepatuhan Internal',
+  'farhanfadhlurrahman': 'KP2KP',
+  'aprianononong': 'KP2KP',
+  'andriasmar': 'KP2KP',
+  'nasdayanti': 'KP2KP',
+  'munadiahmukhlis': 'KP2KP',
+  'indrasakti': 'Seksi Pengawasan V',
+  'muhammadabdanfadhlissalam': 'Seksi Pelayanan',
+  'andiarwin': 'Seksi Pelayanan',
+  'nisfun': 'Seksi Pelayanan',
+  'isytarnatusbungasumarah': 'Seksi Pelayanan',
+  'rizyanaekafebrianti': 'Seksi Pelayanan',
+  'bernadamrolloh': 'Seksi Pelayanan',
+  'muhammadfaridhabiburrohman': 'Seksi Pelayanan',
+  'andinurjannah': 'Seksi Pelayanan',
+  'saharahyusnikalara': 'Seksi Pelayanan',
+  'firstianlaninaalbachri': 'Seksi Pelayanan',
+  'hadrianisupu': 'Seksi Pelayanan',
+};
 
 /**
  * Get employee SPD rankings with month range and year filtering.
@@ -792,6 +972,71 @@ export async function getSPDRankings(filters: {
     return true;
   }).map(({ record }) => record);
 
+  // Load users from DB for dynamic / newly registered users
+  const dbUserSectionMap = new Map<string, string>();
+  const dbUserTokenMap = new Map<string, string>();
+  try {
+    const dbUsers = await db.select({ name: user.name, jabatan: user.jabatan }).from(user);
+    for (const u of dbUsers) {
+      const key = cleanNameForMatch(u.name);
+      if (key && u.jabatan) {
+        const sec = getSectionFromJabatan(u.jabatan);
+        dbUserSectionMap.set(key, sec);
+        // Index distinct tokens (words) of employee name
+        const tokens = u.name.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 4 && !COMMON_STOPWORDS.has(t));
+        for (const t of tokens) {
+          if (!dbUserTokenMap.has(t)) {
+            dbUserTokenMap.set(t, sec);
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('[SHEETS] Could not load DB users for section mapping, using master fallback:', err.message);
+  }
+
+  const resolveSection = (namaPegawai: string): string => {
+    const norm = cleanNameForMatch(namaPegawai);
+    if (!norm) return 'Lainnya';
+
+    // 1. Direct match from DB users
+    if (dbUserSectionMap.has(norm)) {
+      return dbUserSectionMap.get(norm)!;
+    }
+
+    // 2. Direct match from master static mapping
+    if (MASTER_EMPLOYEE_SEKSI[norm]) {
+      return MASTER_EMPLOYEE_SEKSI[norm];
+    }
+
+    // 3. Substring match from DB users
+    for (const [key, seksi] of dbUserSectionMap.entries()) {
+      if ((key.length >= 4 && norm.includes(key)) || (norm.length >= 4 && key.includes(norm))) {
+        return seksi;
+      }
+    }
+
+    // 4. Substring match from master mapping
+    for (const [key, seksi] of Object.entries(MASTER_EMPLOYEE_SEKSI)) {
+      if ((key.length >= 4 && norm.includes(key)) || (norm.length >= 4 && key.includes(norm))) {
+        return seksi;
+      }
+    }
+
+    // 5. Token/Word-level match (e.g. unique single name like 'kalpataru' or 'ghufron')
+    const tokens = namaPegawai.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 4 && !COMMON_STOPWORDS.has(t));
+    for (const t of tokens) {
+      if (dbUserTokenMap.has(t)) {
+        return dbUserTokenMap.get(t)!;
+      }
+      if (MASTER_EMPLOYEE_SEKSI[t]) {
+        return MASTER_EMPLOYEE_SEKSI[t];
+      }
+    }
+
+    return 'Lainnya';
+  };
+
   // Group by employee name
   const employeeMap = new Map<string, {
     namaPegawai: string;
@@ -801,29 +1046,81 @@ export async function getSPDRankings(filters: {
     spdList: RekapSPD[];
   }>();
 
-  for (const r of filteredRecords) {
-    const normKey = cleanNameForMatch(r.namaPegawai) || r.namaPegawai.toLowerCase().trim();
-    if (!normKey) continue;
+  // Initialize sectionMap with all 9 core sections
+  const sectionMap = new Map<string, {
+    seksi: string;
+    totalSpd: number;
+    totalHari: number;
+    employeeMap: Map<string, { namaPegawai: string; totalSpd: number; totalHari: number }>;
+    spdList: RekapSPD[];
+  }>();
 
-    let emp = employeeMap.get(normKey);
-    if (!emp) {
-      emp = {
-        namaPegawai: r.namaPegawai,
-        totalSpd: 0,
-        totalHari: 0,
-        wilayahSet: new Set<string>(),
-        spdList: [],
-      };
-      employeeMap.set(normKey, emp);
-    }
-
-    emp.totalSpd += 1;
-    emp.totalHari += r.jumlahHariSpdNumeric;
-    if (r.wilayahTugas) emp.wilayahSet.add(r.wilayahTugas);
-    emp.spdList.push(r);
+  for (const cs of CORE_SECTIONS) {
+    sectionMap.set(cs, {
+      seksi: cs,
+      totalSpd: 0,
+      totalHari: 0,
+      employeeMap: new Map(),
+      spdList: [],
+    });
   }
 
-  // Sort descending by totalSpd, then totalHari
+  for (const r of filteredRecords) {
+    // 1. Aggregate for employee ranking
+    const normKey = cleanNameForMatch(r.namaPegawai) || r.namaPegawai.toLowerCase().trim();
+    if (normKey) {
+      let emp = employeeMap.get(normKey);
+      if (!emp) {
+        emp = {
+          namaPegawai: r.namaPegawai,
+          totalSpd: 0,
+          totalHari: 0,
+          wilayahSet: new Set<string>(),
+          spdList: [],
+        };
+        employeeMap.set(normKey, emp);
+      }
+
+      emp.totalSpd += 1;
+      emp.totalHari += r.jumlahHariSpdNumeric;
+      if (r.wilayahTugas) emp.wilayahSet.add(r.wilayahTugas);
+      emp.spdList.push(r);
+    }
+
+    // 2. Aggregate for section ranking
+    const seksiName = resolveSection(r.namaPegawai);
+    let sec = sectionMap.get(seksiName);
+    if (!sec) {
+      sec = {
+        seksi: seksiName,
+        totalSpd: 0,
+        totalHari: 0,
+        employeeMap: new Map(),
+        spdList: [],
+      };
+      sectionMap.set(seksiName, sec);
+    }
+
+    sec.totalSpd += 1;
+    sec.totalHari += r.jumlahHariSpdNumeric;
+    sec.spdList.push(r);
+
+    if (normKey) {
+      let empInSec = sec.employeeMap.get(normKey);
+      if (!empInSec) {
+        empInSec = {
+          namaPegawai: r.namaPegawai,
+          totalSpd: 0,
+          totalHari: 0,
+        };
+        sec.employeeMap.set(normKey, empInSec);
+      }
+      empInSec.totalSpd += 1;
+      empInSec.totalHari += r.jumlahHariSpdNumeric;
+    }
+  }
+
+  // Sort descending by totalSpd, then totalHari for employees
   const sortedEmployees = Array.from(employeeMap.values()).sort((a, b) => {
     if (b.totalSpd !== a.totalSpd) return b.totalSpd - a.totalSpd;
     return b.totalHari - a.totalHari;
@@ -838,9 +1135,47 @@ export async function getSPDRankings(filters: {
     spdList: emp.spdList,
   }));
 
+  // Sort descending by totalSpd, then totalHari for sections
+  const totalSpdInPeriod = filteredRecords.length;
+
+  const sortedSections = Array.from(sectionMap.values())
+    .filter((sec) => {
+      // Core sections are ALWAYS included (even if 0 SPD)
+      if ((CORE_SECTIONS as readonly string[]).includes(sec.seksi as any)) return true;
+      // Non-core sections (Fungsional Pemeriksa Pajak, KP2KP, Kepala Kantor) only if totalSpd > 0
+      return sec.totalSpd > 0;
+    })
+    .sort((a, b) => {
+      if (b.totalSpd !== a.totalSpd) return b.totalSpd - a.totalSpd;
+      return b.totalHari - a.totalHari;
+    });
+
+  const sectionRankings: SectionSPDRanking[] = sortedSections.map((sec, index) => {
+    const pegawaiList = Array.from(sec.employeeMap.values()).sort((a, b) => {
+      if (b.totalSpd !== a.totalSpd) return b.totalSpd - a.totalSpd;
+      return b.totalHari - a.totalHari;
+    });
+
+    const persentaseSpd = totalSpdInPeriod > 0
+      ? Number(((sec.totalSpd / totalSpdInPeriod) * 100).toFixed(1))
+      : 0;
+
+    return {
+      rank: index + 1,
+      seksi: sec.seksi,
+      totalSpd: sec.totalSpd,
+      totalHari: sec.totalHari,
+      jumlahPegawai: sec.employeeMap.size,
+      persentaseSpd,
+      pegawaiList,
+      spdList: sec.spdList,
+    };
+  });
+
   return {
     rankings,
-    totalSpdInPeriod: filteredRecords.length,
+    sectionRankings,
+    totalSpdInPeriod,
     availableMonths,
     availableYears,
     selectedFilter: { startMonth, endMonth, year },

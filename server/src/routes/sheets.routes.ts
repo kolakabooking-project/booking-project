@@ -16,7 +16,7 @@ router.get('/agenda-st', async (req, res) => {
   try {
     const user = (req as any).user;
     const activeRole = req.header('x-active-role') || user.role;
-    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
+    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin' || activeRole === 'kepala_kantor' || activeRole === 'sekretaris';
     const { search, wilayah, page = '1', limit = '20' } = req.query;
 
     const result = await sheetsService.getAgendaSuratTugas({
@@ -40,7 +40,7 @@ router.get('/rekap-spd', async (req, res) => {
   try {
     const user = (req as any).user;
     const activeRole = req.header('x-active-role') || user.role;
-    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
+    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin' || activeRole === 'kepala_kantor' || activeRole === 'sekretaris';
     const { search, wilayah, page = '1', limit = '20' } = req.query;
 
     const result = await sheetsService.getRekapSPD({
@@ -64,7 +64,7 @@ router.get('/spd-summary', async (req, res) => {
   try {
     const user = (req as any).user;
     const activeRole = req.header('x-active-role') || user.role;
-    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
+    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin' || activeRole === 'kepala_kantor' || activeRole === 'sekretaris';
 
     const result = await sheetsService.getSPDSummary(
       isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
@@ -82,7 +82,7 @@ router.get('/dashboard', async (req, res) => {
   try {
     const user = (req as any).user;
     const activeRole = req.header('x-active-role') || user.role;
-    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
+    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin' || activeRole === 'kepala_kantor' || activeRole === 'sekretaris';
 
     const result = await sheetsService.getTrackingDashboard(
       isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
@@ -114,12 +114,16 @@ router.get('/jadwal-jumat', async (req, res) => {
 });
 
 // ─── GET /api/sheets/pegawai-cuti ───
-// Accessible by all users, shows employee leave records
+// Admin: all employees | User: filtered by user (personal cuti only)
 router.get('/pegawai-cuti', async (req, res) => {
   try {
+    const user = (req as any).user;
+    const activeRole = req.header('x-active-role') || user?.role;
+    const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
     const { search, page = '1', limit = '20' } = req.query;
 
     const result = await sheetsService.getPegawaiCuti({
+      user: isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang },
       search: typeof search === 'string' ? search : undefined,
       page: Math.max(1, parseInt(page as string, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),

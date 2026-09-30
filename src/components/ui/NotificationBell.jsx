@@ -14,6 +14,52 @@ export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { activeRole, user } = useAuth();
 
+  const currentRole = activeRole || user?.role || 'user';
+
+  // Role-aware notification filter (defense-in-depth)
+  const visibleNotifications = notifications.filter((notif) => {
+    if (currentRole === 'kepala_kantor') {
+      if (notif.url?.startsWith('/admin')) return false;
+      if (notif.url?.startsWith('/user/room') || notif.url?.startsWith('/user/my-bookings')) return false;
+      if (
+        notif.title.includes('Peminjaman Ruangan Baru') ||
+        notif.title.includes('Pengajuan Peminjaman') ||
+        notif.title.includes('Penugasan Ruangan Baru') ||
+        notif.title.includes('Penugasan Kendaraan') ||
+        notif.title.includes('Dibatalkan Pegawai') ||
+        notif.title.includes('Selesai Lebih Awal')
+      ) {
+        return false;
+      }
+      return true;
+    }
+    if (currentRole === 'user') {
+      if (notif.url?.startsWith('/admin')) return false;
+      if (
+        notif.title.includes('Peminjaman Ruangan Baru') ||
+        notif.title.includes('Pengajuan Peminjaman Baru') ||
+        notif.title.includes('Dibatalkan Pegawai') ||
+        notif.title.includes('Selesai Lebih Awal')
+      ) {
+        return false;
+      }
+      return true;
+    }
+    if (currentRole === 'sekretaris') {
+      if (
+        notif.title.includes('Peminjaman Ruangan Baru') ||
+        notif.title.includes('Pengajuan Peminjaman Baru') ||
+        notif.title.includes('Dibatalkan Pegawai')
+      ) {
+        return false;
+      }
+      return true;
+    }
+    return true;
+  });
+
+  const visibleUnreadCount = visibleNotifications.filter((n) => !n.isRead).length;
+
   // Handle outside click
   useEffect(() => {
     function handleClickOutside(event) {
@@ -31,9 +77,21 @@ export default function NotificationBell() {
     }
     if (notification.url) {
       let targetUrl = notification.url;
+      const role = activeRole || user?.role || 'user';
       if (targetUrl === '/shared/tracking/jadwal-jumat' || targetUrl.includes('jadwal-jumat')) {
-        const role = activeRole || user?.role || 'user';
         targetUrl = role === 'admin' ? '/admin/tracking/jadwal-jumat' : '/user/tracking/jadwal-jumat';
+      } else if (role === 'kepala_kantor') {
+        if (targetUrl.startsWith('/admin') || targetUrl.startsWith('/user/room') || targetUrl.startsWith('/user/my-bookings') || targetUrl === '/kepala-kantor/jadwal/kalender') {
+          targetUrl = '/kepala-kantor/jadwal';
+        }
+      } else if (role === 'sekretaris') {
+        if ((targetUrl.startsWith('/admin') && activeRole !== 'admin') || targetUrl === '/sekretaris/jadwal/kalender') {
+          targetUrl = '/sekretaris/jadwal/calendar';
+        }
+      } else if (role === 'user') {
+        if (targetUrl.startsWith('/admin')) {
+          targetUrl = '/user/kdo/dashboard';
+        }
       }
       navigate(targetUrl);
     }
@@ -49,9 +107,9 @@ export default function NotificationBell() {
         aria-label="Notifikasi"
       >
         <Bell size={18} />
-        {unreadCount > 0 && (
+        {visibleUnreadCount > 0 && (
           <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-[color:var(--color-bg-shell)]">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {visibleUnreadCount > 99 ? '99+' : visibleUnreadCount}
           </span>
         )}
       </button>
@@ -68,7 +126,7 @@ export default function NotificationBell() {
           >
             <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-muted)' }}>
               <h3 className="font-heading font-bold text-[color:var(--color-heading)] text-sm">Notifikasi</h3>
-              {unreadCount > 0 && (
+              {visibleUnreadCount > 0 && (
                 <button
                   onClick={() => markAllAsRead()}
                   className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold flex items-center gap-1"
@@ -79,7 +137,7 @@ export default function NotificationBell() {
             </div>
 
             <div className="max-h-[350px] overflow-y-auto overscroll-contain">
-              {notifications.length === 0 ? (
+              {visibleNotifications.length === 0 ? (
                 <div className="p-8 text-center flex flex-col items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-[color:var(--color-surface-muted)] flex items-center justify-center mb-3">
                     <Bell size={20} className="text-[color:var(--color-text-soft)]" />
@@ -89,7 +147,7 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-                  {notifications.map((notif) => (
+                  {visibleNotifications.map((notif) => (
                     <button
                       key={notif.id}
                       onClick={() => handleNotificationClick(notif)}

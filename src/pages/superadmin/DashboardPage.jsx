@@ -12,6 +12,7 @@ import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/ui/FormInput';
 import { toast } from 'sonner';
+import { formatRole } from '../../utils/constants';
 
 /* ═══════════════════════════════════════════════════════════════
    SVG Donut Chart — pure CSS + SVG, no dependencies
@@ -206,6 +207,8 @@ export default function SuperadminDashboard() {
     user: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
     admin: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
     superadmin: 'bg-red-500/10 text-red-600 dark:text-red-400',
+    kepala_kantor: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+    sekretaris: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   };
 
   if (loading) {
@@ -351,7 +354,7 @@ export default function SuperadminDashboard() {
                             </p>
                           </div>
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${ROLE_BADGE[u.role] || 'bg-slate-100 text-slate-500'}`}>
-                            {u.role}
+                            {formatRole(u.role)}
                           </span>
                         </Link>
                       ))}

@@ -34,7 +34,7 @@ export default function ChatWidget() {
 
   // Load history
   useEffect(() => {
-    if (!isAuthenticated || activeRole !== 'user') return;
+    if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return;
 
     const loadHistory = async () => {
       setIsLoading(true);
@@ -57,7 +57,7 @@ export default function ChatWidget() {
 
   // Initialize Ably (via shared AblyProvider)
   useEffect(() => {
-    if (!isAuthenticated || activeRole !== 'user') return;
+    if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return;
 
     const unsub1 = subscribe(`chat:user_${user.id}`, 'new_message', (msg) => {
       const newMsg = msg.data;
@@ -150,7 +150,7 @@ export default function ChatWidget() {
     }
   };
 
-  if (!isAuthenticated || activeRole !== 'user') return null;
+  if (!isAuthenticated || (activeRole !== 'user' && activeRole !== 'kepala_kantor')) return null;
 
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end">

@@ -27,6 +27,12 @@ export function roleGuard(...allowedRoles: string[]) {
       return;
     }
 
+    // Sekretaris has admin privileges for operational services
+    if (allowedRoles.includes('admin') && user.role === 'sekretaris') {
+      next();
+      return;
+    }
+
     if (!allowedRoles.includes(user.role)) {
       res.status(403).json({
         error: 'Forbidden',

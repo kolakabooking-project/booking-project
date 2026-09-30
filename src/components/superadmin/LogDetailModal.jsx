@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import { getActionMeta } from '../../utils/actionConfig';
 import { formatDate, formatDateShort, formatTime } from '../../utils/helpers';
 import { superadminApi } from '../../lib/api';
+import { formatRole } from '../../utils/constants';
 import { 
   Calendar, 
   Clock, 
@@ -388,7 +389,7 @@ export default function LogDetailModal({ isOpen, onClose, logId, initialLog }) {
               </div>
               <div>
                 <span className="text-[11px] font-semibold text-[color:var(--color-text-soft)] block">Role Akses</span>
-                <p className="text-[color:var(--color-heading)] font-semibold capitalize mt-0.5">{entityDetail.role}</p>
+                <p className="text-[color:var(--color-heading)] font-semibold mt-0.5">{formatRole(entityDetail.role)}</p>
               </div>
             </div>
           </div>

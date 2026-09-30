@@ -22,7 +22,7 @@ export default function RoomBookingModalFlow({
   isAdmin = false,
   initialRoomId = null,
 }) {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { 
     createRoomBooking, 
     createMandatoryRoomBooking, 
@@ -40,8 +40,9 @@ export default function RoomBookingModalFlow({
   const [availableRooms, setAvailableRooms] = useState([]);
   const [roomDetailModal, setRoomDetailModal] = useState(null);
 
+  const isKepalaKantor = activeRole === 'kepala_kantor' || user?.role === 'kepala_kantor';
   const isPast = selectedDate ? isPastDate(selectedDate) : false;
-  const isReadOnly = isPast && !isAdmin;
+  const isReadOnly = (isPast && !isAdmin) || isKepalaKantor;
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -290,7 +291,11 @@ export default function RoomBookingModalFlow({
         <div className="mt-6 border-t pt-4 border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
             <Info size={16} className="shrink-0 text-amber-500" />
-            <span>Tanggal ini telah berlalu. Pengajuan peminjaman ruangan baru tidak dapat dibuat untuk tanggal lampau.</span>
+            <span>
+              {isKepalaKantor
+                ? 'Akun Kepala Kantor dalam mode lihat informasi (view-only). Pemesanan ruang rapat dapat dikoordinasikan melalui Seksi Umum.'
+                : 'Tanggal ini telah berlalu. Pengajuan peminjaman ruangan baru tidak dapat dibuat untuk tanggal lampau.'}
+            </span>
           </div>
         </div>
       ) : (

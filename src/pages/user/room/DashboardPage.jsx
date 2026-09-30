@@ -13,12 +13,13 @@ import PageHeader from '../../../components/ui/PageHeader';
 import { ROOM_STATUS } from '../../../utils/constants';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { rooms, roomBookings, getRoomBookingsForDate } = useRoomBooking();
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [preselectedRoomId, setPreselectedRoomId] = useState(null);
 
+  const isKepalaKantor = activeRole === 'kepala_kantor' || user?.role === 'kepala_kantor';
   const availableToday = rooms.filter((r) => r.status === ROOM_STATUS.AVAILABLE).length;
 
   const handleDateClick = (date) => {
@@ -50,14 +51,16 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title={`Selamat datang, ${user.name}`}
-        subtitle="Pantau peminjaman aktif, cek kapasitas ruangan hari ini, dan buat permintaan baru."
+        subtitle={isKepalaKantor 
+          ? "Pantau status penggunaan dan jadwal ketersediaan ruang rapat KPP Pratama Kolaka."
+          : "Pantau peminjaman aktif, cek kapasitas ruangan hari ini, dan buat permintaan baru."}
       />
 
       {/* Friday WFO Status Widget */}
       <FridayWfoWidget />
 
       {/* Interactive Journey Tracker */}
-      <MyRoomJourneyTracker onNewBooking={handleNewBookingFromTracker} />
+      <MyRoomJourneyTracker onNewBooking={isKepalaKantor ? null : handleNewBookingFromTracker} />
 
       {/* Sedang Dinas Hari Ini */}
       <ActiveSTWidget />
@@ -68,7 +71,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8 mb-8">
         {/* On Mobile: below calendar. On Desktop: above calendar */}
         <div className="order-2 2xl:order-1 w-full grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_420px]">
-          <RoomShowcase onBookRoom={handleBookSpecificRoom} />
+          <RoomShowcase onBookRoom={isKepalaKantor ? undefined : handleBookSpecificRoom} />
 
           {/* Agenda Card */}
           <Card className="hidden 2xl:block overflow-hidden p-0">

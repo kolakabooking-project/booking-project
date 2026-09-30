@@ -1,11 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi, serviceApi } from '../lib/api';
 import SplashScreen from '../components/shared/SplashScreen';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
   const [serviceStatuses, setServiceStatuses] = useState({ kdoActive: true, roomActive: true, spdActive: true });
@@ -43,10 +45,18 @@ export function AuthProvider({ children }) {
 
           const savedRole = localStorage.getItem('booking_active_role');
           if (userData.role === 'superadmin') {
-            const validRoles = ['superadmin', 'admin', 'user'];
+            const validRoles = ['superadmin', 'admin', 'user', 'kepala_kantor', 'sekretaris'];
             const initialRole = savedRole && validRoles.includes(savedRole) ? savedRole : 'superadmin';
             setActiveRole(initialRole);
             localStorage.setItem('booking_active_role', initialRole);
+          } else if (userData.role === 'sekretaris') {
+            const validRoles = ['sekretaris', 'admin', 'user'];
+            const initialRole = savedRole && validRoles.includes(savedRole) ? savedRole : 'sekretaris';
+            setActiveRole(initialRole);
+            localStorage.setItem('booking_active_role', initialRole);
+          } else if (userData.role === 'kepala_kantor') {
+            setActiveRole('kepala_kantor');
+            localStorage.setItem('booking_active_role', 'kepala_kantor');
           } else if (userData.role === 'admin') {
             const validRoles = ['admin', 'user'];
             const initialRole = savedRole && validRoles.includes(savedRole) ? savedRole : 'admin';
@@ -102,6 +112,8 @@ export function AuthProvider({ children }) {
           email: result.user.email,
           image: result.user.image,
         };
+        // Clear any previous query cache to prevent cross-account data leaks
+        queryClient.clear();
         setUser(userData);
 
         // Determine active role
@@ -126,7 +138,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       return { success: false, message: err.message || 'NIP atau password salah.' };
     }
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(async () => {
     try {
@@ -134,25 +146,34 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore sign-out errors
     }
+    // Purge all cached queries (notifications, bookings, etc.)
+    queryClient.clear();
     setUser(null);
     setActiveRole(null);
     localStorage.removeItem('booking_active_role');
-  }, []);
+  }, [queryClient]);
 
   const switchRole = useCallback((newRole) => {
     if (!user) return;
     
-    if (user.role === 'superadmin') {
-      // Superadmin can switch between superadmin, admin, and user views
-      if (['superadmin', 'admin', 'user'].includes(newRole)) {
-        setActiveRole(newRole);
-        localStorage.setItem('booking_active_role', newRole);
-      }
-    } else if (user.role === 'admin' && (newRole === 'admin' || newRole === 'user')) {
+    const validRoles = user.role === 'superadmin'
+      ? ['superadmin', 'admin', 'user', 'kepala_kantor', 'sekretaris']
+      : user.role === 'sekretaris'
+      ? ['sekretaris', 'admin', 'user']
+      : user.role === 'admin'
+      ? ['admin', 'user']
+      : [];
+
+    if (validRoles.includes(newRole)) {
       setActiveRole(newRole);
       localStorage.setItem('booking_active_role', newRole);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['pegawai-cuti'] });
+      queryClient.invalidateQueries({ queryKey: ['rekap-spd'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-st'] });
+      queryClient.invalidateQueries({ queryKey: ['tracking-dashboard'] });
     }
-  }, [user]);
+  }, [user, queryClient]);
 
   // Show splash screen until the entire sequence (video → spinner → fadeout) completes
   if (!splashDone) {

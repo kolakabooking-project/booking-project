@@ -4,6 +4,7 @@ import { superadminApi } from '../lib/api';
 import { useLoading } from '../contexts/LoadingContext';
 import useDebouncedValue from './useDebouncedValue';
 import useServerPagination from './useServerPagination';
+import { formatRole } from '../utils/constants';
 
 export default function useAccountManagement() {
   const { showLoading, hideLoading } = useLoading();
@@ -189,10 +190,11 @@ export default function useAccountManagement() {
   // Change role
   const handleRoleChange = async (newRole) => {
     if (!roleTarget) return;
-    showLoading(`Mengubah role menjadi ${newRole}...`);
+    const formattedRole = formatRole(newRole);
+    showLoading(`Mengubah role menjadi ${formattedRole}...`);
     try {
       await superadminApi.changeRole(roleTarget.id, newRole);
-      toast.success(`Role ${roleTarget.name} diubah menjadi ${newRole}`);
+      toast.success(`Role ${roleTarget.name} berhasil diubah menjadi ${formattedRole}`);
       setRoleTarget(null);
       refresh();
     } catch (err) {

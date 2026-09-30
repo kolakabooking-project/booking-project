@@ -166,11 +166,18 @@ export default function PegawaiCutiPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-heading font-bold text-[color:var(--color-heading)]">
-          Pegawai Cuti
+        <h1 className="text-2xl font-heading font-bold text-[color:var(--color-heading)] flex items-center gap-2.5">
+          {isAdmin ? 'Pegawai Cuti' : 'Cuti Saya'}
+          {!isAdmin && (
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold border border-amber-500/20">
+              Data Pribadi
+            </span>
+          )}
         </h1>
         <p className="text-sm text-[color:var(--color-text-soft)] mt-1">
-          Daftar rekapitulasi cuti pegawai terurut rapi berdasarkan status dan jadwal pelaksanaan
+          {isAdmin
+            ? 'Daftar rekapitulasi cuti seluruh pegawai terurut rapi berdasarkan status dan jadwal pelaksanaan'
+            : 'Daftar rekapitulasi riwayat cuti Anda terurut rapi berdasarkan status dan jadwal pelaksanaan'}
         </p>
       </div>
 
@@ -186,7 +193,7 @@ export default function PegawaiCutiPage() {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Cari nama pegawai atau tanggal cuti..."
+              placeholder={isAdmin ? "Cari nama pegawai atau tanggal cuti..." : "Cari tanggal cuti..."}
               className="w-full rounded-xl border py-2.5 pl-10 pr-4 text-xs sm:text-sm font-heading bg-[color:var(--color-surface-elevated)] text-[color:var(--color-heading)] placeholder:text-[color:var(--color-text-soft)] focus:outline-none focus:ring-2 focus:ring-amber-500/30"
               style={{ borderColor: 'var(--color-border)' }}
             />
@@ -296,9 +303,15 @@ export default function PegawaiCutiPage() {
               <tr>
                 <td colSpan={6} className="px-4 py-16 text-center">
                   <UserCheck size={36} className="mx-auto mb-2.5 text-[color:var(--color-text-soft)] opacity-40" />
-                  <p className="font-heading font-semibold text-sm text-[color:var(--color-text-muted)]">Tidak ada data pegawai cuti</p>
+                  <p className="font-heading font-semibold text-sm text-[color:var(--color-text-muted)]">
+                    {isAdmin ? 'Tidak ada data pegawai cuti' : 'Belum ada riwayat cuti'}
+                  </p>
                   <p className="text-xs text-[color:var(--color-text-soft)] mt-1">
-                    {search || statusFilter !== 'all' ? 'Coba ubah kata kunci atau filter status' : 'Belum ada entri cuti yang terdaftar'}
+                    {search || statusFilter !== 'all'
+                      ? 'Coba ubah kata kunci atau filter status'
+                      : isAdmin
+                      ? 'Belum ada entri cuti yang terdaftar di spreadsheet'
+                      : 'Anda belum memiliki catatan riwayat cuti dalam sistem.'}
                   </p>
                 </td>
               </tr>
@@ -342,7 +355,16 @@ export default function PegawaiCutiPage() {
         ) : processedRecords.length === 0 ? (
           <div className="text-center py-12">
             <UserCheck size={36} className="mx-auto mb-2 text-[color:var(--color-text-soft)] opacity-40" />
-            <p className="font-heading font-semibold text-sm text-[color:var(--color-text-muted)]">Tidak ada data pegawai cuti</p>
+            <p className="font-heading font-semibold text-sm text-[color:var(--color-text-muted)]">
+              {isAdmin ? 'Tidak ada data pegawai cuti' : 'Belum ada riwayat cuti'}
+            </p>
+            <p className="text-xs text-[color:var(--color-text-soft)] mt-1">
+              {search || statusFilter !== 'all'
+                ? 'Coba ubah kata kunci atau filter status'
+                : isAdmin
+                ? 'Belum ada entri cuti yang terdaftar di spreadsheet'
+                : 'Anda belum memiliki catatan riwayat cuti dalam sistem.'}
+            </p>
           </div>
         ) : (
           processedRecords.map((r, i) => {

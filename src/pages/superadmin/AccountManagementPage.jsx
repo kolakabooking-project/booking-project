@@ -2,7 +2,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, Edit, Upload } from 'lucide-react';
+import { Search, Plus, Trash2, RefreshCw, ShieldCheck, UserCog, Users, Edit, Upload, Briefcase, CalendarDays } from 'lucide-react';
 import useAccountManagement from '../../hooks/useAccountManagement';
 import ImportUsersModal from '../../components/admin/ImportUsersModal';
 
@@ -10,6 +10,8 @@ const ROLE_BADGES = {
   user: { label: 'User', className: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' },
   admin: { label: 'Admin', className: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
   superadmin: { label: 'Superadmin', className: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' },
+  kepala_kantor: { label: 'Kepala Kantor', className: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-400' },
+  sekretaris: { label: 'Sekretaris', className: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
 };
 
 export default function AccountManagementPage() {
@@ -49,11 +51,13 @@ export default function AccountManagementPage() {
         <select
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value)}
-          className="form-control py-3 w-full sm:w-40"
+          className="form-control py-3 w-full sm:w-44"
         >
           <option value="">Semua Role</option>
           <option value="user">User</option>
           <option value="admin">Admin</option>
+          <option value="kepala_kantor">Kepala Kantor</option>
+          <option value="sekretaris">Sekretaris</option>
           <option value="superadmin">Superadmin</option>
         </select>
         <div className="flex gap-2">
@@ -219,8 +223,10 @@ export default function AccountManagementPage() {
           <div>
             <label className="block text-sm font-heading font-semibold text-[color:var(--color-text-muted)] mb-1">Role</label>
             <select value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} className="form-control">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="user">User (Pegawai Biasa)</option>
+              <option value="admin">Admin (Operasional)</option>
+              <option value="kepala_kantor">Kepala Kantor</option>
+              <option value="sekretaris">Sekretaris</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
@@ -257,14 +263,14 @@ export default function AccountManagementPage() {
       </Modal>
 
       {/* Change Role Modal */}
-      <Modal isOpen={!!roleTarget} onClose={() => setRoleTarget(null)} title="Ubah Role" size="sm">
+      <Modal isOpen={!!roleTarget} onClose={() => setRoleTarget(null)} title="Ubah Role" size="md">
         {roleTarget && (
           <div className="space-y-4">
             <p className="text-sm text-[color:var(--color-text-muted)]">
               Ubah role untuk <span className="font-bold text-[color:var(--color-heading)]">{roleTarget.name}</span>
             </p>
             <p className="text-xs text-[color:var(--color-text-soft)]">
-              Role saat ini: <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${ROLE_BADGES[roleTarget.role]?.className}`}>{roleTarget.role}</span>
+              Role saat ini: <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${ROLE_BADGES[roleTarget.role]?.className}`}>{ROLE_BADGES[roleTarget.role]?.label || roleTarget.role}</span>
             </p>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
@@ -275,7 +281,7 @@ export default function AccountManagementPage() {
               >
                 <Users size={24} className="mx-auto text-blue-500 mb-2" />
                 <p className="text-sm font-bold text-[color:var(--color-heading)]">User</p>
-                <p className="text-[10px] text-[color:var(--color-text-soft)]">Akses peminjaman</p>
+                <p className="text-[10px] text-[color:var(--color-text-soft)]">Pegawai Biasa</p>
               </button>
               <button
                 onClick={() => handleRoleChange('admin')}
@@ -285,7 +291,27 @@ export default function AccountManagementPage() {
               >
                 <ShieldCheck size={24} className="mx-auto text-amber-500 mb-2" />
                 <p className="text-sm font-bold text-[color:var(--color-heading)]">Admin</p>
-                <p className="text-[10px] text-[color:var(--color-text-soft)]">Kelola armada</p>
+                <p className="text-[10px] text-[color:var(--color-text-soft)]">Admin Operasional</p>
+              </button>
+              <button
+                onClick={() => handleRoleChange('kepala_kantor')}
+                disabled={roleTarget.role === 'kepala_kantor'}
+                className={`p-4 rounded-2xl border text-center transition-all ${roleTarget.role === 'kepala_kantor' ? 'opacity-40 cursor-not-allowed' : 'hover:border-teal-500 hover:bg-teal-500/5 active:scale-95'}`}
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <Briefcase size={24} className="mx-auto text-teal-600 mb-2" />
+                <p className="text-sm font-bold text-[color:var(--color-heading)]">Kepala Kantor</p>
+                <p className="text-[10px] text-[color:var(--color-text-soft)]">Lihat Jadwal & Info</p>
+              </button>
+              <button
+                onClick={() => handleRoleChange('sekretaris')}
+                disabled={roleTarget.role === 'sekretaris'}
+                className={`p-4 rounded-2xl border text-center transition-all ${roleTarget.role === 'sekretaris' ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500 hover:bg-amber-500/5 active:scale-95'}`}
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <CalendarDays size={24} className="mx-auto text-amber-500 mb-2" />
+                <p className="text-sm font-bold text-[color:var(--color-heading)]">Sekretaris</p>
+                <p className="text-[10px] text-[color:var(--color-text-soft)]">Kelola Jadwal & Admin</p>
               </button>
             </div>
           </div>

@@ -11,6 +11,7 @@ import ProfileCard from '../../components/settings/ProfileCard';
 import PasswordChangeModal from '../../components/settings/PasswordChangeModal';
 import AboutAppModal from '../../components/settings/AboutAppModal';
 import BroadcastModal from '../../components/admin/BroadcastModal';
+import { formatRole } from '../../utils/constants';
 
 export default function AdminSettingsPage() {
   const { user, logout, switchRole } = useAuth();
@@ -68,7 +69,7 @@ export default function AdminSettingsPage() {
         user={user} 
         variant="default" 
         fallbackJabatan="Administrator Sistem" 
-        badgeText={user?.role === 'admin' ? 'Administrator' : 'Pengguna'} 
+        badgeText={formatRole(user?.role)} 
       />
 
       {/* Settings List */}

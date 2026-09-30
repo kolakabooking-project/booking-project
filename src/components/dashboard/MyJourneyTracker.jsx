@@ -90,9 +90,11 @@ export default function MyJourneyTracker({ onNewBooking }) {
             <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
               Mulai dari sini
             </div>
-            <button className="mjt-cta-btn" onClick={onNewBooking} type="button">
-              <Plus /> Buat Booking
-            </button>
+            {onNewBooking && (
+              <button className="mjt-cta-btn" onClick={onNewBooking} type="button">
+                <Plus /> Buat Booking
+              </button>
+            )}
           </>
         )
       },

@@ -16,7 +16,7 @@ export const user = pgTable('user', {
   // ── Custom fields ──
   nip: text('nip').notNull().unique(),
   nipPanjang: text('nip_panjang'),
-  role: text('role', { enum: ['user', 'admin', 'superadmin'] }).notNull().default('user'),
+  role: text('role', { enum: ['user', 'admin', 'superadmin', 'kepala_kantor', 'sekretaris'] }).notNull().default('user'),
   jabatan: text('jabatan'),
   username: text('username').unique(),
   displayUsername: text('display_username'),
@@ -221,7 +221,10 @@ export const activityLog = pgTable('activity_log', {
       // WFO
       'WFO_SCHEDULE_UPDATED',
       // Tracking SPD
-      'SPD_CACHE_REFRESHED'
+      'SPD_CACHE_REFRESHED',
+      // Kegiatan & ST Kepala Kantor
+      'KEGIATAN_CREATED', 'KEGIATAN_UPDATED', 'KEGIATAN_DELETED',
+      'ST_CREATED', 'ST_UPDATED', 'ST_DELETED'
     ]
 
   }).notNull(),
@@ -388,4 +391,42 @@ export const announcementRead = pgTable('announcement_read', {
   index('announcement_read_user_idx').on(table.userId),
   index('announcement_read_ann_user_idx').on(table.announcementId, table.userId),
 ]);
+
+// ─────────────────────────────────────────────
+//  Jadwal Kegiatan & ST Kepala Kantor
+// ─────────────────────────────────────────────
+
+export const kegiatanKepala = pgTable('kegiatan_kepala', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tanggal: date('tanggal').notNull(),
+  waktuMulai: text('waktu_mulai').notNull(),
+  waktuSelesai: text('waktu_selesai'),
+  agenda: text('agenda').notNull(),
+  tempat: text('tempat').notNull(),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('kegiatan_kepala_tanggal_idx').on(table.tanggal),
+  index('kegiatan_kepala_created_by_idx').on(table.createdBy),
+]);
+
+export const stKepala = pgTable('st_kepala', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tentang: text('tentang').notNull(),
+  tempat: text('tempat').notNull(),
+  tanggal: date('tanggal').notNull(),
+  tanggalSelesai: date('tanggal_selesai'),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  index('st_kepala_tanggal_idx').on(table.tanggal),
+  index('st_kepala_created_by_idx').on(table.createdBy),
+]);
+
 

@@ -1,5 +1,5 @@
 import { db } from '../config/db.js';
-import { user, account, session, systemSettings, booking, driver, vehicle, room, roomBooking } from '../db/schema.js';
+import { user, account, session, systemSettings, booking, driver, vehicle, room, roomBooking, notification } from '../db/schema.js';
 import { eq, ne, desc, count, ilike, or, and, inArray } from 'drizzle-orm';
 import { auth } from '../auth/auth.js';
 import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors.js';
@@ -77,6 +77,17 @@ function compareEmployees(a: any, b: any): number {
   
   // Sort alphabetically by name
   return (a.name || '').localeCompare(b.name || '');
+}
+
+export function formatRoleName(r: string): string {
+  const map: Record<string, string> = {
+    user: 'Pegawai',
+    admin: 'Administrator',
+    superadmin: 'Superadmin',
+    kepala_kantor: 'Kepala Kantor',
+    sekretaris: 'Sekretaris',
+  };
+  return map[r] || r;
 }
 
 /**
@@ -207,18 +218,24 @@ export async function getUserStats() {
   let totalAdmins = 0;
   let totalSuperadmins = 0;
   let totalRegularUsers = 0;
+  let totalKepalaKantor = 0;
+  let totalSekretaris = 0;
 
   for (const row of result) {
     if (row.role === 'admin') totalAdmins += row.count;
     else if (row.role === 'superadmin') totalSuperadmins += row.count;
     else if (row.role === 'user') totalRegularUsers += row.count;
+    else if (row.role === 'kepala_kantor') totalKepalaKantor += row.count;
+    else if (row.role === 'sekretaris') totalSekretaris += row.count;
   }
 
   return {
-    totalUsers: totalAdmins + totalSuperadmins + totalRegularUsers,
+    totalUsers: totalAdmins + totalSuperadmins + totalRegularUsers + totalKepalaKantor + totalSekretaris,
     totalAdmins,
     totalSuperadmins,
     totalRegularUsers,
+    totalKepalaKantor,
+    totalSekretaris,
   };
 }
 
@@ -230,7 +247,7 @@ export async function createUser(data: {
   nipPanjang?: string;
   name: string;
   jabatan?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'kepala_kantor' | 'sekretaris';
 }, actorId: string, actorName: string, ipAddress?: string) {
   // Prevent creating superadmin via this endpoint
   if ((data as any).role === 'superadmin') {
@@ -273,7 +290,7 @@ export async function createUser(data: {
       action: 'ACCOUNT_CREATED',
       targetId: result.user.id,
       targetName: data.name,
-      detail: `Akun ${data.name} (NIP: ${data.nip}) dibuat dengan role ${data.role}`,
+      detail: `Akun ${data.name} (NIP: ${data.nip}) dibuat dengan role ${formatRoleName(data.role)}`,
       ipAddress,
     });
 
@@ -408,7 +425,7 @@ export async function deleteUser(
  */
 export async function changeUserRole(
   targetUserId: string,
-  newRole: 'user' | 'admin',
+  newRole: 'user' | 'admin' | 'kepala_kantor' | 'sekretaris',
   actorId: string,
   actorName: string,
   ipAddress?: string
@@ -431,7 +448,7 @@ export async function changeUserRole(
   }
 
   if (targetUser.role === newRole) {
-    throw new ValidationError(`Akun sudah memiliki role ${newRole}.`);
+    throw new ValidationError(`Akun sudah memiliki role ${formatRoleName(newRole)}.`);
   }
 
   await db
@@ -448,9 +465,26 @@ export async function changeUserRole(
     action: 'ACCOUNT_ROLE_CHANGED',
     targetId: targetUserId,
     targetName: targetUser.name,
-    detail: `Role ${targetUser.name} diubah dari ${targetUser.role} ke ${newRole}`,
+    detail: `Role ${targetUser.name} diubah dari ${formatRoleName(targetUser.role)} ke ${formatRoleName(newRole)}`,
     ipAddress,
   });
+
+  // If user is changed away from admin, mark stale admin notifications as read
+  if (newRole !== 'admin') {
+    await db
+      .update(notification)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(notification.userId, targetUserId),
+          or(
+            ilike(notification.url, '/admin%'),
+            ilike(notification.title, '%Peminjaman Ruangan Baru%'),
+            ilike(notification.title, '%Pengajuan Peminjaman Baru%')
+          )
+        )
+      );
+  }
 
   return { success: true, newRole };
 }

@@ -70,8 +70,9 @@ export function useJadwalJumat(params = {}) {
 // ─── Pegawai Cuti ───
 export function usePegawaiCuti(params = {}) {
   const debouncedSearch = useDebounce(params.search);
+  const activeRole = localStorage.getItem('booking_active_role') || 'user';
   return useQuery({
-    queryKey: ['pegawai-cuti', { ...params, search: debouncedSearch }],
+    queryKey: ['pegawai-cuti', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getPegawaiCuti({ ...params, search: debouncedSearch }),
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,

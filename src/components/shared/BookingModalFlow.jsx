@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { bookingApi } from '../../lib/api';
 
 export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBookings, isAdmin = false }) {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { createBooking, createMandatoryBooking, getAvailableVehicles, getBookingsForDate } = useBooking();
   const { showLoading, hideLoading } = useLoading();
   
@@ -25,8 +25,9 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [vehicleDetailModal, setVehicleDetailModal] = useState(null);
 
+  const isKepalaKantor = activeRole === 'kepala_kantor' || user?.role === 'kepala_kantor';
   const isPast = selectedDate ? isPastDate(selectedDate) : false;
-  const isReadOnly = isPast && !isAdmin;
+  const isReadOnly = (isPast && !isAdmin) || isKepalaKantor;
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -274,7 +275,11 @@ export default function BookingModalFlow({ isOpen, onClose, selectedDate, dateBo
         <div className="mt-6 border-t pt-4" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
             <Info size={16} className="shrink-0 text-amber-500" />
-            <span>Tanggal ini telah berlalu. Pengajuan peminjaman baru tidak dapat dibuat untuk tanggal lampau.</span>
+            <span>
+              {isKepalaKantor
+                ? 'Akun Kepala Kantor dalam mode lihat informasi (view-only). Pengajuan peminjaman kendaraan dapat dikoordinasikan melalui Seksi Umum.'
+                : 'Tanggal ini telah berlalu. Pengajuan peminjaman baru tidak dapat dibuat untuk tanggal lampau.'}
+            </span>
           </div>
         </div>
       ) : (

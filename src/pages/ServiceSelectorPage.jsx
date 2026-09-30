@@ -5,6 +5,7 @@ import ThemeLogo from '../components/ui/ThemeLogo';
 import DynamicCarIcon from '../components/icons/DynamicCarIcon';
 import DynamicRoomIcon from '../components/icons/DynamicRoomIcon';
 import DynamicTrackingIcon from '../components/icons/DynamicTrackingIcon';
+import DynamicCalendarIcon from '../components/icons/DynamicCalendarIcon';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { serviceApi } from '../lib/api';
@@ -67,11 +68,17 @@ export default function ServiceSelectorPage() {
     }
   };
 
-  const isAdmin = activeRole === 'admin' || activeRole === 'superadmin';
+  const isSekretaris = activeRole === 'sekretaris';
+  const isKepalaKantor = activeRole === 'kepala_kantor';
+  const isSuperadmin = activeRole === 'superadmin';
+  const isAdmin = activeRole === 'admin' || isSuperadmin || isSekretaris;
+  const showCalendarService = isKepalaKantor || isSekretaris || isSuperadmin;
 
   const getAccountSettingPath = () => {
     const role = activeRole || user?.role || 'user';
     if (role === 'superadmin') return '/superadmin/settings';
+    if (role === 'sekretaris') return '/sekretaris/jadwal/settings';
+    if (role === 'kepala_kantor') return '/kepala-kantor/jadwal/account';
     if (role === 'admin') return '/admin/settings';
     return '/user/account';
   };
@@ -143,6 +150,33 @@ export default function ServiceSelectorPage() {
           </div>
         ) : (
           <>
+            {/* Kalender / Jadwal Kegiatan Card */}
+            {showCalendarService && (
+              <button
+                onClick={() => navigate(isKepalaKantor ? '/kepala-kantor/jadwal' : '/sekretaris/jadwal/calendar')}
+                className="group relative flex flex-col items-center p-8 bg-white dark:bg-gray-800 rounded-3xl border-2 border-transparent shadow-sm transition-all duration-300 overflow-hidden text-left w-full md:max-w-[360px] focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 hover:border-teal-500/50 hover:shadow-xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative z-10 w-24 h-24 mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <DynamicCalendarIcon className="w-full h-full" />
+                </div>
+                <h3 className="relative z-10 text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                  {isKepalaKantor ? 'Jadwal Kegiatan' : 'Kelola Jadwal Pimpinan'}
+                </h3>
+                <p className="relative z-10 text-gray-500 dark:text-gray-400 text-center text-sm leading-relaxed">
+                  {isKepalaKantor
+                    ? 'Pantau seluruh agenda rapat, kegiatan kedinasan, dan jadwal Surat Tugas (ST) Kepala Kantor.'
+                    : 'Kelola agenda rapat, kegiatan kedinasan, serta Surat Tugas (ST) resmi Kepala Kantor.'}
+                </p>
+                <div className="relative z-10 mt-8 text-teal-600 dark:text-teal-400 font-medium flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+                  <span>{isKepalaKantor ? 'Masuk ke Jadwal' : 'Masuk ke Panel'}</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </div>
+              </button>
+            )}
+
             {/* KDO Card */}
             {statuses.kdoActive && (
               <button

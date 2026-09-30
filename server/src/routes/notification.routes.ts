@@ -7,7 +7,8 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const notifications = await notificationService.getUserNotifications(user.id);
+    const activeRole = (req.header('x-active-role') as string) || (req.query.role as string) || user.role;
+    const notifications = await notificationService.getUserNotifications(user.id, activeRole);
     res.json({ success: true, data: notifications });
   } catch (error: any) {
     console.error('Error fetching notifications:', error);

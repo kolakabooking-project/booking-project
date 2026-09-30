@@ -3,29 +3,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useAbly } from '../contexts/AblyProvider';
+import { notificationApi } from '../lib/api';
 
 export default function useNotifications() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { subscribe } = useAbly();
 
   const query = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', user?.id, activeRole],
     queryFn: async () => {
-      const res = await fetch('/api/notifications');
-      if (!res.ok) throw new Error('Gagal mengambil notifikasi');
-      const data = await res.json();
-      return data.data;
+      const res = await notificationApi.getAll(activeRole);
+      return res?.data || [];
     },
-    staleTime: 5 * 60 * 1000, // 5m — Ably subscription handles real-time updates instantly
-    refetchOnWindowFocus: false,
+    enabled: !!user?.id,
+    staleTime: 60 * 1000, // 1m — Ably subscription handles real-time updates instantly
+    refetchOnWindowFocus: true,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id) => {
-      const res = await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
-      if (!res.ok) throw new Error('Gagal memperbarui notifikasi');
-      return res.json();
+      return await notificationApi.markAsRead(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -34,9 +32,7 @@ export default function useNotifications() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/notifications/read-all', { method: 'PUT' });
-      if (!res.ok) throw new Error('Gagal memperbarui notifikasi');
-      return res.json();
+      return await notificationApi.markAllAsRead();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

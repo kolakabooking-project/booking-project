@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
-import { Eye, EyeOff, Sun, Moon, User, Lock, ArrowRight, Info } from 'lucide-react';
+import { Eye, EyeOff, Sun, Moon, User, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import AboutAppModal from '../../components/settings/AboutAppModal';
 
@@ -94,10 +94,19 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Card Title Header */}
-          <div className="relative z-10 pr-10 mb-5 sm:mb-7">
-            <h2 className="text-[clamp(1.85rem,6vw,2.75rem)] leading-none font-heading font-extrabold tracking-tight text-[#273c66] dark:text-white transition-colors duration-700">
-              LOGIN
+          {/* Card Title Header with About App trigger icon */}
+          <div className="relative z-10 pr-10 mb-5 sm:mb-7 flex items-start">
+            <h2 className="relative inline-flex items-start text-[clamp(1.85rem,6vw,2.75rem)] leading-none font-heading font-extrabold tracking-tight text-[#273c66] dark:text-white transition-colors duration-700">
+              <span>LOGIN</span>
+              <button
+                type="button"
+                onClick={() => setInfoOpen(true)}
+                aria-label="Tentang Aplikasi Bookolaka"
+                title="Tentang Aplikasi"
+                className="group relative -top-1 sm:-top-2 -ml-0.5 p-1 -m-1 rounded-full text-blue-600 dark:text-amber-400 hover:text-blue-700 dark:hover:text-amber-300 hover:scale-125 active:scale-95 transition-all duration-300 focus:outline-none cursor-pointer"
+              >
+                <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-12 transition-transform duration-300" strokeWidth={2.5} />
+              </button>
             </h2>
           </div>
 
@@ -186,19 +195,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Footer Action: Button Tentang Aplikasi */}
-          <div className="relative z-10 mt-5 sm:mt-6 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setInfoOpen(true)}
-              aria-label="Tentang Aplikasi Bookolaka"
-              className="group relative inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-heading font-bold text-slate-700 dark:text-white/90 hover:text-slate-900 dark:hover:text-white bg-slate-100/90 dark:bg-white/10 hover:bg-slate-200/90 dark:hover:bg-white/20 border border-slate-300/80 dark:border-white/15 shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
-            >
-              <Info className="w-3.5 h-3.5 text-blue-600 dark:text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="tracking-wide">Tentang Aplikasi</span>
-            </button>
-          </div>
         </div>
       </div>
 

@@ -2,7 +2,19 @@ export const ROLES = {
   USER: 'user',
   ADMIN: 'admin',
   SUPERADMIN: 'superadmin',
+  KEPALA_KANTOR: 'kepala_kantor',
+  SEKRETARIS: 'sekretaris',
 };
+
+export const ROLE_LABELS = {
+  [ROLES.USER]: 'Pegawai',
+  [ROLES.ADMIN]: 'Administrator',
+  [ROLES.SUPERADMIN]: 'Superadmin',
+  [ROLES.KEPALA_KANTOR]: 'Kepala Kantor',
+  [ROLES.SEKRETARIS]: 'Sekretaris',
+};
+
+export const formatRole = (role) => ROLE_LABELS[role] || (role ? role.replace(/_/g, ' ') : '');
 
 export const BOOKING_STATUS = {
   PENDING: 'Pending',
@@ -108,4 +120,11 @@ export const NAV_TRACKING_USER = [
   { path: '/user/tracking/pegawai-cuti', label: 'Pegawai Cuti', icon: 'CalendarOff' },
   { path: '/user/tracking/jadwal-jumat', label: 'Jadwal Jumat', icon: 'CalendarDays' },
 ];
+
+export const NAV_SEKRETARIS_JADWAL = [
+  { path: '/sekretaris/jadwal/calendar', label: 'Kalender Jadwal', icon: 'CalendarDays' },
+  { path: '/sekretaris/jadwal/kegiatan', label: 'Agenda Kegiatan', icon: 'ClipboardList' },
+  { path: '/sekretaris/jadwal/surat-tugas', label: 'Surat Tugas (ST)', icon: 'FileText' },
+];
+
 

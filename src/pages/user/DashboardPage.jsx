@@ -13,11 +13,12 @@ import PageHeader from '../../components/ui/PageHeader';
 import { VEHICLE_STATUS } from '../../utils/constants';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const { vehicles, bookings, getBookingsForDate } = useBooking();
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const isKepalaKantor = activeRole === 'kepala_kantor' || user?.role === 'kepala_kantor';
   const availableToday = vehicles.filter((v) => v.status === VEHICLE_STATUS.AVAILABLE).length;
 
   const handleDateClick = (date) => {
@@ -38,14 +39,16 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title={`Selamat datang, ${user.name}`}
-        subtitle="Pantau peminjaman aktif, cek kapasitas kendaraan hari ini, dan buat permintaan baru."
+        subtitle={isKepalaKantor 
+          ? "Pantau operasional dan jadwal ketersediaan kendaraan dinas KPP Pratama Kolaka."
+          : "Pantau peminjaman aktif, cek kapasitas kendaraan hari ini, dan buat permintaan baru."}
       />
 
       {/* Friday WFO Status Widget */}
       <FridayWfoWidget />
 
       {/* Interactive Journey Tracker */}
-      <MyJourneyTracker onNewBooking={handleNewBookingFromTracker} />
+      <MyJourneyTracker onNewBooking={isKepalaKantor ? null : handleNewBookingFromTracker} />
 
       {/* Sedang Dinas Hari Ini */}
       <ActiveSTWidget />

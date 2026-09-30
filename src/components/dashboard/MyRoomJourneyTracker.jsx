@@ -96,9 +96,11 @@ export default function MyRoomJourneyTracker({ onNewBooking }) {
             <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
               Mulai dari sini
             </div>
-            <button className="mjt-cta-btn bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 mt-3" onClick={onNewBooking} type="button">
-              <Plus size={16} /> Booking Ruang
-            </button>
+            {onNewBooking && (
+              <button className="mjt-cta-btn bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 mt-3" onClick={onNewBooking} type="button">
+                <Plus size={16} /> Booking Ruang
+              </button>
+            )}
           </>
         )
       },

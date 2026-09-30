@@ -418,3 +418,51 @@ export const announcementApi = {
   },
 };
 
+// ─── Jadwal Kegiatan & ST Kepala Kantor ───
+
+export const jadwalKepalaApi = {
+  getCalendar: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.month) qs.set('month', String(params.month));
+    if (params?.year) qs.set('year', String(params.year));
+    const query = qs.toString();
+    return request(`/jadwal-kepala/calendar${query ? `?${query}` : ''}`);
+  },
+  getPimpinan: () => request('/jadwal-kepala/pimpinan'),
+
+  // Kegiatan
+  getKegiatan: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.month) qs.set('month', String(params.month));
+    if (params?.year) qs.set('year', String(params.year));
+    if (params?.search) qs.set('search', params.search);
+    const query = qs.toString();
+    return request(`/jadwal-kepala/kegiatan${query ? `?${query}` : ''}`);
+  },
+  getKegiatanById: (id) => request(`/jadwal-kepala/kegiatan/${id}`),
+  createKegiatan: (data) => request('/jadwal-kepala/kegiatan', { method: 'POST', body: JSON.stringify(data) }),
+  updateKegiatan: (id, data) => request(`/jadwal-kepala/kegiatan/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteKegiatan: (id) => request(`/jadwal-kepala/kegiatan/${id}`, { method: 'DELETE' }),
+
+  // Surat Tugas (ST)
+  getST: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.month) qs.set('month', String(params.month));
+    if (params?.year) qs.set('year', String(params.year));
+    if (params?.search) qs.set('search', params.search);
+    const query = qs.toString();
+    return request(`/jadwal-kepala/st${query ? `?${query}` : ''}`);
+  },
+  getSTById: (id) => request(`/jadwal-kepala/st/${id}`),
+  createST: (data) => request('/jadwal-kepala/st', { method: 'POST', body: JSON.stringify(data) }),
+  updateST: (id, data) => request(`/jadwal-kepala/st/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteST: (id) => request(`/jadwal-kepala/st/${id}`, { method: 'DELETE' }),
+};
+
+export const notificationApi = {
+  getAll: (role) => request(`/notifications${role ? `?role=${role}` : ''}`),
+  markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
+};
+
+

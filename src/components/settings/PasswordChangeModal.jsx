@@ -17,13 +17,24 @@ export default function PasswordChangeModal({
   loading
 }) {
   const isRed = accentColor === 'red-500';
+  const isTeal = accentColor === 'teal';
+
+  let iconBg = 'bg-djp-blue/10';
+  let iconText = 'text-djp-blue';
+  if (isRed) {
+    iconBg = 'bg-red-500/10';
+    iconText = 'text-red-500';
+  } else if (isTeal) {
+    iconBg = 'bg-teal-500/10';
+    iconText = 'text-teal-600 dark:text-teal-400';
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Ubah Password" size="sm">
       <form onSubmit={handlePasswordSubmit} className="space-y-5">
         <div className="flex justify-center mb-4 mt-2">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isRed ? 'bg-red-500/10' : 'bg-djp-blue/10'}`}>
-            <Lock size={24} className={isRed ? 'text-red-500' : 'text-djp-blue'} />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${iconBg}`}>
+            <Lock size={24} className={iconText} />
           </div>
         </div>
 

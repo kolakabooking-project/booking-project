@@ -1,5 +1,5 @@
 import Modal from '../ui/Modal';
-import { Car, Building2, MapPin, Megaphone, ShieldCheck } from 'lucide-react';
+import { Car, Building2, MapPin, Megaphone, ShieldCheck, CalendarDays } from 'lucide-react';
 
 export default function AboutAppModal({ 
   isOpen, 
@@ -9,6 +9,11 @@ export default function AboutAppModal({
   role = 'admin'
 }) {
   const isRed = accentColor === 'red-500';
+  const isTeal = accentColor === 'teal';
+
+  let iconColor = 'text-djp-blue';
+  if (isRed) iconColor = 'text-red-400';
+  if (isTeal) iconColor = 'text-teal-600 dark:text-teal-400';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Tentang Aplikasi" size="md">
@@ -16,9 +21,9 @@ export default function AboutAppModal({
         <div className="mx-auto w-20 h-20 rounded-[1.5rem] flex items-center justify-center mb-4">
           <img src="/logoweb.png" alt="Bookolaka" className="w-full h-full object-contain" loading="lazy" />
         </div>
-        <h3 className={`text-xl font-heading font-bold ${isRed ? 'text-red-400' : 'text-[color:var(--color-heading)]'}`}>Bookolaka</h3>
+        <h3 className={`text-xl font-heading font-bold ${isRed ? 'text-red-400' : isTeal ? 'text-teal-600 dark:text-teal-400' : 'text-[color:var(--color-heading)]'}`}>Bookolaka</h3>
         <p className="text-sm text-[color:var(--color-text-soft)] leading-relaxed px-4">
-          Sistem Informasi Manajemen Kendaraan Dinas Operasional (KDO) dan Fasilitas Ruangan di lingkungan KPP Pratama Kolaka.
+          Sistem Informasi Manajemen Terpadu Kendaraan Dinas, Fasilitas Ruangan, Tracking SPD, dan Jadwal Kegiatan Pimpinan di lingkungan KPP Pratama Kolaka.
         </p>
 
         <div className="mt-5 space-y-3 text-left">
@@ -29,7 +34,17 @@ export default function AboutAppModal({
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--color-surface-muted)' }}>
-                  <Car size={16} className={isRed ? 'text-red-400' : 'text-djp-blue'} />
+                  <CalendarDays size={16} className={iconColor} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-[color:var(--color-heading)]">Kalender Jadwal Kegiatan Pimpinan</h4>
+                  <p className="text-[11px] text-[color:var(--color-text-soft)] leading-relaxed mt-0.5">Pemantauan dan pengelolaan agenda dinas serta surat tugas (ST) Kepala Kantor secara tersinkronisasi.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--color-surface-muted)' }}>
+                  <Car size={16} className={iconColor} />
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold text-[color:var(--color-heading)]">Manajemen Kendaraan Dinas (KDO)</h4>
@@ -39,7 +54,7 @@ export default function AboutAppModal({
 
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--color-surface-muted)' }}>
-                  <Building2 size={16} className={isRed ? 'text-red-400' : 'text-djp-blue'} />
+                  <Building2 size={16} className={iconColor} />
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold text-[color:var(--color-heading)]">Reservasi Ruang Rapat dan Fasilitas</h4>
@@ -49,7 +64,7 @@ export default function AboutAppModal({
 
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--color-surface-muted)' }}>
-                  <MapPin size={16} className={isRed ? 'text-red-400' : 'text-djp-blue'} />
+                  <MapPin size={16} className={iconColor} />
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold text-[color:var(--color-heading)]">Pemantauan Perjalanan Dinas (SPD)</h4>
