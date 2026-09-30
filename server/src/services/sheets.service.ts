@@ -180,6 +180,93 @@ export function isUserMatch(
 }
 
 /**
+ * Normalizes a Surat Tugas number for comparison across sheets.
+ * Strips whitespace, punctuation, and converts to lowercase.
+ */
+export function cleanNomorST(st: string | undefined): string {
+  if (!st) return '';
+  return st.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Builds a date resolver function from 'Agenda Surat Tugas' data.
+ * Maps 'Tanggal Surat' (column F / index 5) so that Rekap SPD's 'tanggalDitetapkan'
+ * is sourced directly from Agenda Surat Tugas instead of the outdated column in Rekap SPD.
+ */
+export function createAgendaSTDateResolver(agendaRows: string[][]) {
+  // Map by normalized nomorST -> tanggalSurat
+  const dateByST = new Map<string, string>();
+  // Map by (normalized nomorST + normalized namaPegawai) -> tanggalSurat
+  const dateBySTAndName = new Map<string, string>();
+  // Map by (nomorSpd + normalized namaPegawai) -> tanggalSurat
+  const dateBySpdAndName = new Map<string, string>();
+
+  for (const row of agendaRows) {
+    const nomorSpd = safeInt(row[0]);
+    const namaPegawai = safeStr(row[3]);
+    const nomorST = safeStr(row[4]);
+    const tanggalSurat = safeStr(row[5]);
+
+    // Validate that tanggalSurat is not empty or placeholder
+    if (
+      !tanggalSurat ||
+      tanggalSurat === '-' ||
+      tanggalSurat === '0' ||
+      tanggalSurat.startsWith('#') ||
+      tanggalSurat.includes('1900')
+    ) {
+      continue;
+    }
+
+    const stKey = cleanNomorST(nomorST);
+    const nameKey = cleanNameForMatch(namaPegawai);
+
+    if (stKey && stKey.length > 2 && stKey !== '0') {
+      if (!dateByST.has(stKey)) {
+        dateByST.set(stKey, tanggalSurat);
+      }
+    }
+
+    if (stKey && nameKey) {
+      dateBySTAndName.set(`${stKey}_${nameKey}`, tanggalSurat);
+    }
+
+    if (nomorSpd > 0 && nameKey) {
+      dateBySpdAndName.set(`${nomorSpd}_${nameKey}`, tanggalSurat);
+    }
+  }
+
+  return (nomorSpd: number, namaPegawai: string, nomorST: string, fallbackDate: string): string => {
+    const stKey = cleanNomorST(nomorST);
+    const nameKey = cleanNameForMatch(namaPegawai);
+
+    // 1. Try matching by ST number and employee name
+    if (stKey && nameKey) {
+      const match = dateBySTAndName.get(`${stKey}_${nameKey}`);
+      if (match) return match;
+    }
+
+    // 2. Try matching by ST number alone (all employees on the same ST share the same ST date)
+    if (stKey && stKey.length > 2 && stKey !== '0') {
+      const match = dateByST.get(stKey);
+      if (match) return match;
+    }
+
+    // 3. Try matching by nomorSpd + employee name
+    if (nomorSpd > 0 && nameKey) {
+      const match = dateBySpdAndName.get(`${nomorSpd}_${nameKey}`);
+      if (match) return match;
+    }
+
+    // Fallback to original Rekap SPD row[10] value (cleaning any placeholder values)
+    if (fallbackDate.includes('1900') || fallbackDate.startsWith('#')) {
+      return '';
+    }
+    return fallbackDate;
+  };
+}
+
+/**
  * Parse Indonesian month date strings to check if within current month.
  * Format: "dd mmmm yyyy" (e.g. "05 Januari 2026")
  */
@@ -311,8 +398,16 @@ export async function getAgendaSuratTugas(filters: SheetFilters = {}): Promise<P
 export async function getRekapSPD(filters: SheetFilters = {}): Promise<PaginatedResult<RekapSPD>> {
   const { user, userName, search, wilayah, page = 1, limit = 20 } = filters;
 
-  // Read from row 2 onwards (skip 1 header row)
-  const rawData = await getSheetData('Rekap SPD', 'A2:M');
+  // Read Rekap SPD (data starts row 2) and Agenda Surat Tugas (data starts row 3) concurrently
+  const [rawData, agendaRawData] = await Promise.all([
+    getSheetData('Rekap SPD', 'A2:M'),
+    getSheetData('Agenda Surat Tugas', 'A3:S').catch((err) => {
+      console.error('[SHEETS] Error loading Agenda Surat Tugas for date mapping in getRekapSPD:', err);
+      return [] as string[][];
+    }),
+  ]);
+
+  const resolveTanggalDitetapkan = createAgendaSTDateResolver(agendaRawData);
 
   // Transform and filter
   let records: RekapSPD[] = rawData
@@ -322,21 +417,28 @@ export async function getRekapSPD(filters: SheetFilters = {}): Promise<Paginated
       if (row[8]?.includes('00 Januari 1900')) return false;
       return true;
     })
-    .map((row) => ({
-      nomorSpd: safeInt(row[0]),
-      nomorPegawai: safeInt(row[1]),
-      nip: '', // NIP column deleted
-      namaPegawai: safeStr(row[2]),
-      wilayahTugas: safeStr(row[3]),
-      nomorST: safeStr(row[4]),
-      tanggalST: safeStr(row[5]),
-      perihalTugas: safeStr(row[6]),
-      jumlahHariSpd: safeStr(row[7]),
-      jumlahHariSpdNumeric: parseInt(row[7] || '0', 10) || 0, // "5 (lima) hari" → 5
-      tanggalMulai: safeStr(row[8]),
-      tanggalAkhir: safeStr(row[9]),
-      tanggalDitetapkan: safeStr(row[10]),
-    }))
+    .map((row) => {
+      const spdNum = safeInt(row[0]);
+      const namaPegawai = safeStr(row[2]);
+      const nomorST = safeStr(row[4]);
+      const fallbackDate = safeStr(row[10]);
+
+      return {
+        nomorSpd: spdNum,
+        nomorPegawai: safeInt(row[1]),
+        nip: '', // NIP column deleted
+        namaPegawai,
+        wilayahTugas: safeStr(row[3]),
+        nomorST,
+        tanggalST: safeStr(row[5]),
+        perihalTugas: safeStr(row[6]),
+        jumlahHariSpd: safeStr(row[7]),
+        jumlahHariSpdNumeric: parseInt(row[7] || '0', 10) || 0, // "5 (lima) hari" → 5
+        tanggalMulai: safeStr(row[8]),
+        tanggalAkhir: safeStr(row[9]),
+        tanggalDitetapkan: resolveTanggalDitetapkan(spdNum, namaPegawai, nomorST, fallbackDate),
+      };
+    })
     .reverse(); // Sort from newest to oldest
 
   // Apply user filter (matching by name and NIP)
@@ -898,7 +1000,15 @@ export async function getSPDRankings(filters: {
   endMonth?: number;
   year?: number;
 } = {}): Promise<SPDRankingsResult> {
-  const rawData = await getSheetData('Rekap SPD', 'A2:M');
+  const [rawData, agendaRawData] = await Promise.all([
+    getSheetData('Rekap SPD', 'A2:M'),
+    getSheetData('Agenda Surat Tugas', 'A3:S').catch((err) => {
+      console.error('[SHEETS] Error loading Agenda Surat Tugas for date mapping in getSPDRankings:', err);
+      return [] as string[][];
+    }),
+  ]);
+
+  const resolveTanggalDitetapkan = createAgendaSTDateResolver(agendaRawData);
 
   const records: RekapSPD[] = rawData
     .filter((row) => {
@@ -906,21 +1016,28 @@ export async function getSPDRankings(filters: {
       if (row[8]?.includes('00 Januari 1900')) return false;
       return true;
     })
-    .map((row) => ({
-      nomorSpd: safeInt(row[0]),
-      nomorPegawai: safeInt(row[1]),
-      nip: '',
-      namaPegawai: safeStr(row[2]),
-      wilayahTugas: safeStr(row[3]),
-      nomorST: safeStr(row[4]),
-      tanggalST: safeStr(row[5]),
-      perihalTugas: safeStr(row[6]),
-      jumlahHariSpd: safeStr(row[7]),
-      jumlahHariSpdNumeric: parseInt(row[7] || '0', 10) || 0,
-      tanggalMulai: safeStr(row[8]),
-      tanggalAkhir: safeStr(row[9]),
-      tanggalDitetapkan: safeStr(row[10]),
-    }))
+    .map((row) => {
+      const spdNum = safeInt(row[0]);
+      const namaPegawai = safeStr(row[2]);
+      const nomorST = safeStr(row[4]);
+      const fallbackDate = safeStr(row[10]);
+
+      return {
+        nomorSpd: spdNum,
+        nomorPegawai: safeInt(row[1]),
+        nip: '',
+        namaPegawai,
+        wilayahTugas: safeStr(row[3]),
+        nomorST,
+        tanggalST: safeStr(row[5]),
+        perihalTugas: safeStr(row[6]),
+        jumlahHariSpd: safeStr(row[7]),
+        jumlahHariSpdNumeric: parseInt(row[7] || '0', 10) || 0,
+        tanggalMulai: safeStr(row[8]),
+        tanggalAkhir: safeStr(row[9]),
+        tanggalDitetapkan: resolveTanggalDitetapkan(spdNum, namaPegawai, nomorST, fallbackDate),
+      };
+    })
     .reverse();
 
   // Extract available years and months from parsed dates

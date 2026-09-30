@@ -143,7 +143,7 @@ export default function MonitoringSPDPage() {
               <th className="px-4 py-3 text-center font-heading font-bold text-[color:var(--color-text-muted)]">Hari</th>
               <th className="px-4 py-3 text-left font-heading font-bold text-[color:var(--color-text-muted)]">Tgl Mulai</th>
               <th className="px-4 py-3 text-left font-heading font-bold text-[color:var(--color-text-muted)]">Tgl Akhir</th>
-              <th className="px-4 py-3 text-left font-heading font-bold text-[color:var(--color-text-muted)]">Tgl Ditetapkan</th>
+              <th className="px-4 py-3 text-left font-heading font-bold text-[color:var(--color-text-muted)]">Tgl ST</th>
             </tr>
           </thead>
           <tbody>
@@ -307,7 +307,7 @@ export default function MonitoringSPDPage() {
                 <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{selectedRecord.jumlahHariSpdNumeric} Hari</p>
               </div>
               <div>
-                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Ditetapkan</span>
+                <span className="block text-[10px] font-bold text-[color:var(--color-text-soft)] uppercase tracking-widest mb-1">Tgl ST</span>
                 <p className="text-xs font-medium">{selectedRecord.tanggalDitetapkan}</p>
               </div>
             </div>
