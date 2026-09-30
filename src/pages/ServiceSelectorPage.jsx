@@ -68,15 +68,20 @@ export default function ServiceSelectorPage() {
     }
   };
 
-  const isSekretaris = activeRole === 'sekretaris';
-  const isKepalaKantor = activeRole === 'kepala_kantor';
-  const isSuperadmin = activeRole === 'superadmin';
-  const isAdmin = activeRole === 'admin' || isSuperadmin || isSekretaris;
+  const userRole = user?.role;
+  const isSekretaris = activeRole === 'sekretaris' || userRole === 'sekretaris';
+  const isKepalaKantor = activeRole === 'kepala_kantor' || userRole === 'kepala_kantor';
+  const isSuperadmin = activeRole === 'superadmin' || userRole === 'superadmin';
+  // Default for sekretaris is admin in the other 3 services, unless activeRole is explicitly 'user' (Mode Pegawai)
+  const isAdmin = activeRole === 'admin' || isSuperadmin || (userRole === 'sekretaris' ? activeRole !== 'user' : activeRole === 'sekretaris');
   const showCalendarService = isKepalaKantor || isSekretaris || isSuperadmin;
 
   const getAccountSettingPath = () => {
     const role = activeRole || user?.role || 'user';
     if (role === 'superadmin') return '/superadmin/settings';
+    if (user?.role === 'sekretaris') {
+      return activeRole === 'user' ? '/user/account' : '/sekretaris/jadwal/settings';
+    }
     if (role === 'sekretaris') return '/sekretaris/jadwal/settings';
     if (role === 'kepala_kantor') return '/kepala-kantor/jadwal/account';
     if (role === 'admin') return '/admin/settings';

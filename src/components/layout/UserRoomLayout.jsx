@@ -156,7 +156,7 @@ export default function UserRoomLayout({ children }) {
                         <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)] group-hover:text-blue-500 transition-colors">{user?.name}</p>
                         <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan}</p>
                       </Link>
-                      {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                      {(user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'sekretaris') && (
                         <button
                           onClick={handleSwitchToAdmin}
                           className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors dark:bg-blue-900/30 dark:hover:bg-blue-800/40"
@@ -164,6 +164,16 @@ export default function UserRoomLayout({ children }) {
                           <CircleUser size={16} />
                           Mode Admin
                         </button>
+                      )}
+                      {user?.role === 'sekretaris' && (
+                        <Link
+                          to="/sekretaris/jadwal/calendar"
+                          onClick={() => setProfileOpen(false)}
+                          className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 transition-colors"
+                        >
+                          <CalendarDays size={16} />
+                          Panel Jadwal Pimpinan
+                        </Link>
                       )}
                       {user?.role === 'superadmin' && (
                         <button

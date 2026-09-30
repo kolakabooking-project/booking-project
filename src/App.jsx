@@ -137,6 +137,10 @@ function ProtectedRoute({ children, role }) {
     if (role === 'kepala_kantor' && activeRole === 'sekretaris') {
       return children;
     }
+    // Sekretaris base role can always access sekretaris routes
+    if (role === 'sekretaris' && user?.role === 'sekretaris') {
+      return children;
+    }
     if (activeRole === 'superadmin') return <Navigate to="/superadmin/dashboard" replace />;
     return <Navigate to="/select-service" replace />;
   }

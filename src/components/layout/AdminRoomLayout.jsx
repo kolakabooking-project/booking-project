@@ -11,7 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
   Menu, LogOut, ChevronLeft, Bell, Home, ChevronRight,
   LayoutDashboard, CalendarCheck, Building2, FileSpreadsheet, MessageCircle,
-  Settings, Plus, Shield, ArrowLeft, Users, Loader2
+  Settings, Plus, Shield, ArrowLeft, Users, Loader2, CalendarDays
 } from 'lucide-react';
 import RoomBookingModalFlow from '../shared/RoomBookingModalFlow';
 import SkipLink from '../ui/SkipLink';
@@ -86,11 +86,11 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
         {(!collapsed || isMobile) && (
           <Link to="/admin/room/settings" onClick={isMobile ? () => setMobileOpen(false) : undefined} className="block rounded-[1.2rem] border border-white/8 bg-white/6 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/10">
             <p className="truncate text-sm font-heading font-bold text-white">{user?.name || 'Administrator'}</p>
-            <p className="mt-1 truncate text-xs font-semibold text-blue-400">{user?.role === 'superadmin' ? 'Superadmin (Admin Mode)' : user?.role === 'admin' ? 'Admin' : 'Pegawai'}</p>
+            <p className="mt-1 truncate text-xs font-semibold text-blue-400">{user?.role === 'superadmin' ? 'Superadmin (Admin Mode)' : user?.role === 'admin' ? 'Admin' : user?.role === 'sekretaris' ? 'Sekretaris (Admin Mode)' : 'Pegawai'}</p>
             <p className="mt-1 truncate text-[10px] uppercase tracking-widest text-white/45">{user?.jabatan || 'Subbagian Umum'}</p>
           </Link>
         )}
-        {user?.role === 'admin' && (
+        {(user?.role === 'admin' || user?.role === 'sekretaris') && (
           <button
             onClick={handleSwitchToUser}
             title={collapsed ? 'Mode Pegawai' : undefined}
@@ -99,6 +99,16 @@ function SidebarContent({ collapsed, isMobile = false, user, handleLogout, setMo
             <Users size={20} className="flex-shrink-0" />
             {(!collapsed || isMobile) && <span>Mode Pegawai</span>}
           </button>
+        )}
+        {user?.role === 'sekretaris' && (
+          <Link
+            to="/sekretaris/jadwal/calendar"
+            title={collapsed ? 'Panel Jadwal Pimpinan' : undefined}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-teal-300 bg-teal-900/30 hover:bg-teal-900/50 hover:text-teal-200 transition-colors ${collapsed && !isMobile ? 'justify-center' : ''}`}
+          >
+            <CalendarDays size={20} className="flex-shrink-0" />
+            {(!collapsed || isMobile) && <span>Panel Jadwal Pimpinan</span>}
+          </Link>
         )}
         {user?.role === 'superadmin' && (
           <button

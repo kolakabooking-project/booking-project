@@ -14,6 +14,7 @@ import {
   Shield, 
   ArrowLeft,
   CircleUser,
+  Users,
   Plus
 } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -58,6 +59,11 @@ export default function SekretarisJadwalLayout({ children }) {
       setIsLoggingOut(false);
       navigate('/login');
     }
+  };
+
+  const handleSwitchToUser = () => {
+    switchRole('user');
+    navigate('/user/dashboard');
   };
 
   const handleSwitchToAdmin = () => {
@@ -151,10 +157,19 @@ export default function SekretarisJadwalLayout({ children }) {
                       <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan || 'Sekretaris Kepala Kantor'}</p>
                     </Link>
 
+                    {/* Mode Pegawai button */}
+                    <button
+                      onClick={handleSwitchToUser}
+                      className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-djp-yellow hover:bg-yellow-400 transition-colors shadow-sm"
+                    >
+                      <Users size={16} />
+                      Mode Pegawai
+                    </button>
+
                     {/* Mode Admin button */}
                     <button
                       onClick={handleSwitchToAdmin}
-                      className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 bg-djp-yellow hover:bg-yellow-400 transition-colors"
+                      className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 dark:text-teal-300 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 transition-colors"
                     >
                       <CircleUser size={16} />
                       Mode Admin
@@ -207,8 +222,15 @@ export default function SekretarisJadwalLayout({ children }) {
               <p className="text-xs text-[color:var(--color-text-soft)]">{user?.jabatan || 'Sekretaris'}</p>
             </Link>
             <button
+              onClick={handleSwitchToUser}
+              className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-900 bg-djp-yellow shadow-sm"
+            >
+              <Users size={16} />
+              Mode Pegawai
+            </button>
+            <button
               onClick={handleSwitchToAdmin}
-              className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-900 bg-djp-yellow"
+              className="flex w-full items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-teal-700 bg-teal-50 dark:text-teal-300 dark:bg-teal-950/40"
             >
               <CircleUser size={16} />
               Mode Admin

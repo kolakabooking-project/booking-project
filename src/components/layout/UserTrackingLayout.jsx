@@ -133,7 +133,7 @@ export default function UserTrackingLayout({ children }) {
                       <p className="truncate text-sm font-heading font-bold text-[color:var(--color-heading)]">{user?.name}</p>
                       <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">{user?.jabatan}</p>
                     </Link>
-                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                    {(user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'sekretaris') && (
                       <button
                         onClick={handleSwitchToAdmin}
                         className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 transition-colors dark:text-emerald-300 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50"
@@ -141,6 +141,16 @@ export default function UserTrackingLayout({ children }) {
                         <CircleUser size={16} />
                         Mode Admin
                       </button>
+                    )}
+                    {user?.role === 'sekretaris' && (
+                      <Link
+                        to="/sekretaris/jadwal/calendar"
+                        onClick={() => setProfileOpen(false)}
+                        className="mt-2 flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-teal-600 bg-teal-500/10 hover:bg-teal-500/20 transition-colors"
+                      >
+                        <CalendarDays size={16} />
+                        Panel Jadwal Pimpinan
+                      </Link>
                     )}
                     {user?.role === 'superadmin' && (
                       <button

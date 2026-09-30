@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
-import { LogOut, ChevronRight, Moon, Sun, Settings, Info, CircleUser, Bell, ArrowLeft, Loader2 } from 'lucide-react';
+import { LogOut, ChevronRight, Moon, Sun, Settings, Info, CircleUser, Bell, ArrowLeft, Loader2, CalendarDays } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import usePushNotification from '../../hooks/usePushNotification';
@@ -166,13 +166,23 @@ export default function AccountPage() {
           </div>
         </div>
 
-        {user?.role === 'admin' && (
+        {(user?.role === 'admin' || user?.role === 'sekretaris') && (
           <button
             onClick={handleSwitchToAdmin}
             className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-djp-blue/30 text-djp-blue bg-djp-yellow/10 font-semibold transition-all hover:bg-djp-yellow hover:text-djp-blue-dark"
           >
             <CircleUser size={18} />
             Masuk Mode Admin
+          </button>
+        )}
+
+        {user?.role === 'sekretaris' && (
+          <button
+            onClick={() => { switchRole('sekretaris'); navigate('/sekretaris/jadwal/calendar'); }}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-3xl border border-teal-500/30 text-teal-700 bg-teal-500/10 font-semibold transition-all hover:bg-teal-500 hover:text-white dark:text-teal-400 dark:hover:bg-teal-500 dark:hover:text-white"
+          >
+            <CalendarDays size={18} />
+            Kembali ke Panel Jadwal Pimpinan
           </button>
         )}
 
