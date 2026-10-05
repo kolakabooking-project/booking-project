@@ -19,7 +19,7 @@ const ADMIN_NIPS = new Set(['958634903', '60097600', '958390856']);
 const DEFAULT_PASSWORD = 'Kolaka2026!';
 
 const employees = [
-  { nip: "60078203", name: "HELMY AFRUL", unit: "KPP Pratama", jabatan: "Kepala Kantor" },
+  { nip: "060084475", name: "ADRIAN MUNANDAR", unit: "KPP Pratama", jabatan: "Kepala Kantor" },
   { nip: "60094596", name: "IDO KRISHNA TITARA", unit: "Seksi Pelayanan", jabatan: "Kepala Seksi" },
   { nip: "60087318", name: "ANDI HAFSAH", unit: "Seksi Penjaminan Kualitas Data", jabatan: "Kepala Seksi" },
   { nip: "60096871", name: "BINTARTO ALIMUDIN", unit: "Seksi Pemeriksaan, Penilaian, dan Penagihan", jabatan: "Kepala Seksi" },

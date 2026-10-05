@@ -886,6 +886,7 @@ export function getSectionFromJabatan(jabatan: string | null | undefined): strin
 const COMMON_STOPWORDS = new Set(['muhammad', 'andi', 'laode', 'abdul', 'putra', 'putri', 'utama', 'seksi', 'pelaksana', 'nur']);
 
 const MASTER_EMPLOYEE_SEKSI: Record<string, string> = {
+  'adrianmunandar': 'Kepala Kantor',
   'helmyafrul': 'Kepala Kantor',
   'idokrishnatitara': 'Seksi Pelayanan',
   'andihafsah': 'Seksi Penjaminan Kualitas Data',

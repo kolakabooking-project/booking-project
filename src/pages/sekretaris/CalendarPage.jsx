@@ -34,6 +34,23 @@ export default function SekretarisCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [calendarData, setCalendarData] = useState({ kegiatan: [], st: [] });
   const [loading, setLoading] = useState(true);
+
+  // Persistent Kepala Kantor state to eliminate flickering across sessions
+  const [cachedKepalaKantor, setCachedKepalaKantor] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bookolaka_kepala_kantor');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.name && !parsed.name.toUpperCase().includes('HELMY')) {
+          return parsed;
+        } else {
+          localStorage.removeItem('bookolaka_kepala_kantor');
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
   const [filterType, setFilterType] = useState('all');
   const [selectedDate, setSelectedDate] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -77,6 +94,12 @@ export default function SekretarisCalendarPage() {
       const res = await jadwalKepalaApi.getCalendar({ month: currentMonth, year: currentYear });
       if (res?.data) {
         setCalendarData(res.data);
+        if (res.data.kepalaKantor?.name && !res.data.kepalaKantor.name.toUpperCase().includes('HELMY')) {
+          setCachedKepalaKantor(res.data.kepalaKantor);
+          try {
+            localStorage.setItem('bookolaka_kepala_kantor', JSON.stringify(res.data.kepalaKantor));
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.error('Failed to fetch calendar:', err);
@@ -85,6 +108,20 @@ export default function SekretarisCalendarPage() {
       setLoading(false);
     }
   };
+
+  // Eagerly fetch Kepala Kantor info if not in cache
+  useEffect(() => {
+    if (!cachedKepalaKantor) {
+      jadwalKepalaApi.getPimpinan().then(res => {
+        if (res?.data?.name && !res.data.name.toUpperCase().includes('HELMY')) {
+          setCachedKepalaKantor(res.data);
+          try {
+            localStorage.setItem('bookolaka_kepala_kantor', JSON.stringify(res.data));
+          } catch (e) {}
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     fetchCalendar();
@@ -302,7 +339,9 @@ export default function SekretarisCalendarPage() {
   };
 
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const kepalaKantor = calendarData?.kepalaKantor || { name: 'HELMY AFRUL', nip: '60078203', jabatan: 'Kepala Kantor' };
+  const activeKepala = (calendarData?.kepalaKantor && !calendarData.kepalaKantor.name?.toUpperCase().includes('HELMY'))
+    ? calendarData.kepalaKantor
+    : cachedKepalaKantor;
 
   return (
     <div className="space-y-6">
@@ -321,24 +360,39 @@ export default function SekretarisCalendarPage() {
             </div>
 
             {/* Informasi Kepala Kantor */}
-            <div className="inline-flex items-center gap-3.5 px-4 py-2.5 rounded-2xl border border-teal-500/25 bg-teal-500/5 dark:bg-teal-500/10 backdrop-blur-sm shadow-sm max-w-full">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 text-white flex items-center justify-center font-heading font-bold text-sm shadow-sm flex-shrink-0">
-                {getInitials(kepalaKantor?.name || 'HELMY AFRUL')}
-              </div>
-              <div className="text-left min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                    {kepalaKantor?.jabatan || 'Kepala Kantor'}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
-                    NIP: {kepalaKantor?.nip || '60078203'}
-                  </span>
+            {!activeKepala ? (
+              <div className="inline-flex items-center gap-3.5 px-4 py-2.5 rounded-2xl border border-teal-500/20 bg-teal-500/5 dark:bg-teal-500/10 backdrop-blur-sm shadow-sm max-w-full animate-pulse">
+                <div className="w-11 h-11 rounded-2xl bg-teal-500/20 flex-shrink-0" />
+                <div className="space-y-1.5 min-w-[140px]">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-24 rounded bg-teal-500/20" />
+                    <div className="h-3 w-16 rounded bg-teal-500/15" />
+                  </div>
+                  <div className="h-4 w-36 rounded bg-teal-500/25" />
                 </div>
-                <p className="text-sm sm:text-base font-heading font-bold text-[color:var(--color-heading)] truncate">
-                  {kepalaKantor?.name || 'HELMY AFRUL'}
-                </p>
               </div>
-            </div>
+            ) : (
+              <div className="inline-flex items-center gap-3.5 px-4 py-2.5 rounded-2xl border border-teal-500/25 bg-teal-500/5 dark:bg-teal-500/10 backdrop-blur-sm shadow-sm max-w-full">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 text-white flex items-center justify-center font-heading font-bold text-sm shadow-sm flex-shrink-0">
+                  {getInitials(activeKepala.name)}
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                      {activeKepala.jabatan || 'Kepala Kantor'}
+                    </span>
+                    {activeKepala.nip && activeKepala.nip !== '-' && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
+                        NIP: {activeKepala.nip}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm sm:text-base font-heading font-bold text-[color:var(--color-heading)] truncate">
+                    {activeKepala.name}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

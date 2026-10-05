@@ -553,9 +553,9 @@ export async function getKepalaKantorInfo() {
   if (!kepala) {
     return {
       id: 'default-kepala',
-      name: 'HELMY AFRUL',
-      nip: '60078203',
-      nipPanjang: '197504151996021001',
+      name: 'Kepala Kantor',
+      nip: '-',
+      nipPanjang: '-',
       jabatan: 'Kepala Kantor',
     };
   }
