@@ -204,11 +204,23 @@ export default function SekretarisCalendarPage() {
     return { kegiatan: keg, st: s };
   }, [selectedDate, calendarData]);
 
+  // Dapatkan format tanggal hari ini (YYYY-MM-DD) berdasarkan waktu lokal
+  const getTodayDateStr = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   // Open Create Kegiatan
-  const handleOpenCreateKegiatan = (defaultDate = '') => {
+  // Jika dipanggil dari klik kalender/modal tanggal (ada targetDate), pakai tanggal tersebut.
+  // Jika dipanggil dari button buat kegiatan di atas, langsung ke tanggal hari ini.
+  const handleOpenCreateKegiatan = (targetDate = null) => {
     setEditingKegiatan(null);
+    const initialDate = targetDate || getTodayDateStr();
     setKegiatanForm({
-      tanggal: defaultDate || selectedDate || `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+      tanggal: initialDate,
       waktuMulai: '09:00',
       waktuSelesai: '',
       agenda: '',
@@ -252,12 +264,15 @@ export default function SekretarisCalendarPage() {
   };
 
   // Open Create ST
-  const handleOpenCreateST = (defaultDate = '') => {
+  // Jika dipanggil dari klik kalender/modal tanggal (ada targetDate), pakai tanggal tersebut.
+  // Jika dipanggil dari button buat ST di atas, langsung ke tanggal hari ini.
+  const handleOpenCreateST = (targetDate = null) => {
     setEditingST(null);
+    const initialDate = targetDate || getTodayDateStr();
     setStForm({
       tentang: '',
       tempat: '',
-      tanggal: defaultDate || selectedDate || `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+      tanggal: initialDate,
       tanggalSelesai: '',
     });
     setStModalOpen(true);
@@ -528,6 +543,10 @@ export default function SekretarisCalendarPage() {
                 <div
                   key={day.dateStr}
                   onClick={() => handleDayClick(day.dateStr)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenCreateKegiatan(day.dateStr);
+                  }}
                   className={`min-h-[120px] sm:min-h-[145px] p-2 sm:p-2.5 transition-all cursor-pointer flex flex-col justify-between group relative ${
                     hasST
                       ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/40 hover:bg-amber-100/60 dark:hover:bg-amber-950/30'
@@ -538,6 +557,7 @@ export default function SekretarisCalendarPage() {
                     isSelected ? 'ring-2 ring-teal-500 ring-inset' : ''
                   }`}
                   style={{ borderColor: 'var(--color-border)' }}
+                  title="Klik untuk lihat agenda, klik ganda untuk tambah kegiatan"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
@@ -552,15 +572,28 @@ export default function SekretarisCalendarPage() {
                       {day.dayNumber}
                     </span>
 
-                    {totalEventsCount > 0 && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
-                        hasST
-                          ? 'bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300'
-                          : 'bg-gray-100 dark:bg-gray-800 text-[color:var(--color-text-soft)]'
-                      }`}>
-                        {totalEventsCount}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDayClick(day.dateStr);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/50 text-teal-600 dark:text-teal-400 transition-all hidden sm:inline-flex"
+                        title="Tambah atau kelola agenda tanggal ini"
+                      >
+                        <Plus size={13} />
+                      </button>
+                      {totalEventsCount > 0 && (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                          hasST
+                            ? 'bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300'
+                            : 'bg-gray-100 dark:bg-gray-800 text-[color:var(--color-text-soft)]'
+                        }`}>
+                          {totalEventsCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex-1 space-y-1 overflow-hidden">
@@ -1108,6 +1141,7 @@ export default function SekretarisCalendarPage() {
                   <input
                     type="date"
                     value={stForm.tanggalSelesai}
+                    min={stForm.tanggal || undefined}
                     onChange={(e) => setStForm({ ...stForm, tanggalSelesai: e.target.value })}
                     className="form-control"
                   />
