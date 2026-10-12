@@ -90,9 +90,15 @@ export default function FleetPage() {
           <FormInput label="Odometer (KM)" id="odometer" type="number" value={form.odometer || ''} onChange={(e) => handleFormChange('odometer', e.target.value ? parseInt(e.target.value) : '')} />
           <FormInput label="Jadwal Pajak" id="jadwalPajak" type="date" value={form.jadwalPajak || ''} onChange={(e) => handleFormChange('jadwalPajak', e.target.value)} />
           <FormInput label="Jadwal Servis Berikutnya" id="jadwalServis" type="date" value={form.jadwalServis || ''} onChange={(e) => handleFormChange('jadwalServis', e.target.value)} />
-          <FormInput label="Status" id="status" type="select" value={form.status === VEHICLE_STATUS.IN_USE ? VEHICLE_STATUS.AVAILABLE : form.status} onChange={(e) => handleFormChange('status', e.target.value)}>
+          <FormInput 
+            label="Status" 
+            id="status" 
+            type="select" 
+            value={form.status === VEHICLE_STATUS.IN_USE ? VEHICLE_STATUS.AVAILABLE : (form.status === 'Dalam Perawatan' ? VEHICLE_STATUS.UNAVAILABLE : form.status)} 
+            onChange={(e) => handleFormChange('status', e.target.value)}
+          >
             <option value={VEHICLE_STATUS.AVAILABLE}>{VEHICLE_STATUS.AVAILABLE}</option>
-            <option value={VEHICLE_STATUS.MAINTENANCE}>{VEHICLE_STATUS.MAINTENANCE}</option>
+            <option value={VEHICLE_STATUS.UNAVAILABLE}>{VEHICLE_STATUS.UNAVAILABLE}</option>
           </FormInput>
         </div>
         <div className="mt-4">

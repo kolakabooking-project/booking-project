@@ -30,7 +30,7 @@ function VehicleSlot({ vehicle, variant = 'available', booking, onClick }) {
       <div className="fcc-tooltip">
         <div className="fcc-tooltip-title">{vehicle.merek}</div>
         <div className="fcc-tooltip-sub">{vehicle.platNomor} • {vehicle.warna || vehicle.tipe}</div>
-        {variant === 'maintenance' && <div className="fcc-tooltip-sub" style={{ color: '#f59e0b' }}>🔧 Dalam Perawatan</div>}
+        {variant === 'maintenance' && <div className="fcc-tooltip-sub" style={{ color: '#f59e0b' }}>🔧 Tidak Tersedia</div>}
         {booking && (
           <>
             <div className="fcc-tooltip-sub" style={{ marginTop: '3px' }}>👤 {booking.userName}</div>
@@ -157,8 +157,9 @@ export default function FleetCommandCenter() {
     }
   };
 
-  const availableCount = garageVehicles.filter((v) => v.status !== VEHICLE_STATUS.MAINTENANCE).length;
-  const maintenanceCount = garageVehicles.filter((v) => v.status === VEHICLE_STATUS.MAINTENANCE).length;
+  const isVehicleUnavailable = (v) => v.status === VEHICLE_STATUS.UNAVAILABLE || v.status === 'Dalam Perawatan';
+  const availableCount = garageVehicles.filter((v) => !isVehicleUnavailable(v)).length;
+  const maintenanceCount = garageVehicles.filter(isVehicleUnavailable).length;
   const pendingCount = pendingWithVehicle.length + pendingWithoutVehicle.length;
   const missionCount = missionVehicles.length;
 
@@ -220,7 +221,7 @@ export default function FleetCommandCenter() {
                     </div>
                   ) : (
                     garageVehicles.map((v) => (
-                      <VehicleSlot key={v.id} vehicle={v} variant={v.status === VEHICLE_STATUS.MAINTENANCE ? 'maintenance' : 'available'} />
+                      <VehicleSlot key={v.id} vehicle={v} variant={isVehicleUnavailable(v) ? 'maintenance' : 'available'} />
                     ))
                   )}
                 </div>
@@ -230,7 +231,7 @@ export default function FleetCommandCenter() {
           <div className="fcc-zone-footer">
             <span>Tersedia:</span>
             <span className="fcc-zone-footer-num">{availableCount}</span>
-            {maintenanceCount > 0 && <span style={{ fontSize: '0.625rem', opacity: 0.6, marginLeft: '0.25rem' }}>({maintenanceCount} perawatan)</span>}
+            {maintenanceCount > 0 && <span style={{ fontSize: '0.625rem', opacity: 0.6, marginLeft: '0.25rem' }}>({maintenanceCount} tidak tersedia)</span>}
           </div>
         </div>
 

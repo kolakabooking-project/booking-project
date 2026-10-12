@@ -260,10 +260,10 @@ export default function FleetTimetableBoard() {
 
                   {/* ACTIVE TIMELINE BARS */}
                   <div className="ftb-bars-container">
-                    {v.status === 'Dalam Perawatan' ? (
+                    {v.status === 'Tidak Tersedia' || v.status === 'Dalam Perawatan' ? (
                       <div className="ftb-maintenance-bar">
                         <Wrench size={12} style={{ marginRight: '6px' }} />
-                        Dalam Perawatan (Bengkel KPP)
+                        Tidak Tersedia
                       </div>
                     ) : (
                       v.dayBookings.map(({ left, width, booking }) => (

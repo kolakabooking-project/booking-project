@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
           allowPastClick={true} 
           getBookingsForDate={getBookingsForDate}
           bookings={bookings}
-          totalResources={vehicles.filter(v => v.status !== 'Dalam Perawatan').length}
+          totalResources={vehicles.filter(v => v.status !== 'Tidak Tersedia' && v.status !== 'Dalam Perawatan').length}
         />
         <Card className="p-6">
           <span className="page-kicker">Insight Hari Ini</span>
