@@ -29,7 +29,8 @@ export const BOOKING_STATUS = {
 export const VEHICLE_STATUS = {
   AVAILABLE: 'Tersedia',
   IN_USE: 'Sedang Dipakai',
-  MAINTENANCE: 'Dalam Perawatan',
+  UNAVAILABLE: 'Tidak Tersedia',
+  MAINTENANCE: 'Tidak Tersedia',
 };
 
 export const DRIVER_STATUS = {
@@ -62,7 +63,8 @@ export const STATUS_COLORS = {
   [BOOKING_STATUS.CANCELLED]: { bg: 'bg-gray-100 dark:bg-gray-700/30', text: 'text-black dark:text-white', dot: 'bg-black dark:bg-white' },
   [VEHICLE_STATUS.AVAILABLE]: { bg: 'bg-success-light dark:bg-success/15', text: 'text-success', dot: 'bg-success' },
   [VEHICLE_STATUS.IN_USE]: { bg: 'bg-info-light dark:bg-info/15', text: 'text-info', dot: 'bg-info' },
-  [VEHICLE_STATUS.MAINTENANCE]: { bg: 'bg-warning-light dark:bg-warning/15', text: 'text-warning', dot: 'bg-warning' },
+  [VEHICLE_STATUS.UNAVAILABLE]: { bg: 'bg-warning-light dark:bg-warning/15', text: 'text-warning', dot: 'bg-warning' },
+  'Dalam Perawatan': { bg: 'bg-warning-light dark:bg-warning/15', text: 'text-warning', dot: 'bg-warning' },
   [DRIVER_STATUS.AVAILABLE]: { bg: 'bg-success-light dark:bg-success/15', text: 'text-success', dot: 'bg-success' },
   [DRIVER_STATUS.ON_DUTY]: { bg: 'bg-info-light dark:bg-info/15', text: 'text-info', dot: 'bg-info' },
   [DRIVER_STATUS.OFF]: { bg: 'bg-gray-100 dark:bg-gray-700/30', text: 'text-black dark:text-white', dot: 'bg-black dark:bg-white' },

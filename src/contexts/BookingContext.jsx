@@ -59,7 +59,13 @@ export function BookingProvider({ children }) {
 
   // Expose arrays or default to empty lists
   const bookings = useMemo(() => bookingsQuery.data || [], [bookingsQuery.data]);
-  const vehicles = useMemo(() => vehiclesQuery.data || [], [vehiclesQuery.data]);
+  const vehicles = useMemo(() => {
+    const list = vehiclesQuery.data || [];
+    return list.map((v) => ({
+      ...v,
+      status: v.status === 'Dalam Perawatan' ? 'Tidak Tersedia' : v.status,
+    }));
+  }, [vehiclesQuery.data]);
   const drivers = useMemo(() => driversQuery.data || [], [driversQuery.data]);
 
   const isLoading = bookingsQuery.isLoading || vehiclesQuery.isLoading || driversQuery.isLoading;
@@ -298,7 +304,7 @@ export function BookingProvider({ children }) {
       // karena 'Sedang Dipakai' hanya berarti dipakai SEKARANG — bukan berarti
       // tidak tersedia di waktu lain. Overlap waktu sudah ditangani oleh bookedVehicleIds.
       return vehicles.filter(
-        (v) => v.status !== 'Dalam Perawatan' && !bookedVehicleIds.includes(v.id)
+        (v) => v.status !== 'Tidak Tersedia' && v.status !== 'Dalam Perawatan' && !bookedVehicleIds.includes(v.id)
       );
     },
     [bookings, vehicles]
