@@ -1,7 +1,7 @@
 import { db } from '../config/db.js';
 import { vehicle, booking } from '../db/schema.js';
 import { eq, and, not, or, lte, gte, lt, gt, inArray, isNull, sql } from 'drizzle-orm';
-import { BOOKING_STATUS, VEHICLE_STATUS, TERMINAL_BOOKING_STATUSES } from '../utils/constants.js';
+import { BOOKING_STATUS, VEHICLE_STATUS, TERMINAL_BOOKING_STATUSES, LEGACY_MAINTENANCE_STATUS } from '../utils/constants.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
 type VehicleInsert = typeof vehicle.$inferInsert;
@@ -48,7 +48,7 @@ export async function getAllVehicles() {
 
   return allVehicles.map((v) => {
     const { isInUse, ...vehicleData } = v;
-    const isUnavailableStatus = vehicleData.status === VEHICLE_STATUS.UNAVAILABLE || vehicleData.status === 'Dalam Perawatan';
+    const isUnavailableStatus = vehicleData.status === VEHICLE_STATUS.UNAVAILABLE || vehicleData.status === LEGACY_MAINTENANCE_STATUS;
     if (isUnavailableStatus) return vehicleData;
     if (isInUse) return { ...vehicleData, status: VEHICLE_STATUS.IN_USE };
     return { ...vehicleData, status: VEHICLE_STATUS.AVAILABLE };
@@ -101,7 +101,7 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
     .from(vehicle)
     .where(
       and(
-        not(inArray(vehicle.status, [VEHICLE_STATUS.UNAVAILABLE, 'Dalam Perawatan'])),
+        not(inArray(vehicle.status, [VEHICLE_STATUS.UNAVAILABLE, LEGACY_MAINTENANCE_STATUS])),
         isNull(vehicle.deletedAt)
       )
     );
