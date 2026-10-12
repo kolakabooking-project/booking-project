@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const isKepalaKantor = activeRole === 'kepala_kantor' || user?.role === 'kepala_kantor';
-  const availableToday = vehicles.filter((v) => v.status === VEHICLE_STATUS.AVAILABLE || v.status === 'Tersedia').length;
+  const availableToday = vehicles.filter((v) => v.status === VEHICLE_STATUS.AVAILABLE).length;
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
@@ -84,7 +84,7 @@ export default function DashboardPage() {
             allowPastClick={true}
             getBookingsForDate={getBookingsForDate}
             bookings={bookings}
-            totalResources={vehicles.filter(v => v.status !== 'Tidak Tersedia' && v.status !== 'Dalam Perawatan').length}
+            totalResources={vehicles.filter(v => v.status !== VEHICLE_STATUS.UNAVAILABLE && v.status !== 'Dalam Perawatan').length}
           />
         </div>
       </div>

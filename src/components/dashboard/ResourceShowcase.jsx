@@ -41,7 +41,8 @@ export default function ResourceShowcase({
     bookingItemClassName = "vs-booking-item",
     renderBookingItem,
     emptyTimelineClassName = "vs-empty-timeline",
-    emptyTimelineText = "Tersedia sepanjang hari."
+    emptyTimelineText = "Tersedia sepanjang hari.",
+    maintenanceLabel = "Tidak Tersedia"
   } = config;
 
   const [selectedResource, setSelectedResource] = useState(null);
@@ -94,7 +95,7 @@ export default function ResourceShowcase({
 
   const getStatusLabel = (r) => {
     if (activeResourceIds.has(getResourceId(r))) return 'Dipakai';
-    if (isMaintenance(r)) return config.maintenanceLabel || 'Tidak Tersedia';
+    if (isMaintenance(r)) return maintenanceLabel;
     return 'Tersedia';
   };
 
