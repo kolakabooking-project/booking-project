@@ -48,7 +48,8 @@ export async function getAllVehicles() {
 
   return allVehicles.map((v) => {
     const { isInUse, ...vehicleData } = v;
-    if (vehicleData.status === VEHICLE_STATUS.MAINTENANCE) return vehicleData;
+    const isUnavailableStatus = vehicleData.status === VEHICLE_STATUS.UNAVAILABLE || vehicleData.status === 'Dalam Perawatan';
+    if (isUnavailableStatus) return vehicleData;
     if (isInUse) return { ...vehicleData, status: VEHICLE_STATUS.IN_USE };
     return { ...vehicleData, status: VEHICLE_STATUS.AVAILABLE };
   });
@@ -100,7 +101,7 @@ export async function getAvailableVehicles(startTime: Date, endTime: Date) {
     .from(vehicle)
     .where(
       and(
-        not(eq(vehicle.status, VEHICLE_STATUS.MAINTENANCE)),
+        not(inArray(vehicle.status, [VEHICLE_STATUS.UNAVAILABLE, 'Dalam Perawatan'])),
         isNull(vehicle.deletedAt)
       )
     );

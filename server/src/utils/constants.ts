@@ -13,8 +13,11 @@ export const BOOKING_STATUS = {
 export const VEHICLE_STATUS = {
   AVAILABLE: 'Tersedia',
   IN_USE: 'Sedang Dipakai',
-  MAINTENANCE: 'Dalam Perawatan',
+  UNAVAILABLE: 'Tidak Tersedia',
+  MAINTENANCE: 'Tidak Tersedia',
 } as const;
+
+export const LEGACY_MAINTENANCE_STATUS = 'Dalam Perawatan' as const;
 
 // ─── Driver Status ───
 export const DRIVER_STATUS = {

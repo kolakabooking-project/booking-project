@@ -79,7 +79,7 @@ export const vehicle = pgTable('vehicle', {
   tipe: text('tipe', { enum: ['Mobil', 'Motor'] }).notNull().default('Mobil'),
   tahun: integer('tahun').notNull(),
   kapasitas: integer('kapasitas').notNull().default(7),
-  status: text('status', { enum: ['Tersedia', 'Dalam Perawatan'] })
+  status: text('status', { enum: ['Tersedia', 'Tidak Tersedia', 'Dalam Perawatan'] })
     .notNull()
     .default('Tersedia'),
   odometer: integer('odometer').notNull().default(0),
