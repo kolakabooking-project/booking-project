@@ -328,7 +328,7 @@ export default function FleetTimetableBoard() {
         </div>
         <div className="ftb-legend-item">
           <div className="ftb-legend-color ftb-legend-color--maintenance" />
-          <span>Perawatan Armada</span>
+          <span>Tidak Tersedia</span>
         </div>
       </div>
           </motion.div>
