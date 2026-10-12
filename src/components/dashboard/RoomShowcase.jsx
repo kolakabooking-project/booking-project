@@ -19,6 +19,7 @@ export default function RoomShowcase({ onBookRoom }) {
     getBookingResourceId: (b) => b.roomId,
     getResourceName: (r) => r.name,
     isMaintenance: (r) => r.status === 'Dalam Perawatan',
+    maintenanceLabel: 'Perawatan',
     isBookingOngoing: (b) => b.status === 'Berlangsung',
     isBookingApproved: (b) => b.status === 'Disetujui',
     isBookingCompletedOrCancelled: (b) => 

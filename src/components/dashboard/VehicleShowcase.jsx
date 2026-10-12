@@ -21,7 +21,8 @@ export default function VehicleShowcase() {
     getResourceId: (v) => v.id,
     getBookingResourceId: (b) => b.vehicleId,
     getResourceName: (v) => v.merek,
-    isMaintenance: (v) => v.status === VEHICLE_STATUS.MAINTENANCE,
+    isMaintenance: (v) => v.status === VEHICLE_STATUS.UNAVAILABLE || v.status === 'Tidak Tersedia' || v.status === 'Dalam Perawatan',
+    maintenanceLabel: 'Tidak Tersedia',
     isBookingOngoing: (b) => b.status === BOOKING_STATUS.ONGOING,
     isBookingApproved: (b) => b.status === BOOKING_STATUS.APPROVED,
     isBookingCompletedOrCancelled: (b) => 

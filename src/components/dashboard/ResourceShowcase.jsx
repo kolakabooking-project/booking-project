@@ -94,7 +94,7 @@ export default function ResourceShowcase({
 
   const getStatusLabel = (r) => {
     if (activeResourceIds.has(getResourceId(r))) return 'Dipakai';
-    if (isMaintenance(r)) return 'Perawatan';
+    if (isMaintenance(r)) return config.maintenanceLabel || 'Tidak Tersedia';
     return 'Tersedia';
   };
 
