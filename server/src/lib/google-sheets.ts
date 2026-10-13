@@ -20,7 +20,7 @@ function getRedis(): Redis | null {
 
 // ─── Fallback In-Memory Cache (for local dev without Redis) ───
 interface CacheEntry {
-  data: string[][];
+  data: any;
   fetchedAt: number;
 }
 
@@ -137,13 +137,75 @@ export async function getSheetData(sheetName: string, range?: string): Promise<s
   }
 }
 
+const COMPUTED_CACHE_PREFIX = 'computed:sheets:';
+
 /**
- * Invalidate cached sheet data.
+ * Retrieve cached computed result from Redis (or fallback memory cache).
+ */
+export async function getComputedCache<T>(key: string): Promise<T | null> {
+  const fullKey = `${COMPUTED_CACHE_PREFIX}${key}`;
+  const redisClient = getRedis();
+
+  if (redisClient) {
+    try {
+      const cached = await redisClient.get<T>(fullKey);
+      if (cached !== null && cached !== undefined) return cached;
+    } catch (err: any) {
+      console.warn('[Cache] Redis read computed error:', err.message);
+    }
+  }
+
+  const memCached = memoryCache.get(fullKey);
+  if (memCached) {
+    return memCached.data as unknown as T;
+  }
+
+  return null;
+}
+
+/**
+ * Store computed result in Redis (with TTL) and memory cache.
+ */
+export async function setComputedCache<T>(key: string, data: T, ttlSeconds = 1800): Promise<void> {
+  const fullKey = `${COMPUTED_CACHE_PREFIX}${key}`;
+  const redisClient = getRedis();
+
+  if (redisClient) {
+    try {
+      await redisClient.set(fullKey, data, { ex: ttlSeconds });
+    } catch (err: any) {
+      console.warn('[Cache] Redis write computed error:', err.message);
+    }
+  }
+
+  memoryCache.set(fullKey, { data, fetchedAt: Date.now() });
+}
+
+/**
+ * Invalidate cached sheet data and all computed results.
  * Clears both Redis and in-memory caches.
  * @param sheetName - Optional: clear only a specific sheet's cache. If omitted, clears all.
  */
 export async function invalidateCache(sheetName?: string): Promise<void> {
   const redisClient = getRedis();
+
+  // Always invalidate computed caches whenever raw data changes
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(COMPUTED_CACHE_PREFIX)) {
+      memoryCache.delete(key);
+    }
+  }
+
+  if (redisClient) {
+    try {
+      const computedKeys = await scanKeys(redisClient, `${COMPUTED_CACHE_PREFIX}*`);
+      if (computedKeys.length > 0) {
+        await redisClient.del(...computedKeys);
+      }
+    } catch (err: any) {
+      console.warn('[Cache] Redis computed invalidation error:', err.message);
+    }
+  }
 
   if (sheetName) {
     // Clear specific sheet from memory cache

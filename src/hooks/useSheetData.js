@@ -12,6 +12,8 @@ function useDebounce(value, delay = 300) {
   return debounced;
 }
 
+const SHEETS_STALE_TIME = 15 * 60 * 1000; // 15m
+
 // ─── Agenda Surat Tugas ───
 export function useAgendaST(params = {}) {
   const debouncedSearch = useDebounce(params.search);
@@ -19,7 +21,8 @@ export function useAgendaST(params = {}) {
   return useQuery({
     queryKey: ['agenda-st', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getAgendaST({ ...params, search: debouncedSearch }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 }
@@ -31,7 +34,8 @@ export function useRekapSPD(params = {}) {
   return useQuery({
     queryKey: ['rekap-spd', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getRekapSPD({ ...params, search: debouncedSearch }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 }
@@ -42,7 +46,8 @@ export function useSPDSummary() {
   return useQuery({
     queryKey: ['spd-summary', activeRole],
     queryFn: () => sheetsApi.getSPDSummary(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -52,7 +57,8 @@ export function useTrackingDashboard() {
   return useQuery({
     queryKey: ['tracking-dashboard', activeRole],
     queryFn: () => sheetsApi.getTrackingDashboard(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -62,7 +68,8 @@ export function useJadwalJumat(params = {}) {
   return useQuery({
     queryKey: ['jadwal-jumat', { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getJadwalJumat({ ...params, search: debouncedSearch }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 }
@@ -74,7 +81,8 @@ export function usePegawaiCuti(params = {}) {
   return useQuery({
     queryKey: ['pegawai-cuti', activeRole, { ...params, search: debouncedSearch }],
     queryFn: () => sheetsApi.getPegawaiCuti({ ...params, search: debouncedSearch }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 }
@@ -84,7 +92,8 @@ export function useSPDRankings(params = {}) {
   return useQuery({
     queryKey: ['spd-rankings', params],
     queryFn: () => sheetsApi.getSPDRankings(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: SHEETS_STALE_TIME,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 }

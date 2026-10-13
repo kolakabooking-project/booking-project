@@ -27,6 +27,7 @@ router.get('/agenda-st', async (req, res) => {
       limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),
     });
 
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching agenda ST:', err.message);
@@ -51,6 +52,7 @@ router.get('/rekap-spd', async (req, res) => {
       limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),
     });
 
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching rekap SPD:', err.message);
@@ -69,6 +71,7 @@ router.get('/spd-summary', async (req, res) => {
     const result = await sheetsService.getSPDSummary(
       isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
     );
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching SPD summary:', err.message);
@@ -87,6 +90,7 @@ router.get('/dashboard', async (req, res) => {
     const result = await sheetsService.getTrackingDashboard(
       isAdmin ? undefined : { name: user.name, nip: user.nip, nipPanjang: user.nipPanjang }
     );
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching dashboard:', err.message);
@@ -106,6 +110,7 @@ router.get('/jadwal-jumat', async (req, res) => {
       limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),
     });
 
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching Jadwal Jumat:', err.message);
@@ -129,6 +134,7 @@ router.get('/pegawai-cuti', async (req, res) => {
       limit: Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20)),
     });
 
+    res.setHeader('Cache-Control', 'private, max-age=60, stale-while-revalidate=120');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching Pegawai Cuti:', err.message);
@@ -148,6 +154,7 @@ router.get('/spd-rankings', roleGuard('admin'), async (req, res) => {
       year: year ? parseInt(year as string, 10) : undefined,
     });
 
+    res.setHeader('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
     res.json(result);
   } catch (err: any) {
     console.error('[SHEETS] Error fetching SPD rankings:', err.message);
@@ -170,6 +177,7 @@ router.post('/cache/refresh', roleGuard('admin'), async (req, res) => {
       ipAddress: getIp(req),
     });
 
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ message: 'Semua cache data spreadsheet berhasil di-refresh' });
   } catch (err: any) {
     console.error('[SHEETS] Error refreshing cache:', err.message);

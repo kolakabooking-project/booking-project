@@ -1,4 +1,4 @@
-import { getSheetData, invalidateCache } from '../lib/google-sheets.js';
+import { getSheetData, invalidateCache, getComputedCache, setComputedCache } from '../lib/google-sheets.js';
 import { db } from '../config/db.js';
 import { user } from '../db/schema.js';
 export { invalidateCache };
@@ -120,13 +120,23 @@ function safeStr(value: string | undefined): string {
  * 2. Removes common Indonesian prefixes (e.g. Drs., Dra., Ir., H., Hj.)
  * 3. Removes all non-alphanumeric characters and converts to lowercase.
  */
+const cleanNameCache = new Map<string, string>();
+
 export function cleanNameForMatch(name: string): string {
   if (!name) return '';
+  if (cleanNameCache.has(name)) {
+    return cleanNameCache.get(name)!;
+  }
   let base = name.split(',')[0].trim();
   base = base.replace(/^(drs\.|dra\.|ir\.|h\.|hj\.)\s+/i, '');
   base = base.toLowerCase().replace(/[^a-z0-9]/g, '');
   // Normalize known spelling variations across sheets and DB
   base = base.replace(/iswahyudi/g, 'iswayudi');
+
+  if (cleanNameCache.size > 2000) {
+    cleanNameCache.clear();
+  }
+  cleanNameCache.set(name, base);
   return base;
 }
 
@@ -276,10 +286,18 @@ const MONTHS_ID: Record<string, number> = {
   september: 8, oktober: 9, november: 10, desember: 11,
 };
 
+const dateParseCache = new Map<string, Date | null>();
+
 function parseIndonesianDate(dateStr: string): Date | null {
   if (!dateStr) return null;
   const str = dateStr.trim();
+  if (dateParseCache.has(str)) {
+    const cached = dateParseCache.get(str);
+    return cached ? new Date(cached.getTime()) : null;
+  }
   
+  let result: Date | null = null;
+
   // Try Indonesian format: "05 Januari 2026"
   const parts = str.toLowerCase().split(/\s+/);
   if (parts.length >= 3) {
@@ -287,17 +305,23 @@ function parseIndonesianDate(dateStr: string): Date | null {
     const month = MONTHS_ID[parts[1]];
     const year = parseInt(parts[2], 10);
     if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-      return new Date(year, month, day);
+      result = new Date(year, month, day);
     }
   }
 
   // Try standard JS format: "4/19/2026", "2026-06-03", etc
-  const parsed = new Date(str);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
+  if (!result) {
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      result = parsed;
+    }
   }
 
-  return null;
+  if (dateParseCache.size > 2000) {
+    dateParseCache.clear();
+  }
+  dateParseCache.set(str, result);
+  return result ? new Date(result.getTime()) : null;
 }
 
 function isCurrentMonth(dateStr: string): boolean {
@@ -484,6 +508,13 @@ export async function getRekapSPD(filters: SheetFilters = {}): Promise<Paginated
  */
 export async function getSPDSummary(user?: UserIdentifier | string): Promise<SPDSummary> {
   const targetUser = typeof user === 'string' ? { name: user } : user;
+  const userKey = targetUser ? (targetUser.nip || targetUser.name || 'user') : 'all';
+  const cacheKey = `spd-summary:${userKey}`;
+
+  const cached = await getComputedCache<SPDSummary>(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
   // Fetch raw data directly — skip transform + pagination overhead
   const [rawRekap, rawAgenda] = await Promise.all([
@@ -516,13 +547,16 @@ export async function getSPDSummary(user?: UserIdentifier | string): Promise<SPD
     if (row[17]?.trim() === 'SUDAH') sikkaSelesai++;
   }
 
-  return {
+  const result: SPDSummary = {
     totalSpd,
     totalHariPerjalanan: totalHari,
     jumlahWilayah: wilayahSet.size,
     inputSikkaSelesai: sikkaSelesai,
     totalSpdBulanIni: spdBulanIni,
   };
+
+  await setComputedCache(cacheKey, result, 900); // 15 mins
+  return result;
 }
 
 /**
@@ -784,6 +818,13 @@ export async function getTrackingDashboard(user?: UserIdentifier | string): Prom
   activeCutiToday: ActiveCuti[];
 }> {
   const targetUser = typeof user === 'string' ? { name: user } : user;
+  const userKey = targetUser ? (targetUser.nip || targetUser.name || 'user') : 'all';
+  const cacheKey = `tracking-dashboard:${userKey}`;
+
+  const cached = await getComputedCache<any>(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
   const [summary, recentSPDResult, recentPerjadinResult, activeSTToday, activeCutiToday] = await Promise.all([
     getSPDSummary(targetUser),
@@ -793,13 +834,16 @@ export async function getTrackingDashboard(user?: UserIdentifier | string): Prom
     getActiveCutiToday(), // Always fetches all users
   ]);
 
-  return {
+  const result = {
     summary,
     recentSPD: recentSPDResult.data,
     recentPerjadin: recentPerjadinResult.data,
     activeSTToday,
     activeCutiToday,
   };
+
+  await setComputedCache(cacheKey, result, 900); // 15 mins
+  return result;
 }
 
 export interface EmployeeSPDRanking {
@@ -1001,6 +1045,12 @@ export async function getSPDRankings(filters: {
   endMonth?: number;
   year?: number;
 } = {}): Promise<SPDRankingsResult> {
+  const cacheKey = `spd-rankings:${filters.startMonth || ''}:${filters.endMonth || ''}:${filters.year || ''}`;
+  const cached = await getComputedCache<SPDRankingsResult>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const [rawData, agendaRawData] = await Promise.all([
     getSheetData('Rekap SPD', 'A2:M'),
     getSheetData('Agenda Surat Tugas', 'A3:S').catch((err) => {
@@ -1290,7 +1340,7 @@ export async function getSPDRankings(filters: {
     };
   });
 
-  return {
+  const result = {
     rankings,
     sectionRankings,
     totalSpdInPeriod,
@@ -1298,6 +1348,9 @@ export async function getSPDRankings(filters: {
     availableYears,
     selectedFilter: { startMonth, endMonth, year },
   };
+
+  await setComputedCache(cacheKey, result, 1800); // 30 mins
+  return result;
 }
 
 /**

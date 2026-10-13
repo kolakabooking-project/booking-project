@@ -153,6 +153,12 @@ export function createApp() {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+  // ─── Default Cache-Control for API (no-store unless explicitly overridden) ───
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    next();
+  });
+
   // ─── Static File Serving (uploads — only in development) ───
   if (!isProd) {
     const uploadsDir = path.resolve(env.UPLOAD_DIR);

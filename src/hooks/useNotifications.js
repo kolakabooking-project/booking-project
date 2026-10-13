@@ -17,8 +17,8 @@ export default function useNotifications() {
       return res?.data || [];
     },
     enabled: !!user?.id,
-    staleTime: 60 * 1000, // 1m — Ably subscription handles real-time updates instantly
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5m — Ably subscription handles real-time updates instantly
+    refetchOnWindowFocus: false,
   });
 
   const markAsReadMutation = useMutation({
