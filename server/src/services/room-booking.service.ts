@@ -311,6 +311,122 @@ function sanitizeRoomBookingInsert(data: any) {
   return fullBooking;
 }
 
+export interface UpdateRoomBookingInput {
+  roomId: string;
+  startTime: string | Date;
+  endTime: string | Date;
+  keperluan: string;
+  jumlahPeserta: number;
+  catatan?: string | null;
+  userId?: string;
+  targetUserId?: string;
+}
+
+export async function updateRoomBooking(
+  bookingId: string,
+  data: UpdateRoomBookingInput,
+  actor: { id: string; name: string; role: string }
+) {
+  const [target] = await db.select().from(roomBooking).where(eq(roomBooking.id, bookingId));
+  if (!target) throw new NotFoundError('Peminjaman Ruangan');
+
+  if (target.status !== 'Disetujui' && target.status !== 'Berlangsung') {
+    throw new ValidationError('Hanya peminjaman aktif yang dapat diedit.');
+  }
+
+  if (new Date() >= new Date(target.endTime)) {
+    throw new ValidationError('Peminjaman yang waktunya sudah terlewat tidak dapat diubah.');
+  }
+
+  if (!data.keperluan?.trim()) throw new ValidationError('Keperluan wajib diisi.');
+  if (!data.startTime || !data.endTime) throw new ValidationError('Waktu mulai dan selesai wajib diisi.');
+  if (!data.roomId) throw new ValidationError('Ruangan wajib dipilih.');
+
+  const startTime = new Date(data.startTime);
+  const endTime = new Date(data.endTime);
+
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    throw new ValidationError('Format waktu mulai atau selesai tidak valid.');
+  }
+
+  if (startTime >= endTime) {
+    throw new ValidationError('Waktu selesai harus setelah waktu mulai.');
+  }
+
+  // Check collision with other active bookings on the same room (ignoring current booking ID)
+  const overlapping = await db
+    .select({ id: roomBooking.id })
+    .from(roomBooking)
+    .where(
+      and(
+        eq(roomBooking.roomId, data.roomId),
+        not(eq(roomBooking.id, bookingId)),
+        inArray(roomBooking.status, ['Disetujui', 'Berlangsung']),
+        lt(roomBooking.startTime, endTime),
+        gt(roomBooking.endTime, startTime)
+      )
+    );
+
+  if (overlapping.length > 0) {
+    throw new ValidationError('Ruangan sudah dibooking pada waktu tersebut. Silakan pilih waktu atau ruangan lain.');
+  }
+
+  const updatePayload: Partial<typeof roomBooking.$inferInsert> = {
+    roomId: data.roomId,
+    startTime,
+    endTime,
+    keperluan: data.keperluan.trim(),
+    jumlahPeserta: typeof data.jumlahPeserta === 'number' ? data.jumlahPeserta : parseInt(data.jumlahPeserta as any) || 1,
+    catatan: data.catatan || null,
+    updatedAt: new Date(),
+  };
+
+  const newUserId = data.targetUserId || data.userId;
+  if (newUserId) {
+    updatePayload.userId = newUserId;
+  }
+
+  const [updated] = await db
+    .update(roomBooking)
+    .set(updatePayload)
+    .where(eq(roomBooking.id, bookingId))
+    .returning();
+
+  const fullBooking = await getRoomBookingById(updated.id);
+
+  broadcastBookingUpdate('ROOM_BOOKING_UPDATED', { booking: fullBooking }, 'room-bookings').catch((err) =>
+    console.error('[RoomBookingService] Ably broadcast failed:', err)
+  );
+
+  // Notify the user that their booking was updated by admin/sekretaris
+  (async () => {
+    try {
+      const formattedStart = formatDateTime(startTime);
+      const actorLabel = actor.role === 'sekretaris' ? 'Sekretaris' : 'Admin';
+
+      const { createNotification } = await import('./notification.service.js');
+      await createNotification({
+        userId: fullBooking.userId,
+        title: 'Peminjaman Ruangan Diperbarui',
+        body: `${actorLabel} telah memperbarui peminjaman ${fullBooking.roomName} ("${updated.keperluan}") pada ${formattedStart}.`,
+        url: '/user/room/my-bookings',
+      });
+
+      const payload = {
+        title: 'Peminjaman Ruangan Diperbarui',
+        body: `${actorLabel} telah memperbarui peminjaman ${fullBooking.roomName} ("${updated.keperluan}") pada ${formattedStart}.`,
+        url: '/user/room/my-bookings',
+      };
+      const { sendPushNotification } = await import('./push.service.js');
+      await sendPushNotification(fullBooking.userId, payload);
+    } catch (err) {
+      console.error('[RoomBookingService] Failed to send push notification on update:', err);
+    }
+  })();
+
+  return fullBooking;
+}
+
 export async function cancelRoomBooking(bookingId: string, userId: string, isAdmin: boolean = false, alasan?: string) {
   const [target] = await db.select().from(roomBooking).where(eq(roomBooking.id, bookingId));
   if (!target) throw new NotFoundError('Peminjaman Ruangan');
