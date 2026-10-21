@@ -83,7 +83,7 @@ export function RoomBookingProvider({ children }) {
           return [booking, ...current];
         });
         refreshRooms(); // status update for room
-      } else if (['ROOM_BOOKING_CANCELLED', 'ROOM_REVIEW_SUBMITTED'].includes(type)) {
+      } else if (['ROOM_BOOKING_CANCELLED', 'ROOM_REVIEW_SUBMITTED', 'ROOM_BOOKING_UPDATED'].includes(type)) {
         queryClient.setQueryData(roomBookingQueryKey, (old) => {
           const current = old || [];
           return current.map(b => b.id === booking.id ? booking : b);
@@ -122,6 +122,18 @@ export function RoomBookingProvider({ children }) {
         const current = old || [];
         if (current.some(b => b.id === res.data.id)) return current;
         return [res.data, ...current];
+      });
+    }
+    refreshRooms();
+    return res?.data;
+  }, [queryClient, refreshRooms]);
+
+  const updateRoomBooking = useCallback(async (bookingId, bookingData) => {
+    const [res] = await Promise.all([roomBookingApi.update(bookingId, bookingData), minDelay()]);
+    if (res?.data) {
+      queryClient.setQueryData(['roomBookings'], (old) => {
+        const current = old || [];
+        return current.map(b => b.id === bookingId ? res.data : b);
       });
     }
     refreshRooms();
@@ -245,6 +257,7 @@ export function RoomBookingProvider({ children }) {
         isLoading,
         createRoomBooking,
         createMandatoryRoomBooking,
+        updateRoomBooking,
         cancelRoomBooking,
         submitRoomReview,
         markRoomReviewAsRead,

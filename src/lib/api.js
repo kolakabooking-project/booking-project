@@ -245,6 +245,7 @@ export const roomBookingApi = {
   getById: (id) => request(`/room-bookings/${id}`),
   create: (data) => request('/room-bookings', { method: 'POST', body: JSON.stringify(data) }),
   createMandatory: (data) => request('/room-bookings/mandatory', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/room-bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   cancel: (id, alasan) => request(`/room-bookings/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ alasan }) }),
   submitReview: (id, reviewNotes) =>
     request(`/room-bookings/${id}/review`, { method: 'POST', body: JSON.stringify({ reviewNotes }) }),
