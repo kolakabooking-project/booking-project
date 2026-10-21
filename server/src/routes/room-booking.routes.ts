@@ -144,12 +144,41 @@ router.post('/mandatory', roleGuard('admin'), async (req: Request, res: Response
 });
 
 /**
+ * PUT /api/room-bookings/:id — Update active room booking (Admin / Sekretaris)
+ */
+router.put('/:id', roleGuard('admin'), async (req: Request, res: Response) => {
+  try {
+    const actor = (req as any).user;
+    const booking = await roomBookingService.updateRoomBooking(
+      req.params.id as string,
+      req.body,
+      actor
+    );
+
+    res.json({ data: booking });
+
+    logActivity({
+      userId: actor.id,
+      userName: actor.name,
+      action: 'ROOM_BOOKING_UPDATED',
+      targetId: booking.id,
+      targetName: `Peminjaman Ruangan: ${booking.keperluan}`,
+      detail: `${actor.role === 'sekretaris' ? 'Sekretaris' : 'Admin'} memperbarui peminjaman ruangan: ${booking.roomName}`,
+      ipAddress: (Array.isArray(req.ip) ? req.ip[0] : req.ip) || undefined,
+    });
+  } catch (err: any) {
+    const status = err instanceof AppError ? err.statusCode : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/**
  * PATCH /api/room-bookings/:id/cancel — Cancel room booking
  */
 router.patch('/:id/cancel', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    const isAdmin = user.role === 'admin' || user.role === 'superadmin' || user.role === 'sekretaris';
     const { alasan } = req.body;
 
     const booking = await roomBookingService.cancelRoomBooking(req.params.id as string, user.id, isAdmin, alasan);
