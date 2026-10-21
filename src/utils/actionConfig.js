@@ -7,7 +7,7 @@
  */
 import {
   LogIn, LogOut, KeyRound,
-  FilePlus2, FileX2, FileCheck2, FileWarning, FileClock, Navigation, FlagTriangleRight, CircleCheckBig,
+  FilePlus2, FileX2, FileCheck2, FileWarning, FileClock, Navigation, FlagTriangleRight, CircleCheckBig, FilePenLine,
   CarFront, Wrench, Trash2,
   UserPlus, Pencil,
   UserRoundPlus, UserRoundX, RefreshCcw, RefreshCw, ShieldCheck,
@@ -180,6 +180,13 @@ export const ACTION_CONFIG = {
     iconClass: 'text-emerald-600 dark:text-emerald-400',
     bgClass: 'bg-emerald-500/8 dark:bg-emerald-500/15 border border-emerald-500/15 dark:border-emerald-400/20',
     badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/8 dark:bg-emerald-500/15',
+  },
+  ROOM_BOOKING_UPDATED: {
+    icon: FilePenLine,
+    label: 'Booking Ruangan Diperbarui',
+    iconClass: 'text-blue-600 dark:text-blue-400',
+    bgClass: 'bg-blue-500/8 dark:bg-blue-500/15 border border-blue-500/15 dark:border-blue-400/20',
+    badgeClass: 'text-blue-700 dark:text-blue-300 bg-blue-500/8 dark:bg-blue-500/15',
   },
   ROOM_BOOKING_CANCELLED: {
     icon: FileX2,
