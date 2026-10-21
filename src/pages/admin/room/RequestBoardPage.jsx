@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useRoomBooking } from '../../../contexts/RoomBookingContext';
 import { useLoading } from '../../../contexts/LoadingContext';
 import Badge from '../../../components/ui/Badge';
@@ -10,16 +11,22 @@ import DataTable from '../../../components/ui/DataTable';
 import Pagination from '../../../components/ui/Pagination';
 import PageHeader from '../../../components/ui/PageHeader';
 import RoomBookingModalFlow from '../../../components/shared/RoomBookingModalFlow';
+import EditRoomBookingModal from '../../../components/admin/room/EditRoomBookingModal';
 import { ROOM_STATUS } from '../../../utils/constants';
 import { formatDateShort, formatTime } from '../../../utils/helpers';
 import { toast } from 'sonner';
-import { XCircle, Eye, Search, Filter, Plus } from 'lucide-react';
+import { XCircle, Eye, Search, Filter, Plus, Edit } from 'lucide-react';
 
 export default function RequestBoardPage() {
+  const { user, activeRole } = useAuth();
   const { roomBookings, cancelRoomBooking } = useRoomBooking();
   const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Role permissions: Admin, Sekretaris (in admin mode), Superadmin
+  const canManageBooking = ['admin', 'sekretaris', 'superadmin'].includes(user?.role) ||
+                           ['admin', 'sekretaris', 'superadmin'].includes(activeRole);
 
   // UI States
   const [activeTab, setActiveTab] = useState('aktif'); // 'aktif' or 'riwayat'
@@ -31,6 +38,7 @@ export default function RequestBoardPage() {
 
   // Modal States
   const [modal, setModal] = useState(null);
+  const [editingBooking, setEditingBooking] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
 
@@ -287,9 +295,24 @@ export default function RequestBoardPage() {
             {(modal.status === 'Disetujui' || modal.status === 'Berlangsung') && new Date() < new Date(modal.endTime) && (
               <div className="pt-2">
                 {!showReject ? (
-                  <div className="flex gap-3 justify-end bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                    <div className="flex-1 text-sm text-gray-500 self-center">Batalkan peminjaman jika terjadi konflik atau alasan darurat.</div>
-                    <Button variant="danger" onClick={() => setShowReject(true)} className="shadow-sm shadow-red-500/20"><XCircle size={16} />Batalkan Booking</Button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-end items-stretch sm:items-center bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex-1 text-sm text-gray-500">
+                      Kelola peminjaman jika terjadi perubahan agenda, bentrok waktu, atau pembatalan.
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      {canManageBooking && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setEditingBooking(modal)}
+                          className="shadow-sm border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500/50"
+                        >
+                          <Edit size={16} /> Edit Booking
+                        </Button>
+                      )}
+                      <Button variant="danger" onClick={() => setShowReject(true)} className="shadow-sm shadow-red-500/20">
+                        <XCircle size={16} /> Batalkan Booking
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-red-50/50 dark:bg-red-900/10 rounded-2xl p-5 border border-red-100 dark:border-red-900/30 animate-fade-in">
@@ -307,13 +330,23 @@ export default function RequestBoardPage() {
             {(modal.status === 'Disetujui' || modal.status === 'Berlangsung') && new Date() >= new Date(modal.endTime) && (
               <div className="pt-2">
                 <div className="p-3.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
-                  Waktu peminjaman sudah terlewat, sehingga peminjaman ini tidak dapat dibatalkan.
+                  Waktu peminjaman sudah terlewat, sehingga peminjaman ini tidak dapat diubah atau dibatalkan.
                 </div>
               </div>
             )}
           </div>
         )}
       </Modal>
+
+      <EditRoomBookingModal
+        isOpen={!!editingBooking}
+        onClose={() => setEditingBooking(null)}
+        booking={editingBooking}
+        onSuccess={(updatedBooking) => {
+          setModal(updatedBooking);
+          setEditingBooking(null);
+        }}
+      />
 
       <RoomBookingModalFlow
         isOpen={isBookingModalOpen}
